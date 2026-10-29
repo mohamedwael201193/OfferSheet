@@ -21,7 +21,7 @@ import { runVerdict } from './src/pipeline.js';
 import { OfferError, notConfigured } from './src/errors.js';
 
 const FRONTEND_DIR = fileURLToPath(new URL('../frontend/', import.meta.url));
-const BENCH_FILE = fileURLToPath(new URL('../../bench/results.json', import.meta.url));
+const BENCH_FILE = fileURLToPath(new URL('../bench/results.json', import.meta.url));
 const guards = new Guards({
   monthlyBudget: config.monthlyCallBudget,
   perVisitorDailyCap: config.perVisitorDailyCap,
