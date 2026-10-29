@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qloo tool catalogue — OfferSheet</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="app-page">
+<header class="appbar">
+  <a class="wordmark" href="index.html">OfferSheet</a>
+  <nav class="appnav" aria-label="App navigation">
+    <a href="app.html#tool">Tool</a>
+    <a href="app.html#ledger">Ledger</a>
+    <a href="docs.html">How the verdict is proven</a>
+    <a href="index.html">Landing</a>
+  </nav>
+</header>
+<main class="wrap doc-prose">
+  <section class="sheet crop">
+    <p class="specimen">The catalogue</p>
+    <h1>Qloo tool catalogue</h1>
+    <p class="label">The 10 Qloo tools behind every verdict, in plain verbs. OfferSheet has no MCP server of its own — the block below wires Qloo's official local server, not a new surface.</p>
+
+    <div class="table-wrap"><table class="depth-table">
+      <thead><tr><th>Tool</th><th>What it does</th><th>Where it shows up</th></tr></thead>
+      <tbody>
+        <tr><td>qloo_capabilities</td><td>Lists what Qloo can do before any verdict runs</td><td>Readiness probe</td></tr>
+        <tr><td>qloo_find_tags</td><td>Turns the artist and city into Qloo tags before any audience call</td><td>Tag discovery</td></tr>
+        <tr><td>qloo_describe</td><td>Resolves one named artist to its Qloo entity card</td><td>Headliner resolution</td></tr>
+        <tr><td>qloo_recommend</td><td>Finds opener candidates from the headliner's fans</td><td>Opener shortlist</td></tr>
+        <tr><td>qloo_rank</td><td>Ranks a shortlist for one city audience</td><td>Graph pick</td></tr>
+        <tr><td>qloo_where_popular</td><td>Finds where the headliner is popular</td><td>Audience areas</td></tr>
+        <tr><td>qloo_audience_demographics</td><td>Returns full age and gender bands for an audience</td><td>Who this audience is</td></tr>
+        <tr><td>qloo_entity_tags</td><td>Returns tags shared between two entities</td><td>Shared tags</td></tr>
+        <tr><td>qloo_trends</td><td>Returns 90-day momentum for an entity</td><td>Whether the artist is rising</td></tr>
+        <tr><td>qloo_compare_audiences</td><td>Compares two audiences' overlap</td><td>How the fan bases overlap</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2>Install Qloo's official local server (agent setup)</h2>
+    <p>This wires Qloo's own MCP server into your agent — it is not an OfferSheet server, and it adds no new OfferSheet surface. The verdict itself still runs in the hosted app.</p>
+    <pre>npm install --global @qloo/qloo-harness
+qloo mcp</pre>
+    <p>Then add this block to your agent's MCP config — <code>.mcp.json</code> for Claude Code, or the MCP settings file for Cursor. The server name is your local label; the command is Qloo's verified invocation.</p>
+    <pre>{
+  "mcpServers": {
+    "qloo": {
+      "command": "qloo",
+      "args": ["mcp"]
+    }
+  }
+}</pre>
+    <p>If the key is missing, Qloo's own setup reports it — run <code>qloo setup --status</code> and follow its prompt. OfferSheet never invents a verdict while the key is missing, and <strong>your key never leaves the server</strong>: receipts carry hashes and request IDs, never keys.</p>
+    <p><a href="app.html">Back to the app</a> · <a href="docs.html">How the verdict is proven</a></p>
+  </section>
+</main>
+<footer class="footer band band--deep">
+  <p class="label">OfferSheet — one money decision, before you sign.</p>
+  <p class="colophon">Colophon — Set in Hedvig Letters Serif and Geist. Printed on studio-white proof paper.</p>
+</footer>
+</body>
+</html>

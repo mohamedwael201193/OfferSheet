@@ -1,0 +1,89 @@
+{
+  "version": "offersheet-trial-pack-1",
+  "label": "Recorded trials — recorded, not live. Re-verify the arithmetic and the recorded picks without a fresh Qloo call.",
+  "source": "bench/results.json (committed benchmark ledger)",
+  "trials": [
+    {
+      "inputs": {
+        "artist": "Billie Eilish",
+        "city": "New York",
+        "guarantee": 250000,
+        "ticketPrice": 120
+      },
+      "breakEvenTickets": 2084,
+      "graphPick": "Olivia Rodrigo",
+      "gutPick": "Clairo. Her intimate, moody indie-pop fits a New York Billie Eilish audience well.",
+      "webPick": "Armani White — the only viable opening-act candidate supported by the supplied Wikidata facts, via the 2022 single “Billie Eilish” by Armani White.",
+      "misses": [
+        {
+          "arm": "gut",
+          "pick": "Clairo. Her intimate, moody indie-pop fits a New York Billie Eilish audience well.",
+          "graphPick": "Olivia Rodrigo"
+        },
+        {
+          "arm": "web",
+          "pick": "Armani White — the only viable opening-act candidate supported by the supplied Wikidata facts, via the 2022 single “Billie Eilish” by Armani White.",
+          "graphPick": "Olivia Rodrigo"
+        }
+      ],
+      "timingMs": 35319,
+      "recordedAt": "2026-10-29T06:24:14.566Z",
+      "sha256": "41a1fe11c8daf7ac4c09fcf2b0f0a29080ce06375986378bd4bd50c800b55395"
+    },
+    {
+      "inputs": {
+        "artist": "Taylor Swift",
+        "city": "New York",
+        "guarantee": 250000,
+        "ticketPrice": 120
+      },
+      "breakEvenTickets": 2084,
+      "graphPick": "Carly Rae Jepsen",
+      "gutPick": "Sabrina Carpenter.",
+      "webPick": "Def Leppard.\n\nUsing only the provided Wikidata facts, Def Leppard is the only act explicitly connected to Taylor Swift via the episode “Taylor Swift and Def Leppard.”",
+      "misses": [
+        {
+          "arm": "gut",
+          "pick": "Sabrina Carpenter.",
+          "graphPick": "Carly Rae Jepsen"
+        },
+        {
+          "arm": "web",
+          "pick": "Def Leppard.\n\nUsing only the provided Wikidata facts, Def Leppard is the only act explicitly connected to Taylor Swift via the episode “Taylor Swift and Def Leppard.”",
+          "graphPick": "Carly Rae Jepsen"
+        }
+      ],
+      "timingMs": 26190,
+      "recordedAt": "2026-10-29T06:24:41.397Z",
+      "sha256": "a48f797f1cc409d65b12e4b483079ed7bbc200898035ce5a51be0139f49c69ef"
+    },
+    {
+      "inputs": {
+        "artist": "Olivia Rodrigo",
+        "city": "Los Angeles",
+        "guarantee": 180000,
+        "ticketPrice": 95
+      },
+      "breakEvenTickets": 1895,
+      "graphPick": "King Princess",
+      "gutPick": "Gracie Abrams — her confessional, emotional pop fits Olivia Rodrigo’s Los Angeles audience perfectly.",
+      "webPick": "Based on the Wikidata facts you provided, the only artist mentioned is Olivia Rodrigo itself (her biography, discography, documentary, a past concert, and a video album). No other musicians, bands, or related acts appear in those data, so there isn’t any information to identify a separate opening-act candidate.\n\nResult: With the given facts alone, a specific opening act cannot be selected; additional data about other artists would be needed to make a recommendation.",
+      "misses": [
+        {
+          "arm": "gut",
+          "pick": "Gracie Abrams — her confessional, emotional pop fits Olivia Rodrigo’s Los Angeles audience perfectly.",
+          "graphPick": "King Princess"
+        },
+        {
+          "arm": "web",
+          "pick": "Based on the Wikidata facts you provided, the only artist mentioned is Olivia Rodrigo itself (her biography, discography, documentary, a past concert, and a video album). No other musicians, bands, or related acts appear in those data, so there isn’t any information to identify a separate opening-act candidate.\n\nResult: With the given facts alone, a specific opening act cannot be selected; additional data about other artists would be needed to make a recommendation.",
+          "graphPick": "King Princess"
+        }
+      ],
+      "timingMs": 40119,
+      "recordedAt": "2026-10-29T06:25:22.247Z",
+      "sha256": "3425b33ffdd37ec3e5a026c348ade7d16922d369d489e6a165452c9dbb5361b9"
+    }
+  ],
+  "packSha256": "034a53376a636110afe0cad2518e6d17fc3fed7bf0f5aec9029a612740838267"
+}

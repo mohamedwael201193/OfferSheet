@@ -81,6 +81,10 @@
     </form>
     <p class="label" style="margin-top:14px">No sign-in. One money decision, before you sign.</p>
     <p><a class="link-btn" href="#formula">See how the number is computed</a></p>
+    <div id="trialCards" class="trial-cards" aria-label="Recorded trials — tap to prefill">
+      <p class="label">Four cards — three recorded trials, one blank. Tap a trial to prefill the form; the verdict still requires pressing “Run the verdict”. Nothing auto-runs.</p>
+      <div id="trialCardsRow" class="trial-cards-row"></div>
+    </div>
   </section>
 
   <section id="status" class="status crop" aria-live="polite" hidden></section>
@@ -94,9 +98,13 @@
         <p class="label" id="verdictSubject"></p>
       </div>
     </div>
+    <div id="signChecklist" class="sign-checklist" aria-label="Before you sign checklist"></div>
     <div><span id="beTickets" class="verdict-number num">—</span> <span class="verdict-unit">tickets to break even</span></div>
+    <div id="confidenceBox" class="confidence-box" aria-label="Evidence strength"></div>
+    <div id="thinBadge" class="thin-badge" hidden></div>
     <p class="aggregate-note">Aggregate taste signals only — they show how much two audiences share, never a prediction about any individual, and never a promise this show will sell out.</p>
     <p id="beVerdict" class="verdict-line"></p>
+    <div id="citeChips" class="cite-chips" aria-label="Citations for this verdict"></div>
     <ul id="proofSummary" class="proof-summary"></ul>
     <div id="cannotBox" class="cannot-box" hidden><p>Cannot break even in this room at this guarantee</p></div>
     <div id="capacityBadge" class="capacity-badge"></div>
@@ -131,6 +139,7 @@
     </details>
     <details open>
       <summary>Sources checked</summary>
+      <p id="legSummary" class="leg-summary"></p>
       <div id="legsBlock"></div>
     </details>
   </section>
@@ -189,6 +198,14 @@
     </div>
   </section>
 
+  <!-- Gut-vs-Graph recorded tally: bench-driven, recorded not live. -->
+  <section id="trialTally" class="sheet crop" aria-label="Gut versus Graph — recorded trials">
+    <p class="label">Recorded trials — from the committed benchmark ledger. Recorded, not live.</p>
+    <h2>Gut vs Graph — recorded trials</h2>
+    <div id="tallyTable"></div>
+    <p id="tallyLine" class="tally-line"></p>
+  </section>
+
   <!-- Receipt drawer -->
   <section id="receiptSection" class="sheet crop" hidden aria-label="Receipts">
     <div class="sheet-head">
@@ -196,10 +213,29 @@
       <div>
         <h2>Proof for every number (click to re-check)</h2>
         <p class="label">Every claim, with the exact call behind it. Replay re-runs that call live.</p>
+        <p class="label">Keys never appear here — receipts carry hashes and request IDs, never keys.</p>
       </div>
     </div>
     <div id="receiptList" class="set"></div>
     <div id="replayOut" class="replay-out"></div>
+  </section>
+
+  <!-- Verdict sheet: printable/shareable, generated from the SAME verdict data. -->
+  <section id="verdictSheet" class="sheet crop verdict-sheet" hidden aria-label="Verdict sheet">
+    <div class="sheet-head">
+      <img src="assets/icon-contract.webp" alt="" width="56" height="56">
+      <div>
+        <h2>Verdict sheet — print or copy</h2>
+        <p class="label">Generated from this verdict's own data — never a diverging copy. Print it, or copy the promoter brief.</p>
+      </div>
+    </div>
+    <div id="sheetBody"></div>
+    <div id="refusedBlock"></div>
+    <div class="sheet-actions">
+      <button class="btn" type="button" id="printSheetBtn">Print sheet</button>
+      <button class="btn" type="button" id="copyBriefBtn">Copy promoter brief</button>
+    </div>
+    <p id="copyNote" class="label"></p>
   </section>
 
   <!-- Qloo integration depth: final copy from the integration-depth audit, 2026-10-29. -->
@@ -258,12 +294,42 @@
     <p>When capacity is known and break-even tickets exceed it, the verdict is: “Cannot break even in this room at this guarantee.” When capacity is unknown, no sellout percentage is shown at all.</p>
   </section>
 
+  <!-- What Qloo doesn't decide: limits + failure cases, copy only. -->
+  <section id="limits" class="sheet crop" aria-label="What Qloo doesn't decide">
+    <h2>What Qloo doesn't decide</h2>
+    <p>Qloo affinities are aggregate taste-overlap signals. They do not decide any of the following — and this page never presents them as if they did:</p>
+    <ul>
+      <li><strong>No headcount.</strong> Qloo returns matched areas and entities, not a population number.</li>
+      <li><strong>No sellout prediction.</strong> A break-even count is not a promise the room fills.</li>
+      <li><strong>No prediction about any individual.</strong> Audiences are aggregates, never a person.</li>
+      <li><strong>No causal claim.</strong> Shared taste does not cause a show to sell out.</li>
+      <li><strong>No booking availability, price, or terms.</strong> An opener pick is not a booking, and unconfirmed terms stay unconfirmed.</li>
+      <li><strong>No signing recommendation.</strong> The verdict is a count with evidence; the promoter decides.</li>
+    </ul>
+    <h3>Failure cases — what you see, and what it means</h3>
+    <div class="table-wrap"><table class="depth-table">
+      <thead><tr><th>Case</th><th>What the page shows</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td>Qloo not configured</td><td>Visible 503, form disabled</td><td>Outage refusal — no verdict can be computed</td></tr>
+        <tr><td>Required evidence leg fails</td><td>“Verdict withheld: evidence incomplete”, no numbers</td><td>Outage refusal — the missing legs are named</td></tr>
+        <tr><td>Price unknown</td><td>No break-even number; partial evidence only</td><td>Thin-data state — a count needs a price</td></tr>
+        <tr><td>Ambiguous headliner name</td><td>Needs-input picker, no guess</td><td>Thin-data state — pick the entity you mean</td></tr>
+        <tr><td>Capacity unknown</td><td>Tickets needed only, no sellout percentage</td><td>Thin-data state — verify room size before signing</td></tr>
+        <tr><td>REST leg rate-limited (429)</td><td>Exact failure label on that leg</td><td>Outage label — the verdict still stands on MCP legs</td></tr>
+        <tr><td>Trends / compare empty</td><td>Shown as no data</td><td>Thin-data state — never faked</td></tr>
+        <tr><td>No opener clears the checks</td><td>No forced winner</td><td>“No equivalent cleared the evidence checks — this does not mean none exists.”</td></tr>
+      </tbody>
+    </table></div>
+    <p class="proof-note"><strong>Cite-or-omit rule.</strong> Every Qloo-backed sentence on a verdict traces to a receipt below; LLM-arm picks are labelled LLM-only. A sentence with no backing receipt is dropped or labelled LLM-only — never presented as Qloo-backed.</p>
+  </section>
+
   <!-- Benchmark ledger -->
   <section class="sheet crop reveal ledger-card" id="ledger" aria-label="Benchmark ledger">
     <p class="specimen">No. 07 — The ledger</p>
     <h2>Benchmark ledger</h2>
     <p class="label">Committed, rerunnable Qloo-vs-Gut-vs-Web trials. Runs appear here only after real runs.</p>
     <div id="benchBlock">Loading…</div>
+    <p><a href="trial-pack.json" download>Download offline replay pack (recorded, not live)</a> — the 3 dated trials, frozen with checksums. Re-verify the arithmetic and the recorded picks without a fresh Qloo call.</p>
   </section>
 
   <!-- Safety strip -->
@@ -274,7 +340,8 @@
   <!-- Footer -->
   <footer class="footer band band--deep reveal">
     <p>What results do NOT establish: Qloo affinities are aggregate taste-overlap signals — how much two audiences share — not individual behavior, and not a causal claim that a show will sell out. No sellout percentage is ever shown when capacity is unknown. Quota guards are this product’s own design settings, not Qloo-stated quotas — no numeric Qloo quota is documented.</p>
-    <p class="label">OfferSheet — one page, one money decision.</p>
+    <p><a href="docs.html">How the verdict is proven</a> · <a href="tools.html">Qloo tool catalogue</a> · <a href="index.html">Landing</a></p>
+    <p class="label">OfferSheet — one money decision, before you sign.</p>
     <p class="colophon">Colophon — Set in Hedvig Letters Serif and Geist. Printed on studio-white proof paper.</p>
   </footer>
 </main>

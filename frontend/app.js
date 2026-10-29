@@ -49,8 +49,15 @@ async function loadBench() {
     $('benchBlock').innerHTML = runs.length === 0
       ? `<p class="empty">${esc(b.note || 'No benchmark runs recorded yet.')}</p><p class="empty"><span class="next-action">Next action:</span> run a live verdict, then record a trial — nothing is listed here until a real run exists.</p>`
       : `<p>${runs.length} recorded trial(s).</p><ul>${runs.map((t) => `<li>${esc(t.question || '')} — Graph: ${esc(t.graphPick || '')}, misses: ${(t.misses || []).length}${(t.misses || []).map((m) => ` (${esc(m.arm)} picked “${esc(m.pick)}”)`).join('')}</li>`).join('')}</ul>`;
+    // SHIP items 3 + 13: recorded-trial cards + Gut-vs-Graph tally, from
+    // the same bench data. Recorded, not live; prefill only, never auto-run.
+    renderTrialCards(runs);
+    renderTrialTally(runs);
   } catch {
     $('benchBlock').innerHTML = '<p class="empty">Benchmark ledger unavailable. <span class="next-action">Next action:</span> check that the backend is running, then reload.</p>';
+    renderTrialCards([]);
+    const tt = $('tallyTable'); if (tt) tt.innerHTML = '<p class="empty">Recorded tally unavailable — backend unreachable.</p>';
+    const tl = $('tallyLine'); if (tl) tl.textContent = '';
   }
 }
 
@@ -67,6 +74,8 @@ function hideVerdict() {
   $('receiptSection').hidden = true;
   $('raceToggleWrap').hidden = true;
   $('partialSection').hidden = true;
+  const sheet = $('verdictSheet');
+  if (sheet) sheet.hidden = true;
 }
 function setRunning(on) {
   document.querySelectorAll('#offerForm button').forEach((b) => { b.disabled = on; });
@@ -136,6 +145,7 @@ function renderReceipts(v) {
   receipts.forEach((r, idx) => {
     const div = document.createElement('div');
     div.className = 'receipt';
+    div.id = `receipt-${idx}`;
     const replayBtn = r.replay
       ? `<button class="btn btn-sm" data-replay='${esc(JSON.stringify(r.replay))}' data-receipt-idx="${idx}">Replay</button>`
       : '<em>No replay for this receipt</em>';
@@ -223,7 +233,10 @@ function plainLegName(name) {
 function legRowHtml(key, l) {
   const plain = plainLegName(key);
   const secondary = plain === key ? '' : ` <span class="label">(${esc(key)})</span>`;
-  return `<div><dt>${esc(plain)}${secondary}</dt><dd>${esc(l.status)}${l.reason ? ` — ${esc(l.reason)}` : ''}${l.note ? ` — ${esc(l.note)}` : ''}</dd></div>`;
+  // SHIP item 8: ok/partial state badge on every leg row. A leg counts
+  // ONLY at ok; anything else is partial, never a pass.
+  const state = l.status === 'ok' ? '<span class="leg-state leg-state--ok">ok</span>' : '<span class="leg-state leg-state--partial">partial</span>';
+  return `<div><dt>${esc(plain)}${secondary}</dt><dd>${state} ${esc(l.status)}${l.reason ? ` — ${esc(l.reason)}` : ''}${l.note ? ` — ${esc(l.note)}` : ''}</dd></div>`;
 }
 
 // Shared leg rows for the verdict card and the partial-evidence section.
@@ -336,6 +349,344 @@ function animateTickets(value) {
   ticketsRaf = requestAnimationFrame(step);
 }
 
+// ---- SHIP round (30-agent sweep adoptions, 29 Oct 2026) ----
+// Display-only helpers: they read the verdict/bench objects the backend
+// already returned. Nothing here changes the break-even numerator, the
+// receipt pipeline, or the 503 fail-closed gate, and nothing here makes a
+// new live Qloo call. Every displayed figure comes from already-computed,
+// already-receipted data or the recorded trials.
+
+// Item 1: find the receipt index for a set of operations (MCP tool names
+// or rest:<path>). Receipts exist only for legs that returned ok, so a
+// missing receipt means "not provable from this run" — the chip is omitted.
+function findReceiptIndex(receipts, operations) {
+  if (!Array.isArray(receipts)) return -1;
+  return receipts.findIndex((r) => r && operations.includes(r.operation));
+}
+
+// Item 1: scroll to an existing receipt and flash it. The drawer stays the
+// audit layer; chips are shortcuts, not new proof.
+function scrollToReceipt(idx) {
+  const section = $('receiptSection');
+  const el = document.getElementById(`receipt-${idx}`);
+  if (section) section.hidden = false;
+  if (el && el.scrollIntoView) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('receipt--flash');
+    setTimeout(() => el.classList.remove('receipt--flash'), 2500);
+  }
+}
+
+// Item 1: citation chips ON the verdict. Each chip names the Qloo signal,
+// the tool, and the requestId, and clicks to the existing re-runnable
+// receipt. A chip renders ONLY when its mapping is proven from this run's
+// receipts; otherwise it is omitted (never guessed).
+//   PROVEN: Graph pick (qloo_rank or qloo_recommend receipt); each miss
+//     (same Graph receipt — the miss is the LLM pick contradicted by it).
+//   OMITTED BY DESIGN: the arithmetic line. Its inputs are the guarantee
+//     (user input) and the price (user-supplied, or Ticketmaster history —
+//     Ticketmaster has no receipt object), so no receipt can back it. The
+//     worked example shows those inputs labelled by source instead.
+function renderCiteChips(v) {
+  const box = $('citeChips');
+  if (!box) return;
+  const receipts = v.receipts || [];
+  const graphIdx = findReceiptIndex(receipts, ['qloo_rank', 'qloo_recommend']);
+  const chips = [];
+  if (v.openers?.topPick && graphIdx >= 0) {
+    const r = receipts[graphIdx];
+    chips.push({ label: `Graph pick ${esc(v.openers.topPick)} — ${esc(r.operation)} · requestId ${esc(r.requestId ?? '—')}`, idx: graphIdx });
+  }
+  for (const m of v.missTrial?.misses || []) {
+    if (graphIdx >= 0) {
+      chips.push({ label: `Miss: ${esc(m.arm)} picked ${esc(m.pick)}; Qloo picked ${esc(m.graphPick)} — ${esc(receipts[graphIdx].operation)}`, idx: graphIdx });
+    }
+  }
+  if (chips.length === 0) {
+    box.innerHTML = '<p class="label">No Qloo-backed citation chip this run — the receipts below still carry every claim.</p>';
+    return;
+  }
+  box.innerHTML = chips.map((c, i) => `<button type="button" class="cite-chip" data-receipt-idx="${c.idx}" data-chip="${i}">${c.label}</button>`).join('');
+  box.querySelectorAll('[data-receipt-idx]').forEach((b) => {
+    b.addEventListener('click', () => scrollToReceipt(Number(b.getAttribute('data-receipt-idx'))));
+  });
+}
+
+// Item 4: deterministic evidence-strength label. Code-set, never LLM.
+//   HIGH: all 7 core MCP legs ok AND no leg in error.
+//   MEDIUM: core evidence present (a headliner resolution + an opener
+//     source) but some leg empty/error/skipped.
+//   LOW: thin core — no ranked shortlist AND (no audience areas OR no
+//     shared tags), i.e. the verdict rests on partial evidence.
+// Tie disclosure: Qloo rank returns names only, no scores, so a near-tie
+// cannot be detected from this verdict — stated, never scored.
+// Unranked disclosure: ranked empty + candidates present means the top
+// pick is the first candidate returned, not a ranked winner.
+const CONFIDENCE_CORE = ['findTags', 'describe', 'recommend', 'rank', 'wherePopular', 'demographics', 'entityTags'];
+function computeConfidence(v) {
+  const legs = v.legs || {};
+  const st = (k) => legs[k]?.status;
+  const ranked = Array.isArray(v.openers?.ranked) ? v.openers.ranked : [];
+  const candidates = Array.isArray(v.openers?.candidates) ? v.openers.candidates : [];
+  const areas = Array.isArray(v.audience?.areas) ? v.audience.areas : [];
+  const tags = v.sharedTags;
+  const tagsEmpty = tags === null || tags === undefined || (Array.isArray(tags) && tags.length === 0);
+  const anyError = Object.values(legs).some((l) => l && l.status === 'error');
+  const coreOk = CONFIDENCE_CORE.every((k) => st(k) === 'ok');
+  const nonOk = Object.entries(legs).filter(([, l]) => l && l.status !== 'ok')
+    .map(([k, l]) => `${PLAIN_LEGS[k] || k} (${l.status}${l.reason ? ` — ${l.reason}` : ''})`);
+  let level;
+  if (ranked.length === 0 && (areas.length === 0 || tagsEmpty)) level = 'LOW';
+  else if (coreOk && !anyError) level = 'HIGH';
+  else level = 'MEDIUM';
+  const reasons = [];
+  if (coreOk && !anyError) reasons.push('All 7 core Qloo legs ok; no leg in error.');
+  else reasons.push(`Core legs: ${CONFIDENCE_CORE.filter((k) => st(k) === 'ok').length}/7 ok.`);
+  if (nonOk.length) reasons.push(`Legs without usable data: ${nonOk.join('; ')}.`);
+  if (ranked.length === 0 && candidates.length > 0) reasons.push('Unranked shortlist: the Graph pick is the first candidate returned, not a ranked winner.');
+  else reasons.push('Tie check: Qloo rank returns names only, no scores — a near-tie cannot be ruled out from this verdict.');
+  return { level, reasons };
+}
+
+function renderConfidence(v) {
+  const box = $('confidenceBox');
+  if (!box) return;
+  const c = computeConfidence(v);
+  box.innerHTML = `<p><strong>${c.level}</strong> · evidence strength, not probability</p><ul>${c.reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>`;
+}
+
+// Item 8: leg summary + rejected-evidence counts next to the verdict.
+// Labels derive from existing leg status only; a leg counts ONLY at ok.
+function renderLegSummary(v) {
+  const box = $('legSummary');
+  if (!box) return;
+  const legs = v.legs || {};
+  const bad = Object.entries(legs).filter(([, l]) => l && l.status !== 'ok');
+  const ranked = Array.isArray(v.openers?.ranked) ? v.openers.ranked : [];
+  const candidates = Array.isArray(v.openers?.candidates) ? v.openers.candidates : [];
+  const unranked = Math.max(0, candidates.length - ranked.length);
+  const parts = [];
+  if (bad.length === 0) parts.push('All legs ok.');
+  else parts.push(`${bad.length} leg${bad.length === 1 ? '' : 's'} dropped: ${bad.map(([k, l]) => `${PLAIN_LEGS[k] || k} (${l.status}${l.reason ? ` — ${l.reason}` : ''})`).join('; ')}.`);
+  if (unranked > 0) parts.push(`${unranked} opener candidate${unranked === 1 ? '' : 's'} shown unranked (no ranked winner this run).`);
+  box.textContent = parts.join(' ');
+}
+
+// Item 9: thin-data badge. Shown when the verdict rests on thin core
+// evidence (no ranked shortlist, no audience areas, or no demographics
+// bands) — a badge, not a refusal: the verdict still stands on what
+// cleared the evidence checks.
+function renderThinBadge(v) {
+  const badge = $('thinBadge');
+  if (!badge) return;
+  const ranked = Array.isArray(v.openers?.ranked) ? v.openers.ranked : [];
+  const areas = Array.isArray(v.audience?.areas) ? v.audience.areas : [];
+  const bands = v.demographics;
+  const bandsEmpty = bands === null || bands === undefined || (Array.isArray(bands) && bands.length === 0);
+  if (ranked.length === 0 || areas.length === 0 || bandsEmpty) {
+    badge.hidden = false;
+    badge.textContent = 'Thin data — some Qloo legs returned empty; this verdict uses only what cleared the evidence checks.';
+  } else {
+    badge.hidden = true;
+    badge.textContent = '';
+  }
+}
+
+// Item 10: "Before you sign" checklist above the number. Reflects actual
+// input states only — never adds claimed facts.
+function buildSignChecklist(v) {
+  const be = v.breakEven || {};
+  const cap = v.capacity || {};
+  const known = cap.state === 'known' && typeof cap.value === 'number';
+  const tm = v.ticketmaster || {};
+  const rows = [];
+  rows.push(['Opener', v.openers?.topPick ? `${v.openers.topPick} (Graph pick)` : 'Not picked this run']);
+  rows.push(['Venue', tm.venueName || 'Not resolved this run']);
+  rows.push(['Ticket price', `${money(be.price?.value ?? 0)} (${be.price?.source ?? 'unknown source'})`]);
+  rows.push(['Capacity', known ? `${fmt(cap.value)} (${cap.source})` : 'Unknown — no sellout percentage shown']);
+  rows.push(['Variable cost', be.variableCost?.provided ? money(be.variableCost.value) : 'Not entered — net is before variable costs']);
+  const unknowns = [];
+  if (!known) unknowns.push('capacity');
+  if (!be.variableCost?.provided) unknowns.push('variable cost');
+  if (!tm.venueName) unknowns.push('venue');
+  if (!v.openers?.topPick) unknowns.push('opener pick');
+  return { rows, unknowns };
+}
+
+function renderSignChecklist(v) {
+  const box = $('signChecklist');
+  if (!box) return;
+  const { rows, unknowns } = buildSignChecklist(v);
+  box.innerHTML = `<p class="label">Before you sign — check each line against the offer:</p><ul>${rows.map(([k, val]) => `<li><strong>${esc(k)}:</strong> ${esc(val)}</li>`).join('')}</ul>${unknowns.length ? `<p class="label">Unknowns: ${esc(unknowns.join(', '))}.</p>` : ''}`;
+}
+
+// Items 7 + 11: one-page verdict sheet + copy-ready promoter brief,
+// generated from the SAME verdict object — never a diverging copy.
+// Item 11's struck-through refused candidates live on the sheet: the
+// refusing rule is the miss ledger (the LLM pick contradicted by the
+// Qloo Graph pick).
+function sheetBriefText(v) {
+  const be = v.breakEven || {};
+  const cap = v.capacity || {};
+  const known = cap.state === 'known' && typeof cap.value === 'number';
+  const lines = [];
+  lines.push(`OfferSheet verdict — ${v.artist || 'artist'} in ${v.city || 'city'}`);
+  lines.push(`Guarantee ${money(v.guarantee ?? 0)} · ticket price ${money(be.price?.value ?? 0)} (${be.price?.source ?? 'unknown source'}) · net per ticket ${money(be.net ?? 0)}${be.variableCost?.provided === false ? ' (before variable costs)' : ''}`);
+  lines.push(`Break-even: ${fmt(be.tickets ?? 0)} tickets${known ? ` (${((be.tickets / cap.value) * 100).toFixed(1)}% of room capacity ${fmt(cap.value)}, ${cap.source})` : ' (capacity unknown — no sellout percentage)'}`);
+  if (v.openers?.topPick) lines.push(`Graph pick: ${v.openers.topPick}`);
+  for (const m of v.missTrial?.misses || []) lines.push(`Miss: ${m.arm} picked ${m.pick}; Qloo picked ${m.graphPick}.`);
+  const unknowns = buildSignChecklist(v).unknowns;
+  if (unknowns.length) lines.push(`Unknowns: ${unknowns.join(', ')}.`);
+  lines.push('Aggregate taste signals only — not a sellout prediction, not a signing recommendation. The promoter decides.');
+  return lines.join('\n');
+}
+
+function renderVerdictSheet(v) {
+  const sheet = $('verdictSheet');
+  const body = $('sheetBody');
+  if (!sheet || !body) return;
+  const be = v.breakEven || {};
+  const cap = v.capacity || {};
+  const known = cap.state === 'known' && typeof cap.value === 'number';
+  const receiptsHtml = (v.receipts || []).map((r) => `<li>${esc(r.claim || r.operation)} — ${esc(r.operation)} · requestId ${esc(r.requestId ?? '—')} · ${esc(String(r.resultCount ?? '—'))} results</li>`).join('');
+  const unknowns = buildSignChecklist(v).unknowns;
+  body.innerHTML = [
+    `<h3>${esc(v.artist || '')} in ${esc(v.city || '')}</h3>`,
+    `<p><strong>${fmt(be.tickets ?? 0)} tickets to break even</strong>${known ? ` — ${((be.tickets / cap.value) * 100).toFixed(1)}% of room capacity ${fmt(cap.value)} (${esc(cap.source)})` : ' — capacity unknown, no sellout percentage'}</p>`,
+    `<p>Guarantee ${money(v.guarantee ?? 0)} · ticket price ${money(be.price?.value ?? 0)} (${esc(be.price?.source ?? 'unknown source')}) · net per ticket ${money(be.net ?? 0)}${be.variableCost?.provided === false ? ' (before variable costs)' : ''}</p>`,
+    v.openers?.topPick ? `<p>Graph pick: ${esc(v.openers.topPick)}</p>` : '',
+    (v.missTrial?.misses || []).length ? `<p>Miss ledger: ${(v.missTrial.misses || []).map((m) => `${esc(m.arm)} picked ${esc(m.pick)}; Qloo picked ${esc(m.graphPick)}`).join(' ')}</p>` : '',
+    unknowns.length ? `<p>Unknowns: ${esc(unknowns.join(', '))}.</p>` : '',
+    receiptsHtml ? `<p>Key receipts:</p><ul>${receiptsHtml}</ul>` : '',
+    `<p class="label">Aggregate taste signals only — not a sellout prediction, not a signing recommendation. The promoter decides.</p>`,
+  ].filter(Boolean).join('');
+  const refused = $('refusedBlock');
+  if (refused) {
+    const misses = v.missTrial?.misses || [];
+    refused.innerHTML = misses.length
+      ? `<h3>Refused picks</h3><ul>${misses.map((m) => `<li><s>${esc(m.pick)}</s> — refused: ${esc(m.arm)} pick contradicted by the Qloo Graph pick ${esc(m.graphPick)}.</li>`).join('')}</ul>`
+      : '<p class="label">No refused picks this run.</p>';
+  }
+  const printBtn = $('printSheetBtn');
+  if (printBtn) printBtn.onclick = () => window.print();
+  const copyBtn = $('copyBriefBtn');
+  const note = $('copyNote');
+  if (copyBtn) copyBtn.onclick = async () => {
+    const text = sheetBriefText(v);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(text); if (note) note.textContent = 'Promoter brief copied.'; }
+      else throw new Error('clipboard unavailable');
+    } catch {
+      if (note) note.textContent = 'Copy failed — select the sheet text manually.';
+    }
+  };
+  sheet.hidden = false;
+}
+
+// Items 3 + 13: prefill the existing form from a recorded trial. Display
+// only — the verdict still requires pressing "Run the verdict".
+function prefillForm(input) {
+  const set = (id, value) => { const el = $(id); if (el) el.value = value ?? ''; };
+  set('artist', input.artist);
+  set('city', input.city);
+  set('guarantee', input.guarantee);
+  set('ticketPrice', input.ticketPrice);
+  set('venue', '');
+  set('variableCost', '');
+  set('capacity', '');
+  set('entityHint', '');
+  const form = $('offerForm');
+  if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Item 13: "four cards" — the recorded trials as tappable cards plus one
+// blank "your artist" card. Tap prefills; nothing auto-runs.
+function renderTrialCards(runs) {
+  const row = $('trialCardsRow');
+  if (!row) return;
+  const cards = (runs || []).map((run) => {
+    const input = run.input || {};
+    const date = (run.recordedAt || '').slice(0, 10);
+    return `<button type="button" class="trial-card" data-prefill='${esc(JSON.stringify(input))}'>
+      <strong>${esc(input.artist || '')}</strong>
+      <span>${esc(input.city || '')} · guarantee ${money(input.guarantee ?? 0)} · price ${money(input.ticketPrice ?? 0)}</span>
+      <span class="trial-card-be">${fmt(run.breakEvenTickets ?? 0)} tickets — recorded ${esc(date)}, not live</span>
+    </button>`;
+  }).join('');
+  const your = `<button type="button" class="trial-card trial-card--blank" data-your-artist="1">
+    <strong>Your artist</strong><span>Start blank — fill in your own offer.</span>
+  </button>`;
+  row.innerHTML = cards + your;
+  row.querySelectorAll('[data-prefill]').forEach((b) => {
+    b.addEventListener('click', () => { try { prefillForm(JSON.parse(b.getAttribute('data-prefill'))); } catch {} });
+  });
+  const blank = row.querySelector('[data-your-artist]');
+  if (blank) blank.addEventListener('click', () => {
+    prefillForm({ artist: '', city: '', guarantee: '', ticketPrice: '' });
+    const artist = $('artist'); if (artist && artist.focus) artist.focus();
+  });
+}
+
+// Item 3: a run's pick for one LLM arm. Bench runs record misses only;
+// an arm with no miss entry matched the Graph pick that run.
+function pickFor(run, arm) {
+  const miss = (run.misses || []).find((m) => m.arm === arm);
+  return miss ? miss.pick : (run.graphPick || '');
+}
+
+function trialMissed(run, arm) {
+  return (run.misses || []).some((m) => m.arm === arm);
+}
+
+function computeTrialTally(runs) {
+  const n = runs.length;
+  const gutSame = runs.filter((r) => !trialMissed(r, 'gut')).length;
+  const webSame = runs.filter((r) => !trialMissed(r, 'web')).length;
+  const changed = runs.filter((r) => trialMissed(r, 'gut') || trialMissed(r, 'web')).length;
+  return { n, gutSame, webSame, changed };
+}
+
+function shortPick(text, limit) {
+  const t = String(text || '');
+  if (t.length <= limit) return { short: t, full: null };
+  return { short: t.slice(0, limit) + '…', full: t };
+}
+
+// Item 3: Gut-vs-Graph side-by-side table + running tally across the
+// recorded trials. The tally must match bench/results.json exactly.
+function renderTrialTally(runs) {
+  const table = $('tallyTable');
+  const line = $('tallyLine');
+  if (!table || !line) return;
+  const t = computeTrialTally(runs);
+  const cell = (c) => c.full ? `${esc(c.short)}<details><summary>Full pick</summary>${esc(c.full)}</details>` : esc(c.short);
+  const rows = (runs || []).map((run) => {
+    const input = run.input || {};
+    const gutPick = pickFor(run, 'gut');
+    const webPick = pickFor(run, 'web');
+    const gutMiss = trialMissed(run, 'gut');
+    const webMiss = trialMissed(run, 'web');
+    const missNames = [];
+    if (gutMiss) missNames.push(`Gut missed: ${gutPick}`);
+    if (webMiss) missNames.push(`Web missed: ${webPick}`);
+    return `<tr>
+      <td>${esc(input.artist || '')} · ${esc(input.city || '')}<br><span class="label">${money(input.guarantee ?? 0)} / ${money(input.ticketPrice ?? 0)} → ${fmt(run.breakEvenTickets ?? 0)} tickets</span></td>
+      <td>${cell(shortPick(gutPick, 120))}</td>
+      <td>${esc(run.graphPick || '')}</td>
+      <td>${gutMiss ? 'different' : 'same'}</td>
+      <td>${cell(shortPick(webPick, 120))}</td>
+      <td>${webMiss ? 'different' : 'same'}</td>
+      <td>${missNames.length ? esc(missNames.join('; ')) : 'No miss — both arms matched Graph.'}</td>
+      <td><button type="button" class="btn" data-rerun='${esc(JSON.stringify(input))}'>Use these inputs</button></td>
+    </tr>`;
+  }).join('');
+  table.innerHTML = `<div class="table-wrap"><table class="depth-table"><thead><tr><th>Trial</th><th>Gut pick</th><th>Qloo pick</th><th>Gut same?</th><th>Web pick</th><th>Web same?</th><th>Named miss</th><th>Re-run</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  table.querySelectorAll('[data-rerun]').forEach((b) => {
+    b.addEventListener('click', () => { try { prefillForm(JSON.parse(b.getAttribute('data-rerun'))); } catch {} });
+  });
+  line.textContent = `Qloo changed the pick in ${t.changed}/${t.n} trials (Gut agreed ${t.gutSame}/${t.n}; Web agreed ${t.webSame}/${t.n}). Recorded, not live.`;
+}
+
 function renderVerdict(v, race) {
   hideStatus();
   lastVerdict = v;
@@ -352,8 +703,15 @@ function renderVerdict(v, race) {
   $('raceToggleWrap').hidden = false;
 
   $('verdictSubject').textContent = `${v.artist} in ${v.city} · guarantee ${money(v.guarantee)}`;
+  // SHIP item 10: checklist above the number.
+  renderSignChecklist(v);
   animateTickets(be.tickets);
+  // SHIP item 4: confidence label next to the verdict. Item 9: thin badge.
+  renderConfidence(v);
+  renderThinBadge(v);
   $('beVerdict').textContent = be.verdict || (be.note === 'no guarantee' ? 'No guarantee to cover — 0 tickets.' : '');
+  // SHIP item 1: citation chips on the verdict.
+  renderCiteChips(v);
   renderProofSummary(v);
   $('cannotBox').hidden = !cannot;
   $('bePrice').textContent = `${money(be.price.value)} (${be.price.source})`;
@@ -401,8 +759,12 @@ function renderVerdict(v, race) {
   $('audienceNote').textContent = v.audience.note;
   $('audienceAreas').innerHTML = (v.audience.areas || []).map((a) => `<li>${esc(a.name || a.id || '')}</li>`).join('') || '<li>No areas returned this run. <span class="next-action">Next action:</span> run the verdict again.</li>';
   const ranked = v.openers.ranked.length > 0 ? v.openers.ranked : v.openers.candidates;
-  $('openerList').innerHTML = ranked.map((o) => `<li>${esc(o.name || o.id || '')}</li>`).join('') || '<li>No openers returned this run. <span class="next-action">Next action:</span> run the verdict again.</li>';
-  $('topPick').textContent = v.openers.topPick ? `Graph pick: ${v.openers.topPick}` : '';
+  $('openerList').innerHTML = ranked.map((o) => `<li>${esc(o.name || o.id || '')}</li>`).join('') || '<li>No equivalent cleared the evidence checks — this does not mean none exists. <span class="next-action">Next action:</span> run the verdict again.</li>';
+  // SHIP item 9: no forced winner. A first candidate from an unranked
+  // shortlist is labelled as such, never as a ranked Graph pick.
+  $('topPick').textContent = v.openers.topPick
+    ? (v.openers.ranked.length > 0 ? `Graph pick: ${v.openers.topPick}` : `First candidate (unranked — no ranked winner this run): ${v.openers.topPick}`)
+    : '';
   $('demoBlock').innerHTML = kvOrList(v.demographics, 'Who this audience is');
   $('trendBlock').innerHTML = kvOrList(v.trends, 'Whether the artist is rising');
   $('tagsBlock').innerHTML = kvOrList(v.sharedTags, 'Shared tags');
@@ -410,6 +772,9 @@ function renderVerdict(v, race) {
   renderArms(v);
   renderReceipts(v);
   renderLegs(v);
+  // SHIP items 8 + 7: leg summary next to the verdict, then the sheet.
+  renderLegSummary(v);
+  renderVerdictSheet(v);
   setBadge('Qloo live — verdict computed from live calls', 'green');
 }
 
@@ -498,7 +863,15 @@ async function submitVerdict(race, entityHint) {
     } else if (v.status === 'verdict_withheld') {
       hideVerdict();
       const plainMissing = (v.missingLegs || []).map((m) => plainLegName(m));
-      showStatus(`<p class="big">Verdict withheld: evidence incomplete</p><p>${esc(v.message)}</p><p>Missing: ${esc(plainMissing.join(', '))}</p><p>No numbers are shown in this state.</p><button class="btn" type="button" id="tryAgainBtn">Try again</button>`, 'red');
+      // SHIP item 9: named refusal state. Map grouped missing names to
+      // their leg keys; an errored leg means OUTAGE, empty/skipped means
+      // THIN DATA. The 503 gate itself is untouched.
+      const missingKeyMap = { 'rank-or-recommend': ['rank', 'recommend'], 'where_popular': ['wherePopular'], 'demographics': ['demographics'], 'compare-or-entity_tags': ['compare', 'entityTags'] };
+      const missingStatuses = (v.missingLegs || []).flatMap((m) => missingKeyMap[m] || [m]).map((k) => v.legs?.[k]?.status);
+      const kindLine = missingStatuses.includes('error')
+        ? '<p>Refusal kind: OUTAGE — a required leg errored (outage), not thin data.</p>'
+        : '<p>Refusal kind: THIN DATA — required legs returned empty or skipped (thin data), not an outage. No equivalent cleared the evidence checks — this does not mean none exists.</p>';
+      showStatus(`<p class="big">Verdict withheld: evidence incomplete</p><p>${esc(v.message)}</p><p>Missing: ${esc(plainMissing.join(', '))}</p>${kindLine}<p>No numbers are shown in this state.</p><button class="btn" type="button" id="tryAgainBtn">Try again</button>`, 'red');
       setBadge('Qloo evidence incomplete — verdict withheld', 'red');
       $('tryAgainBtn').addEventListener('click', () => submitVerdict(false));
     } else if (v.status === 'needs_input') {

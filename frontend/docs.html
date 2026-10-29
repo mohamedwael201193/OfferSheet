@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the verdict is proven — OfferSheet</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="app-page">
+<header class="appbar">
+  <a class="wordmark" href="index.html">OfferSheet</a>
+  <nav class="appnav" aria-label="App navigation">
+    <a href="app.html#tool">Tool</a>
+    <a href="app.html#ledger">Ledger</a>
+    <a href="tools.html">Tool catalogue</a>
+    <a href="index.html">Landing</a>
+  </nav>
+</header>
+<main class="wrap doc-prose">
+  <section class="sheet crop">
+    <p class="specimen">The proof model</p>
+    <h1>How the verdict is proven</h1>
+    <p class="label">Static page. It links the live ledger and the recorded trials — it never restates numbers that can drift.</p>
+
+    <h2>1. The formula</h2>
+    <p>Break-even tickets = ceil(guarantee ÷ net per ticket), where net per ticket = ticket price − variable cost per ticket. A blank variable cost means the net is <em>before</em> variable costs — never net of zero costs. An explicit 0 is cost 0. The worked example on every verdict shows the exact numbers used.</p>
+    <p>When capacity is known (user-supplied or Ticketmaster venue, source always labelled), the verdict also shows break-even as a percentage of room capacity, and when break-even exceeds capacity it says plainly: “Cannot break even in this room at this guarantee.” When capacity is unknown, no percentage is shown at all — only tickets needed, plus the verbatim unknown-capacity sentence.</p>
+
+    <h2>2. The receipt model</h2>
+    <p>Every claim on a verdict traces to a receipt: the claim, the operation (MCP tool name or REST path), a SHA-256 request hash, the upstream requestId (null when the upstream returns none — never invented), a result count, and, where the leg holds one, an ordered ID list. Receipts exist only for legs that returned ok. Every receipt in the drawer carries a Replay button that re-runs the exact call live; a replay matches only when the replayed ID list equals the original ID list in order — counts alone never prove a match.</p>
+    <p>Keys never appear in receipts. The REST client sends the key only as an X-Api-Key header, and MCP arguments never contain keys.</p>
+
+    <h2>3. The fail-closed rule</h2>
+    <p>When a required evidence leg fails, the verdict is withheld and no numbers render. The states:</p>
+    <ul>
+      <li><strong>503 / not configured</strong> — visible error, form disabled. Nothing is guessed.</li>
+      <li><strong>Verdict withheld</strong> — missing legs named, refusal kind named (OUTAGE when a leg errored, THIN DATA when legs returned empty or skipped). No numbers shown.</li>
+      <li><strong>Needs input</strong> — an ambiguous headliner name returns a picker, never a guess.</li>
+      <li><strong>Price unknown</strong> — no break-even number without a price; partial evidence only.</li>
+    </ul>
+
+    <h2>4. The miss ledger</h2>
+    <p>Every verdict records the Gut-vs-Graph race: the LLM-only pick, the Qloo-grounded pick, and whether they differ. A miss names the LLM pick and the contradicting Qloo pick. The recorded trials are in the <a href="app.html#ledger">benchmark ledger</a>; the frozen, checksummed copy is the <a href="trial-pack.json" download>offline replay pack</a> (recorded, not live).</p>
+
+    <h2>5. The trial suite</h2>
+    <p>The replay pack pins the 3 dated trials (inputs, break-evens, recorded Qloo picks, checksums). To verify offline: recompute ceil(guarantee ÷ ticket price) for each trial and compare the recorded Qloo pick — no fresh Qloo call is needed, and no fresh call is made.</p>
+
+    <h2>6. The confidence label</h2>
+    <p>The HIGH / MEDIUM / LOW label next to a verdict is computed by code from leg coverage — never narrated by an LLM — and it measures evidence strength, not probability:</p>
+    <ul>
+      <li><strong>HIGH</strong> — all 7 core Qloo legs ok (find tags, describe, recommend, rank, where popular, demographics, entity tags) and no leg in error.</li>
+      <li><strong>MEDIUM</strong> — core evidence present but some leg empty, errored, or skipped.</li>
+      <li><strong>LOW</strong> — thin core: no ranked shortlist AND (no audience areas OR no shared tags).</li>
+    </ul>
+    <p>Two disclosures always accompany the label. <strong>Tie check:</strong> Qloo rank returns names only, no scores — a near-tie cannot be ruled out from a verdict. <strong>Unranked shortlist:</strong> when the ranked list is empty and candidates are present, the Graph pick is the first candidate returned, not a ranked winner.</p>
+    <p><a href="app.html">Back to the app</a> · <a href="tools.html">Qloo tool catalogue</a></p>
+  </section>
+</main>
+<footer class="footer band band--deep">
+  <p class="label">OfferSheet — one money decision, before you sign.</p>
+  <p class="colophon">Colophon — Set in Hedvig Letters Serif and Geist. Printed on studio-white proof paper.</p>
+</footer>
+</body>
+</html>
