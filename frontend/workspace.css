@@ -128,3 +128,10 @@
 #workspace .ws-pin-label--base { font-weight: 700; }
 #workspace .ws-mapstrip-caption { list-style: none; padding: 0; margin: 8px 0 16px; }
 #workspace .ws-mapstrip-caption li { font-size: 14px; line-height: 20px; }
+
+/* T5 mobile surface (tech) — MIRROR ONLY: no page loads workspace.css
+   (the app page loads dashboard.css, which carries the live rules).
+   Kept in step so the file matches if it is ever loaded again. */
+.ws-table-wrap { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+#workspace .ws-panel { min-width: 0; }
+#workspace .ws-file-label { display: inline-flex; align-items: center; }

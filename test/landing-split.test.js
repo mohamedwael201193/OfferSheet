@@ -30,11 +30,13 @@ test('landing is display-only: no verdict machinery, no data calls', () => {
 });
 
 test('landing keeps the display sections and links into the app', () => {
-  for (const id of ['problem', 'how', 'arms', 'refuses', 'formula', 'heroStage', 'dealStack']) {
+  // MERGE (dark redesign): heroStage/dealStack removed with the 3D tilt stack
+  // (user order: no stacked/tilted hero), and No. 01-05 numbering replaced by
+  // micro-labels in the dark language. All other pins below stay enforced.
+  for (const id of ['problem', 'how', 'arms', 'refuses', 'formula']) {
     assert.ok(landing.includes(`id="${id}"`), `landing must keep id="${id}"`);
   }
-  for (const s of ['No. 01', 'No. 02', 'No. 03', 'No. 04', 'No. 05',
-    'arms-showcase.webp', 'refusal-proof.webp']) {
+  for (const s of ['arms-showcase.webp', 'refusal-proof.webp']) {
     assert.ok(landing.includes(s), `landing must contain ${s}`);
   }
   assert.ok(landing.includes('Recorded example — 29 Oct 2026 trial, not a live verdict'),

@@ -4,7 +4,7 @@
 // call() for each tool in sequence, close(). No key is ever logged: args contain
 // no keys, and envelopes are returned verbatim (error codes only, no credentials).
 import { spawn } from 'node:child_process';
-import { mapEnvelopeError } from './errors.js';
+import { mapEnvelopeError, invalidInput } from './errors.js';
 
 const PROTOCOL_VERSION = '2024-11-05';
 
@@ -22,6 +22,49 @@ export const MCP_TOOLS = [
   'qloo_entity_tags',
   'qloo_trends',
 ];
+
+// T1 (provenance): per-tool argument-KEY allowlist for replay. The keys are
+// exactly the keys the verdict pipeline, the re-rank path, and the routing
+// step send for each tool — observed call shapes, not an upstream schema,
+// so no value-type claim is made here. An unknown key is rejected before
+// any session is spawned: without this, an extra key the upstream silently
+// ignores would re-run a DIFFERENT call that still returns the same IDs
+// and stamps a false "match". Known-key wrong-type values still reach the
+// upstream and fail there, surfacing as a replay failure — never a match.
+// qloo_capabilities takes no keys from any verdict receipt (the readiness
+// probe sends {}); the capabilities() helper's operation_ids has no caller
+// and no receipt, so it is deliberately NOT allowlisted — if a caller is
+// ever added, this table must gain it in the same change.
+export const MCP_ARG_ALLOWLIST = {
+  qloo_capabilities: [],
+  qloo_find_tags: ['query', 'limit'],
+  qloo_describe: ['entity', 'type'],
+  qloo_recommend: ['target_type', 'signals', 'limit'],
+  qloo_rank: ['options', 'option_type', 'signals', 'signal_location'],
+  qloo_where_popular: ['entity', 'within', 'limit'],
+  qloo_compare_audiences: ['group_a', 'group_b', 'target_type'],
+  qloo_audience_demographics: ['entity', 'entity_type'],
+  qloo_entity_tags: ['entities', 'entity_type', 'limit'],
+  qloo_trends: ['entities', 'entity_type', 'start_date', 'end_date'],
+};
+
+// Validate a replay's MCP tool + args against the allowlists above. Throws
+// OfferError (INVALID_INPUT, 400) on the first violation. Pure function —
+// no session, no network — so tests cover it without a harness.
+export function validateMcpReplayArgs(tool, args) {
+  if (!MCP_TOOLS.includes(tool)) {
+    throw invalidInput(`Replay tool not allowlisted: ${tool}`);
+  }
+  if (args === undefined || args === null || typeof args !== 'object' || Array.isArray(args)) {
+    throw invalidInput('Replay MCP args must be an object');
+  }
+  const allowed = MCP_ARG_ALLOWLIST[tool] || [];
+  for (const k of Object.keys(args)) {
+    if (!allowed.includes(k)) {
+      throw invalidInput(`Replay MCP arg not allowlisted for ${tool}: ${k}`);
+    }
+  }
+}
 
 export class McpSession {
   constructor({ command = 'qloo', args = ['mcp'], timeoutMs = 60000, spawnFn = spawn } = {}) {

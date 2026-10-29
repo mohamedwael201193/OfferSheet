@@ -1,854 +1,215 @@
-/* OfferSheet — Studio design system.
-   Tokens implemented exactly from hallmark/skills/hallmark/references/themes/studio.md.
-   Cool studio-white proof paper, blue-black ink, Hedvig Letters Serif heads,
-   Geist body, cadmium orange only as construction + the one primary action.
-   No mono face anywhere on the page: tabular figures come from Geist. */
+/* OfferSheet landing — dark cinematic language, rebuilt originally.
+   Near-black surfaces, white text, monochrome + photographic accents only.
+   Giant rounded display face for titles, grotesk sans for body/labels.
+   Vanilla CSS, no build step. Reduced-motion kills all motion (see end). */
 :root {
-  --color-paper: oklch(97.2% 0.006 215);
-  --color-paper-2: oklch(94% 0.009 215);
-  --color-paper-3: oklch(90.5% 0.011 215);
-  --color-paper-hi: oklch(99% 0.004 215);
-  --color-ink: oklch(16% 0.032 250);
-  --color-ink-2: oklch(34% 0.022 245);
-  --color-muted: oklch(49% 0.018 240);
-  --color-rule: oklch(84% 0.010 225);
-  --color-accent: oklch(68% 0.172 50);
-  --color-accent-ink: oklch(16% 0.032 250);
-  --color-focus: oklch(52% 0.15 48);
-  --color-dot: color-mix(in oklab, var(--color-ink) 20%, transparent);
-  --color-mark: color-mix(in oklab, var(--color-ink) 72%, transparent);
-  --font-display: "Hedvig Letters Serif", ui-serif, Georgia, serif;
-  --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
-  --radius-card: 3px;
-  --radius-pill: 3px;
-  --rule-hair: 1px;
-  --shadow-sheet: 1px 2px 0 color-mix(in oklab, var(--color-ink) 7%, transparent),
-    10px 18px 36px -14px color-mix(in oklab, var(--color-ink) 32%, transparent);
-  --tracking-display: -0.022em;
-  --display-weight: 400;
-  --dur-short: 180ms;
-  --ease-out: ease-out;
-  --space: 16px;
+  --bg: #0A0A0A;
+  --bg-2: #111111;
+  --surface: #1A1A1A;
+  --text: #FFFFFF;
+  --body: #D4D4D4;
+  --muted: #AAAAAA;
+  --faint: #8A8A8A;
+  --hair: #2A2A2A;
+  --hair-soft: #1E1E1E;
+  --teal: #2E8F9E;
+  --amber: #F59E0B;
+  --display: "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-paper-2: #D4D4D4;
+  --color-paper-hi: #FFFFFF;
 }
-
 * { box-sizing: border-box; }
+html { background: var(--bg); overflow-x: clip; scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--body); font-family: var(--sans); font-size: 18px; line-height: 1.65; -webkit-font-smoothing: antialiased; overflow-x: clip; padding-bottom: 110px; }
+h1, h2, h3 { color: var(--text); line-height: 1.05; margin: 0; }
+p { margin: 0 0 16px; max-width: 68ch; }
+a { color: var(--text); text-underline-offset: 3px; }
+a:hover { color: var(--muted); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+img { display: block; max-width: 100%; height: auto; }
+main { display: block; }
+section { padding: 96px 24px; }
+section > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
 
-html { background: var(--color-paper); }
+/* Skip link: first Tab stop, visible on focus. */
+.skip-link { position: absolute; left: -9999px; top: 0; background: #FFFFFF; color: #0A0A0A; padding: 12px 20px; z-index: 200; border-radius: 999px; font-weight: 600; text-decoration: none; }
+.skip-link:focus { position: fixed; left: 16px; top: 16px; }
 
-body {
-  margin: 0;
-  background: var(--color-paper);
-  color: var(--color-ink-2);
-  font-family: var(--font-body);
-  font-size: 16px;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
+/* Top appbar (wordmark row, not a nav) + display type. */
+.appbar { border-bottom: 1px solid var(--hair); }
+.appbar-inner { max-width: 1200px; margin: 0 auto; padding: 20px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.wordmark { font-family: var(--display); font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -0.01em; }
+.app-kicker { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
+.nav-cta { margin-left: auto; }
+
+/* Buttons: pill-shaped. Primary = white fill, black text, soft glow. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 24px; border-radius: 999px; border: 1px solid var(--hair); background: transparent; color: var(--text); font: inherit; font-size: 16px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.btn--primary { background: #FFFFFF; border-color: #FFFFFF; color: #0A0A0A; }
+.btn--primary:hover { background: #E5E5E5; border-color: #E5E5E5; color: #0A0A0A; }
+.btn--ghost { border-color: #3A3A3A; }
+.btn--ghost:hover { border-color: #FFFFFF; color: #FFFFFF; }
+.btn--glow { box-shadow: 0 0 0 1px rgba(255, 255, 255, .25), 0 0 28px rgba(255, 255, 255, .14); }
+.btn--glow:hover { box-shadow: 0 0 0 1px rgba(255, 255, 255, .4), 0 0 40px rgba(255, 255, 255, .22); }
+
+/* Floating glass pill nav, bottom-center. The page's ONE <nav>. */
+.nav-links {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px; z-index: 90;
+  display: flex; gap: 4px; align-items: center; padding: 8px 10px;
+  max-width: calc(100vw - 32px); overflow-x: auto;
+  border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14);
+  background: rgba(17, 17, 17, .72); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
 }
+.nav-links a { flex: none; min-height: 48px; display: inline-flex; align-items: center; padding: 0 16px; border-radius: 999px; text-decoration: none; font-size: 15px; font-weight: 600; color: #FFFFFF; white-space: nowrap; }
+.nav-links a:hover { background: rgba(255, 255, 255, .12); }
+.nav-links-cta { background: #FFFFFF !important; color: #0A0A0A !important; }
 
-h1, h2, h3 {
-  font-family: var(--font-display);
-  font-weight: var(--display-weight);
-  letter-spacing: var(--tracking-display);
-  color: var(--color-ink);
-  font-optical-sizing: auto;
-  line-height: 1.0;
-  margin: 0;
-}
-
-h1 { font-size: clamp(2rem, 6vw, 3.5rem); }
-h2 { font-size: clamp(1.6rem, 4vw, 2.25rem); }
-h3 { font-size: 1.25rem; letter-spacing: -0.005em; }
-
-p { margin: 0 0 12px; }
-a { color: var(--color-ink); text-underline-offset: 3px; }
-a:hover { text-decoration-color: var(--color-accent); text-decoration-thickness: 2px; }
-pre { font-family: inherit; white-space: pre-wrap; word-break: break-word; }
-
-.label, figcaption, .caption, .stat-label, .field-hint, .badge, .readout {
-  font-weight: 500;
-  font-size: 0.8125rem;
-  color: var(--color-muted);
-  font-variant-numeric: tabular-nums;
-}
-.num { font-variant-numeric: tabular-nums; }
-
-/* Proof ground: dot grid + grain, ONLY on hero/nav/footer, fading before the next section. */
-.proof {
-  background-color: var(--color-paper);
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
-    radial-gradient(circle at 1px 1px, var(--color-dot) 1px, transparent 1.4px);
-  background-size: 160px 160px, 24px 24px;
-  -webkit-mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
-}
-
-/* Crop marks: eight 1px ticks, one pair at each corner, set off by a small gap. */
-.crop { position: relative; }
-/* Race lanes and the replay box are app-rendered cards (their markup lives in
-   app.js, so no class can be added there): they take the same crop marks here. */
-.lane, .replay-out { position: relative; }
-.crop::before, .lane::before, .replay-out::before {
-  content: "";
-  position: absolute;
-  inset: -12px;
-  pointer-events: none;
-  --l: 10px; --o: 12px;
-  background:
-    linear-gradient(var(--color-mark), var(--color-mark)) 0 var(--o) / var(--l) 1px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) var(--o) 0 / 1px var(--l) no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - 0px) var(--o) / var(--l) 1px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - var(--o)) 0 / 1px var(--l) no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) 0 calc(100% - var(--o)) / var(--l) 1px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) var(--o) 100% / 1px var(--l) no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - 0px) calc(100% - var(--o)) / var(--l) 1px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - var(--o)) 100% / 1px var(--l) no-repeat;
-}
-/* Right-edge ticks sit inside the box edge so all eight stay visible. */
-.crop.ticks-in::before { --o: 0px; }
-
-/* Construction guides: 1px orange rules that draw in once. */
-.guide {
-  height: 1px;
-  background: var(--color-accent);
-  transform-origin: left center;
-  animation: guide-draw 700ms var(--ease-out) both;
-}
-@keyframes guide-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-
-/* Motion additions (animation + UX audit) — keyframes only, no scripts,
-   no `transition: all` anywhere. Transform/opacity or stroke-dashoffset only. */
-@keyframes hero-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes verdict-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes plan-draw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
-@keyframes lane-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes receipt-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-
-/* Hero entrance: transform/opacity only, once. */
-.hero h1 { animation: hero-rise 600ms var(--ease-out) both; }
-.hero figure { animation: hero-rise 600ms var(--ease-out) 120ms both; }
-
-/* Venue-plan construction lines: blueprint line-draw over the hero image.
-   pathLength="100" in markup normalizes every dash, so each line draws once
-   along its full length, staggered. */
-.plan-draw { position: absolute; top: 10px; left: 10px; width: calc(100% - 20px); height: auto; aspect-ratio: 3 / 2; pointer-events: none; }
-.plan-draw path { fill: none; stroke: var(--color-accent); stroke-width: 1; stroke-dasharray: 100; stroke-dashoffset: 100; animation: plan-draw 900ms var(--ease-out) both; }
-.plan-draw path:nth-child(2) { animation-delay: 150ms; }
-.plan-draw path:nth-child(3) { animation-delay: 300ms; }
-.plan-draw path:nth-child(4) { animation-delay: 450ms; }
-
-/* Verdict-number reveal: transform/opacity only, plays when the verdict card
-   is first unhidden (the animation starts on first display). */
-.verdict-number { animation: verdict-in 500ms var(--ease-out) both; }
-
-/* Race-lane motion: scaleX fill bars, staggered per lane. */
-.lane-bar { height: 3px; margin-top: 10px; background: var(--color-accent); transform-origin: left center; animation: lane-fill 600ms var(--ease-out) both; }
-.lane:nth-child(2) .lane-bar { animation-delay: 120ms; }
-.lane:nth-child(3) .lane-bar { animation-delay: 240ms; }
-.lane-bar--empty { background: var(--color-paper-2); animation: none; transform: scaleX(1); }
-
-/* Receipt rows: staggered reveal, transform/opacity only. */
-.receipt { animation: receipt-in 400ms var(--ease-out) both; }
-.receipt:nth-child(2) { animation-delay: 60ms; }
-.receipt:nth-child(3) { animation-delay: 120ms; }
-.receipt:nth-child(4) { animation-delay: 180ms; }
-.receipt:nth-child(5) { animation-delay: 240ms; }
-.receipt:nth-child(6) { animation-delay: 300ms; }
-.receipt:nth-child(7) { animation-delay: 360ms; }
-.receipt:nth-child(8) { animation-delay: 420ms; }
-
-.wrap { max-width: 1080px; margin: 0 auto; padding: 0 var(--space); }
-
-/* Nav */
-.nav { border-bottom: 1px solid var(--color-ink); }
-.nav-inner {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 18px 0 14px;
-}
-.wordmark { font-family: var(--font-display); font-size: 1.75rem; letter-spacing: var(--tracking-display); color: var(--color-ink); line-height: 1; }
-.badge {
-  border: 1px solid var(--color-ink);
-  border-radius: 2px;
-  padding: 6px 10px;
-  background: var(--color-paper-hi);
-  color: var(--color-ink);
-  text-align: right;
-  max-width: 320px;
-}
-.badge.amber { border-color: var(--color-accent); }
-.badge.green { border-color: var(--color-ink); background: var(--color-paper-hi); }
-.badge.red { border-color: var(--color-focus); color: var(--color-ink); }
-
-/* Hero */
-.hero { padding: 28px 0 8px; }
-.hero h1 { max-width: 22ch; margin-bottom: 20px; }
-.hero figure { margin: 0 0 10px; background: var(--color-paper-hi); box-shadow: var(--shadow-sheet); border-radius: var(--radius-card); padding: 10px; }
-.hero img { display: block; width: 100%; height: auto; border-radius: 2px; }
-.hero figcaption { padding-top: 8px; }
-.hero-fallback { display: none; border: 1px solid var(--color-ink); border-radius: var(--radius-card); padding: 24px; background: var(--color-paper-hi); }
-.hero-fallback p { margin: 0; }
-.hero img.img-missing { display: none; }
-.hero img.img-missing + figcaption { display: none; }
-.hero-fallback.show { display: block; }
-
-/* Sets: 1px ink rule opens a set, 1px rule between rows. */
-.set { border-top: 1px solid var(--color-ink); }
-.set > * { border-bottom: 1px solid var(--color-rule); }
-.set > *:last-child { border-bottom: 0; }
-
-/* Stats strip */
-.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: 28px 0 8px; background: var(--color-paper-hi); border-top: 1px solid var(--color-ink); border-bottom: 1px solid var(--color-rule); }
-.stat { padding: 16px 14px; border-bottom: 1px solid var(--color-rule); }
-.stat:nth-child(odd) { border-right: 1px solid var(--color-rule); }
-.stat-value { font-family: var(--font-display); font-size: 1.9rem; line-height: 1; color: var(--color-ink); letter-spacing: var(--tracking-display); }
-.stat-label { margin-top: 6px; }
-
-/* Sheets / cards */
-.sheet {
-  background: var(--color-paper-hi);
-  border: 1px solid var(--color-rule);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-sheet);
-  padding: 20px;
-  margin: 28px 0;
-}
-.sheet-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
-.sheet-head img { width: 56px; height: 56px; object-fit: cover; border-radius: 2px; flex: none; }
-.sheet-head .label { margin-top: 4px; }
-
-/* Form */
-form { display: grid; gap: 14px; }
-.field { display: flex; flex-direction: column; gap: 6px; }
-.field label { font-weight: 500; color: var(--color-muted); font-size: 0.875rem; }
-.field-hint { margin-top: -2px; }
-input {
-  width: 100%;
-  font: inherit;
-  color: var(--color-ink);
-  background: var(--color-paper);
-  border: 1px solid var(--color-muted);
-  border-radius: 3px;
-  padding: 12px 14px;
-  font-variant-numeric: tabular-nums;
-}
-input:focus {
-  outline: 2px solid var(--color-focus); outline-offset: 1px; border-color: var(--color-ink);
-  /* Crop marks appear on focus: eight 1px inside-corner ticks, 4px inset. */
-  background-image:
-    linear-gradient(var(--color-mark), var(--color-mark)) 4px 4px / 8px 1px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) 4px 4px / 1px 8px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - 4px) 4px / 8px 1px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - 4px) 4px / 1px 8px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) 4px calc(100% - 4px) / 8px 1px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) 4px calc(100% - 4px) / 1px 8px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - 4px) calc(100% - 4px) / 8px 1px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - 4px) calc(100% - 4px) / 1px 8px no-repeat;
-}
-.form-actions { display: grid; gap: 10px; margin-top: 4px; }
-
-/* Controls: 48px, 1px ink border, 2px radius, inset second rule, crop marks that open on hover. */
-.btn {
-  position: relative;
-  min-height: 48px;
-  padding: 0 22px;
-  font: inherit;
-  font-weight: 500;
-  color: var(--color-ink);
-  background: var(--color-paper-hi);
-  border: 1px solid var(--color-ink);
-  border-radius: 2px;
-  cursor: pointer;
-  transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
-}
-.btn::after { content: ""; position: absolute; inset: 2px; border: 1px solid var(--color-mark); border-radius: 1px; pointer-events: none; }
-.btn::before {
-  content: ""; position: absolute; inset: -9px; pointer-events: none;
-  --l: 7px; --o: 9px; opacity: 0;
-  background:
-    linear-gradient(var(--color-mark), var(--color-mark)) 0 var(--o) / var(--l) 1px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) var(--o) 0 / 1px var(--l) no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) 100% var(--o) / var(--l) 1px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - var(--o)) 0 / 1px var(--l) no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) 0 calc(100% - var(--o)) / var(--l) 1px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) var(--o) 100% / 1px var(--l) no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) 100% calc(100% - var(--o)) / var(--l) 1px no-repeat,
-    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - var(--o)) 100% / 1px var(--l) no-repeat;
-  transition: inset var(--dur-short) var(--ease-out), opacity var(--dur-short) var(--ease-out);
-}
-.btn:hover::before, .btn:focus-visible::before { opacity: 1; inset: -12px; }
-.btn--primary { background: var(--color-accent); color: var(--color-accent-ink); }
-.btn:disabled { opacity: 0.55; cursor: wait; }
-.btn-sm { min-height: 48px; padding: 0 14px; font-size: 0.9rem; }
-
-/* Status / verdict */
-.status { border: 1px solid var(--color-ink); border-radius: var(--radius-card); padding: 18px; margin: 24px 0; background: var(--color-paper-hi); box-shadow: var(--shadow-sheet); }
-.status.red { border-color: var(--color-focus); }
-.status .big { font-family: var(--font-display); font-size: 1.4rem; line-height: 1.04; color: var(--color-ink); }
-.spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--color-rule); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 800ms linear infinite; vertical-align: -3px; margin-right: 8px; }
+/* Type scale: giant display + wide-tracked micro-labels. */
+.display { font-family: var(--display); font-weight: 800; letter-spacing: -0.01em; }
+.hero h1.display { font-size: clamp(52px, 11vw, 150px); }
+.display--section { font-size: clamp(40px, 10vw, 96px); margin-bottom: 24px; }
+.display--giant { font-size: clamp(56px, 14vw, 180px); }
+.micro-label { font-size: 13px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+.hero { position: relative; padding-top: 80px; padding-bottom: 96px; overflow: hidden; }
+.hero-beam { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(46, 143, 158, .18), transparent 70%); }
+.hero-sub { font-size: 20px; color: var(--body); max-width: 60ch; }
+.hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin: 28px 0 48px; }
+.hero-figure img { border-radius: 0; width: 100%; }
+.hero-figure figcaption { color: var(--faint); font-size: 15px; margin-top: 12px; max-width: 64ch; }
+.rotating-badge { position: absolute; right: 48px; top: 64px; width: 120px; height: 120px; opacity: .85; }
+.rotating-badge svg { width: 100%; height: 100%; animation: spin 24s linear infinite; }
+.rotating-badge text { fill: var(--muted); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; font-family: var(--sans); }
+.rotating-badge circle { fill: var(--text); }
 @keyframes spin { to { transform: rotate(360deg); } }
-.progress { height: 3px; background: var(--color-paper-2); margin-top: 12px; overflow: hidden; border-radius: 2px; }
-.progress::after { content: ""; display: block; height: 100%; width: 40%; background: var(--color-accent); animation: slide 1.1s var(--ease-out) infinite alternate; }
-@keyframes slide { from { margin-left: 0; } to { margin-left: 60%; } }
 
-/* Streamed verdict progress (LEGENDARY): one ledger line per real completed
-   backend call, rendered live during the run. Text only, no animation, so
-   reduced-motion needs no special case — the list is hidden with the status
-   area once the verdict renders. */
-.leg-progress { list-style: none; margin: 12px 0 0; padding: 0; border-top: 1px solid var(--color-rule); }
-.leg-progress li { font-family: var(--font-body); font-size: 0.85rem; line-height: 1.5; color: var(--color-ink); padding: 6px 0; border-bottom: 1px solid var(--color-rule); }
+/* Marquee: tagline + section labels ONLY, never numbers. */
+.marquee { overflow: hidden; border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); padding: 20px 0; }
+.marquee-track { display: flex; width: max-content; animation: marquee 30s linear infinite; }
+.marquee-track span { font-family: var(--display); font-size: 28px; font-weight: 800; color: var(--text); white-space: nowrap; padding-right: 8px; }
+@keyframes marquee { to { transform: translateX(-50%); } }
 
-/* Headliner image (artist images, display-only): a sourced Qloo artist
-   image with a visible source tag, created dynamically by renderHeadlinerImage.
-   Static, no animation. The slot is omitted entirely when no sourced image
-   exists — never a placeholder photo. */
-.headliner-image { margin: 0 0 18px; }
-.headliner-image img { display: block; width: 100%; max-width: 420px; height: auto; border: 1px solid var(--color-ink); border-radius: var(--radius-card); }
-.headliner-image figcaption { font-family: var(--font-body); font-size: 0.85rem; line-height: 1.5; color: var(--color-ink); margin-top: 6px; }
+/* Collage: sharp-cornered photography, tilted/overlapping fan. */
+.collage { padding-top: 120px; padding-bottom: 120px; }
+.fan { display: flex; gap: 24px; margin-top: 48px; }
+.fan-card { flex: 1; margin: 0; transform: rotate(var(--rot)) translateY(var(--py, 0px)); }
+.fan-card:nth-child(1) { --rot: -4deg; }
+.fan-card:nth-child(2) { --rot: 2deg; margin-top: 40px; }
+.fan-card:nth-child(3) { --rot: -2deg; margin-top: 16px; }
+.fan-card img { border-radius: 0; width: 100%; }
+.fan-card figcaption { color: var(--faint); font-size: 15px; margin-top: 12px; }
 
-.verdict-card { border: 1px solid var(--color-ink); }
-.verdict-number { font-family: var(--font-display); font-size: clamp(4rem, 16vw, 8.5rem); line-height: 1.0; letter-spacing: var(--tracking-display); color: var(--color-ink); font-variant-numeric: tabular-nums; }
-.verdict-unit { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.0; color: var(--color-ink); }
-.verdict-line { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.04; color: var(--color-ink); margin-top: 10px; }
-.capacity-badge { display: inline-block; border: 1px solid var(--color-ink); border-radius: 2px; padding: 4px 8px; margin-top: 12px; font-weight: 500; font-size: 0.85rem; color: var(--color-ink); }
-.capacity-badge.unknown { border-color: var(--color-focus); color: var(--color-ink); }
-.unknown-box { border-top: 1px solid var(--color-ink); margin-top: 16px; padding-top: 14px; }
-.unknown-box p { margin: 0; color: var(--color-ink); }
-.cannot-box { border: 1px solid var(--color-focus); border-radius: var(--radius-card); padding: 14px; margin-top: 16px; }
-.cannot-box p { margin: 0; font-family: var(--font-display); font-size: 1.3rem; line-height: 1.04; color: var(--color-ink); }
-.facts { display: grid; gap: 0; margin-top: 18px; border-top: 1px solid var(--color-ink); }
-.facts > div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--color-rule); }
-.facts dt { font-weight: 500; color: var(--color-muted); font-size: 0.9rem; }
-.facts dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--color-ink); }
+/* Statement: theatrical void around one giant line. */
+.statement { padding-top: 140px; padding-bottom: 140px; }
+.statement p { font-size: 20px; max-width: 60ch; }
 
-details { border-top: 1px solid var(--color-rule); padding: 12px 0; }
-details summary { cursor: pointer; font-weight: 500; color: var(--color-ink); }
-details summary:hover { text-decoration: underline; text-decoration-color: var(--color-accent); text-decoration-thickness: 2px; }
-ul, ol { margin: 8px 0 12px; padding-left: 22px; }
-li { margin-bottom: 6px; }
-.kv { display: grid; gap: 0; }
-.kv > div { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--color-rule); }
-.kv dt { font-weight: 500; color: var(--color-muted); font-size: 0.9rem; }
-.kv dd { margin: 0; text-align: right; word-break: break-word; }
+/* How it works: three plain steps. */
+.steps { list-style: none; padding: 0; margin: 32px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+.steps li { border-top: 1px solid var(--hair); padding-top: 20px; font-size: 18px; }
+.steps li strong { display: block; color: var(--text); font-size: 20px; margin-bottom: 8px; }
 
-/* Race lanes */
-.lane { border: 1px solid var(--color-rule); border-radius: var(--radius-card); padding: 14px; margin: 10px 0; background: var(--color-paper); }
-.lane-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
-.lane-pick { font-family: var(--font-display); font-size: 1.25rem; line-height: 1.04; color: var(--color-ink); }
-.lane-unavailable { color: var(--color-muted); font-style: normal; }
-.race-timer { font-weight: 500; color: var(--color-ink); font-variant-numeric: tabular-nums; }
+/* Evidence: arms grid + recorded labels + how-made note. */
+.arms-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin: 32px 0; }
+.arm-card { border: 1px solid var(--hair); padding: 28px; background: var(--bg-2); }
+.arm-name { color: var(--muted); font-size: 14px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; }
+.arm-pick { font-family: var(--display); font-size: 32px; font-weight: 800; color: var(--text); margin: 8px 0; }
+.recorded-label { border: 1px solid var(--hair); border-left: 4px solid var(--text); padding: 16px 20px; color: var(--body); background: var(--bg-2); max-width: 72ch; }
+.how-made { max-width: 72ch; }
 
-/* Receipts */
-.receipt { display: grid; gap: 8px; padding: 14px 0; border-bottom: 1px solid var(--color-rule); }
-.receipt:last-child { border-bottom: 0; }
-.receipt .claim { font-weight: 500; color: var(--color-ink); }
-.receipt .meta { font-size: 0.85rem; color: var(--color-muted); word-break: break-all; font-variant-numeric: tabular-nums; }
-.replay-out { margin-top: 12px; padding: 12px; border: 1px solid var(--color-rule); border-radius: var(--radius-card); background: var(--color-paper); }
-.replay-out:empty { display: none; }
+/* Formula strip: scroll-drawn SVG + static worked text. */
+.formula-strip { border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); }
+.draw-svg { width: 100%; max-width: 600px; height: 120px; margin: 24px 0; }
+.draw-path { fill: none; stroke: #FFFFFF; stroke-width: 2; }
+.draw-svg.js-draw .draw-path { stroke-dasharray: 100; stroke-dashoffset: 100; }
+.draw-svg.js-draw.drawn .draw-path { stroke-dashoffset: 0; transition: stroke-dashoffset 1.2s ease-out; }
+.formula-text { font-size: 22px; color: var(--text); }
 
-/* Design-audit fixes (property overrides only — no motion rule touched):
-   orange stays on 1px guides + the one primary fill, so loading/fill
-   indicators render in ink; the empty lane bar keeps paper-2. Plus an
-   explicit visible keyboard-focus outline for links, summaries, buttons. */
-.spinner { border-top-color: var(--color-ink); }
-.progress::after { background: var(--color-ink); }
-.lane-bar:not(.lane-bar--empty) { background: var(--color-ink); }
-a:focus-visible, summary:focus-visible, .btn:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+/* Stats band: recorded trials only. */
+.stats { padding-top: 120px; padding-bottom: 120px; }
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin: 40px 0; }
+.stat { border-top: 1px solid var(--hair); padding-top: 24px; }
+.stat-number { font-family: var(--display); font-size: clamp(56px, 8vw, 96px); font-weight: 800; color: var(--text); line-height: 1; margin: 0 0 12px; }
+.stat-tally { font-size: 20px; color: var(--text); }
 
-/* Safety / bench / footer */
-.safety { border-top: 1px solid var(--color-ink); border-bottom: 1px solid var(--color-ink); padding: 18px 0; margin: 28px 0; }
-.safety p { margin: 0; }
+/* Ledger: quiet tabular rows, full width, inner scroll only. */
+.table-wrap { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; margin: 32px 0; }
+table { width: 100%; border-collapse: collapse; min-width: 720px; }
+th, td { text-align: left; padding: 16px 12px; border-bottom: 1px solid var(--hair); font-size: 17px; vertical-align: top; }
+th { color: var(--muted); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
+td { color: var(--body); }
 
-/* QA frontend fix pass — layout and new components only, no motion rules. */
-.config-banner { border: 1px solid var(--color-focus); border-radius: var(--radius-card); padding: 18px; margin: 24px 0; background: var(--color-paper-hi); box-shadow: var(--shadow-sheet); }
-.config-banner p { margin: 0 0 8px; }
-.config-banner p:last-child { margin-bottom: 0; }
-.hero-sub { font-family: var(--font-display); font-size: 1.25rem; line-height: 1.15; color: var(--color-ink); max-width: 62ch; margin: 0 0 10px; }
-.wedge { font-family: var(--font-display); font-size: 1.15rem; line-height: 1.15; color: var(--color-ink); margin: 0 0 16px; }
-.form-disabled-note { border: 1px solid var(--color-focus); border-radius: var(--radius-card); padding: 12px 14px; margin: 0 0 14px; color: var(--color-ink); }
-.aggregate-note { margin-top: 12px; color: var(--color-muted); font-size: 0.9rem; }
-.proof-summary { margin: 14px 0 0; padding-left: 22px; border-top: 1px solid var(--color-rule); padding-top: 12px; }
-.proof-summary li { margin-bottom: 4px; }
-.proof-summary strong { color: var(--color-ink); font-weight: 500; }
-.race-toggle-wrap { margin: 0 0 28px; }
-.link-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--color-ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.link-btn:disabled { opacity: 0.55; cursor: wait; }
-.race-note { border: 1px solid var(--color-rule); border-radius: var(--radius-card); padding: 14px; margin: 10px 0; background: var(--color-paper); }
-.race-note p { margin: 0 0 8px; }
-.race-note p:last-child { margin-bottom: 0; }
-.icon-placeholder { width: 56px; height: 56px; flex: none; background: var(--color-paper-2); border: 1px solid var(--color-rule); border-radius: 2px; }
+/* Refuses: five clear cards. */
+.refuse-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-top: 32px; }
+.refuse-card { border: 1px solid var(--hair); padding: 28px; background: var(--bg-2); }
+.refuse-card h3 { font-size: 22px; margin-bottom: 8px; }
 
-@media (max-width: 520px) {
-  .verdict-number { font-size: clamp(3rem, 14vw, 4.5rem); }
-}
-.footer { padding: 24px 0 40px; }
-.footer p { color: var(--color-muted); font-size: 0.9rem; }
-.empty { color: var(--color-muted); }
-.empty .next-action { color: var(--color-ink); font-weight: 500; }
+/* CTA band. */
+.cta-band { border-top: 1px solid var(--hair); text-align: left; }
+.cta-band .btn { margin-top: 8px; }
 
-@media (min-width: 720px) {
-  .stats { grid-template-columns: repeat(4, 1fr); }
-  .stat { border-bottom: 0; border-right: 1px solid var(--color-rule); }
-  .stat:last-child { border-right: 0; }
-  form { grid-template-columns: 1fr 1fr; }
-  .field.span-2, .form-actions { grid-column: 1 / -1; }
-  .form-actions { display: flex; gap: 12px; }
-  .form-actions .btn { flex: 1; }
-  .receipt { grid-template-columns: 1fr auto; align-items: center; }
-  .receipt .meta { grid-column: 1 / -1; }
-}
+/* Letter reveals + clip-mask reveals: JS-gated (see dark-motion.js).
+   No-JS renders full text; reduced-motion CSS (below) forces visible. */
+[data-reveal] .rl { display: inline-block; opacity: 0; transform: translateY(.35em); transition: opacity 500ms ease-out, transform 500ms ease-out; transition-delay: var(--d, 0ms); }
+[data-reveal].revealed .rl { opacity: 1; transform: none; }
+[data-clip].js-clip { clip-path: inset(0 100% 0 0); }
+[data-clip].js-clip.revealed { clip-path: inset(0 0 0 0); transition: clip-path 900ms ease-out; }
 
-@media (prefers-reduced-motion: reduce) {
-  /* Every shipped animation is killed here AND its end state is forced, so
-     the full construction still shows: lines fully drawn, bars full,
-     content complete and opaque. */
-  .guide, .spinner, .progress::after,
-  .hero h1, .hero figure, .verdict-number,
-  .plan-draw path, .lane-bar, .receipt { animation: none; }
-  .guide { transform: scaleX(1); }
-  .progress::after { width: 100%; margin-left: 0; }
-  .hero h1, .hero figure, .verdict-number, .receipt { opacity: 1; transform: none; }
-  .plan-draw path { stroke-dashoffset: 0; }
-  .lane-bar { transform: scaleX(1); }
-  .btn, .btn::before { transition: none; }
-}
+/* Preloader (JS-created only; never traps the page — see dark-motion.js). */
+.preloader { position: fixed; inset: 0; z-index: 300; background: #0A0A0A; display: flex; align-items: center; justify-content: center; }
+.preloader-num { font-family: var(--display); font-size: clamp(64px, 14vw, 160px); font-weight: 800; color: #FFFFFF; }
+.preloader.done { opacity: 0; transition: opacity 300ms ease-out; }
 
-/* Landing page additions (Studio identity, full-page depth).
-   Appended on top of the QA-fixed system; no existing rule above is changed. */
+/* Footer: dark band, 3-column links, giant wordmark, bottom bar. */
+.footer.band--deep { background: #0A0A0A; border-top: 1px solid var(--hair); padding: 80px 24px 120px; }
+.footer.band--deep p { color: var(--color-paper-2); max-width: 100%; }
+.footer.band--deep a { color: var(--color-paper-hi); }
+.footer-inner { max-width: 1200px; margin: 0 auto; }
+.footer-cta { margin-bottom: 40px; }
+.footer-cta p { font-family: var(--display); font-size: clamp(32px, 5vw, 56px); font-weight: 800; color: #FFFFFF; max-width: none; }
+.footer-disclaimer { max-width: 72ch; }
+.footer-meta { display: grid; gap: 0; border-top: 1px solid rgba(255, 255, 255, .18); padding-top: 20px; }
+.footer-meta p { margin: 0; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, .12); overflow-wrap: anywhere; }
+.footer-wordmark { font-family: var(--display); font-size: clamp(64px, 18vw, 220px); font-weight: 800; color: #FFFFFF; line-height: .9; margin: 48px 0 8px; max-width: none; will-change: transform; }
+.footer-bottom { color: var(--faint); font-size: 14px; }
 
-/* Anchored buttons: the hero CTA is a link styled as a printed control. */
-a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
-a.btn:hover { text-decoration: none; }
-
-/* Nav links: plain Geist labels, orange underline on hover (theme control rule). */
-.nav-links { display: flex; gap: 18px; flex-wrap: wrap; }
-.nav-links a { font-weight: 500; font-size: 0.9rem; color: var(--color-ink-2); text-decoration: none; }
-.nav-links a:hover { color: var(--color-ink); text-decoration: underline; text-decoration-color: var(--color-accent); text-decoration-thickness: 2px; }
-
-/* Hero actions row. */
-.hero-cta { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 18px 0 22px; }
-
-/* Tool centerpiece + depth proof section: ink borders, like the verdict card. */
-.centerpiece { border: 1px solid var(--color-ink); }
-.depth-card { border: 1px solid var(--color-ink); padding: 24px; }
-.depth-card h3 { margin-top: 22px; }
-
-/* Depth table: 1px ink rule opens the set, 1px rule between rows. No mono. */
-.depth-table { width: 100%; border-collapse: collapse; border-top: 1px solid var(--color-ink); margin: 12px 0 4px; }
-.depth-table th, .depth-table td { padding: 10px 8px; border-bottom: 1px solid var(--color-rule); text-align: left; vertical-align: top; font-size: 0.9rem; }
-.depth-table th { font-weight: 500; color: var(--color-muted); }
-.depth-table td:first-child { font-weight: 500; color: var(--color-ink); overflow-wrap: anywhere; }
-.depth-table td:last-child { color: var(--color-muted); }
-
-/* How-it-works band: paper-2 ground, ink rules, crop-marked specimen cards. */
-.how-band { background: var(--color-paper-2); border-top: 1px solid var(--color-ink); border-bottom: 1px solid var(--color-ink); padding: 24px 20px; margin: 28px 0; }
-.how-band h2 { margin-bottom: 16px; }
-.how-grid { display: grid; gap: 28px; margin-top: 20px; }
-.how-card { background: var(--color-paper-hi); border: 1px solid var(--color-rule); border-radius: var(--radius-card); box-shadow: var(--shadow-sheet); padding: 18px; }
-.how-card h3 { margin-bottom: 8px; }
-.how-card p { margin: 0; }
-
-/* Proof figures: paper objects with crop marks, like the hero figure. */
-.fig { margin: 18px 0; background: var(--color-paper-hi); box-shadow: var(--shadow-sheet); border-radius: var(--radius-card); padding: 10px; }
-.fig img { display: block; width: 100%; height: auto; border-radius: 2px; }
-.fig figcaption { padding-top: 8px; }
-.fig-fallback { display: none; border: 1px solid var(--color-ink); border-radius: var(--radius-card); padding: 24px; background: var(--color-paper-hi); }
-.fig-fallback p { margin: 0; }
-.fig img.img-missing { display: none; }
-.fig img.img-missing + figcaption { display: none; }
-.fig-fallback.show { display: block; }
-
-/* Scroll reveal: CSS scroll-driven view-timeline where supported. Content is
-   NEVER hidden by default — the hiding only exists inside @supports (native
-   view-timeline) or under .io-arm (JS fallback armed it). If neither runs,
-   every section stays visible. */
-@keyframes section-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-@supports (animation-timeline: view()) {
-  .reveal { animation: section-rise 700ms var(--ease-out) both; animation-timeline: view(); animation-range: entry 0% entry 55%; }
-}
-.io-arm .reveal { opacity: 0; transform: translateY(16px); transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out); }
-.io-arm .reveal.in-view { opacity: 1; transform: none; }
+/* Shared aid styles (defined here per suite pins; used by the app's
+   injected aids and by landing notes alike). */
+.step-lead { color: var(--muted); font-size: 15px; }
+.verdict-jump { display: inline-flex; min-height: 48px; align-items: center; font-weight: 600; }
+.export-rail { display: flex; gap: 12px; flex-wrap: wrap; }
+.share-note { color: var(--muted); font-size: 15px; }
+.headliner-image { max-width: 420px; border-radius: 0; }
+.headliner-image figcaption { color: var(--faint); font-size: 14px; }
+.leg-progress { list-style: none; padding: 0; }
+.leg-progress li { padding: 10px 0; border-bottom: 1px solid var(--hair); font-size: 15px; }
 
 @media (min-width: 720px) {
-  .how-grid { grid-template-columns: repeat(3, 1fr); }
+  .footer-meta { grid-template-columns: 1fr 1.4fr 1fr; gap: 24px; }
+  .footer-meta p { border-bottom: 0; padding: 0 0 0 24px; border-left: 1px solid rgba(255, 255, 255, .12); }
+  .footer-meta p:first-child { padding-left: 0; border-left: 0; }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  /* Scroll reveal + figure motion off, full construction still visible. */
-  .reveal { animation: none; opacity: 1; transform: none; }
-  .io-arm .reveal { transition: none; opacity: 1; transform: none; }
-  .fig { animation: none; }
-}
-
-/* REDESIGN v2 — "Deal Sheet" deepening of Studio (2026-10-29).
-   Appended only; no existing rule above is changed. Identity: the
-   promoter's deal sheet becomes the page — ticket perforation, proof
-   slips, venue plan, dimension lines. All motion is transform/opacity
-   only and has a reduced-motion end state. */
-
-/* Scroll progress: the page's orange guide line, growing as you read
-   (scroll-progress pattern, vanilla JS + CSS scaleX). */
-.scroll-progress {
-  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 50;
-  background: var(--color-accent);
-  transform: scaleX(var(--sp, 0)); transform-origin: left center;
-}
-
-/* Deal-sheet hero: two-column composition, headline left, 3D stack right. */
-.hero--deal { position: relative; overflow: hidden; }
-.hero--deal .hero-copy { position: relative; z-index: 1; }
-.hero--deal h1 { font-size: clamp(2.4rem, 5.2vw, 4.25rem); max-width: 16ch; }
-.hero-support { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; margin: 0 0 10px; }
-
-/* Ghost velocity band: oversized display words in their own band
-   (aria-hidden, 7% ink — never over text that must be read, never a number). */
-.ghost-strip {
-  overflow: hidden; white-space: nowrap; pointer-events: none; user-select: none;
-  height: 88px; display: flex; align-items: center; margin: 4px 0 0;
-}
-.ghost-strip span {
-  display: inline-block;
-  font-family: var(--font-display); font-size: clamp(3rem, 8vw, 6rem);
-  line-height: 1; letter-spacing: var(--tracking-display);
-  color: color-mix(in oklab, var(--color-ink) 7%, transparent);
-  will-change: transform;
-}
-
-/* 3D deal stack (TiltedCard pattern, vanilla): perspective on the stage,
-   preserve-3d on the stack, sheets at real Z depths. The stack reads
-   even with no pointer and no script: sheets carry 2D offsets too. */
-.hero-stage { position: relative; z-index: 1; perspective: 1200px; animation: stack-float 7s ease-in-out infinite; }
-@keyframes stack-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
-.deal-stack { position: relative; transform-style: preserve-3d; transform: rotateX(10deg) rotateY(-12deg); transition: transform 200ms ease-out; will-change: transform; }
-.deal-sheet { background: var(--color-paper-hi); border: 1px solid var(--color-rule); border-radius: var(--radius-card); box-shadow: var(--shadow-sheet); padding: 10px; }
-.deal-sheet img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 2px; }
-.deal-sheet--back { position: absolute; inset: 0; transform: translate(-26px, 26px) translateZ(-40px); }
-.deal-sheet--mid { position: absolute; inset: 0; transform: translate(-13px, 13px) translateZ(0px); }
-.deal-sheet--front { position: relative; transform: translateZ(40px); }
-.deal-sheet--front figcaption { padding-top: 8px; }
-.deal-caption { margin: 48px 0 0 28px; font-weight: 500; font-size: 0.9rem; color: var(--color-muted); }
-.deal-caption::before { content: ""; display: inline-block; width: 18px; height: 1px; background: var(--color-accent); vertical-align: middle; margin-right: 8px; }
-
-/* Ticket perforation: punched paper holes along the top edge of the
-   two money sheets (tool + verdict). ::after is free on .sheet. */
-.perf::after {
-  content: ""; position: absolute; top: -7px; left: 14px; right: 14px; height: 14px;
-  background-image: radial-gradient(circle at 7px 7px, var(--color-paper) 5px, transparent 6px);
-  background-size: 28px 14px; background-repeat: repeat-x; pointer-events: none;
-}
-
-/* Stats ticker (marquee pattern, vanilla): duplicated track, CSS loop,
-   pause on hover; the same four spec-honest facts, never shortened. */
-.ticker { border-top: 1px solid var(--color-ink); border-bottom: 1px solid var(--color-ink); padding: 12px 0; margin: 28px 0 8px; overflow: hidden; background: var(--color-paper-hi); -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent); mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent); }
-.ticker-track { display: flex; width: max-content; animation: ticker-scroll 46s linear infinite; }
-.ticker:hover .ticker-track { animation-play-state: paused; }
-.ticker-group { display: flex; align-items: baseline; }
-.ticker-item { white-space: nowrap; padding: 0 26px; font-size: 0.95rem; color: var(--color-muted); }
-.ticker-item strong { font-family: var(--font-display); font-size: 1.15rem; color: var(--color-ink); font-weight: 400; margin-right: 6px; }
-.ticker-item + .ticker-item { border-left: 1px solid var(--color-rule); }
-@keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-
-/* Depth proof notes: chunked with an orange guide + air, every word kept. */
-.proof-note { border-left: 1px solid var(--color-accent); padding-left: 18px; margin: 22px 0; }
-.proof-note p { margin: 0 0 12px; }
-.proof-note p:last-child { margin-bottom: 0; }
-.table-wrap { overflow-x: auto; }
-.depth-table td { padding: 14px 10px; }
-.depth-table td:first-child { font-family: var(--font-display); font-size: 1.05rem; }
-.stamp { display: inline-block; border: 1px solid var(--color-ink); border-radius: 2px; padding: 3px 8px; font-size: 0.8rem; color: var(--color-ink); white-space: nowrap; }
-
-/* Reveal stagger: --rd delays the entrance per child (both the
-   view-timeline path and the IntersectionObserver fallback path). */
-.reveal { animation-delay: var(--rd, 0ms); }
-.io-arm .reveal { transition-delay: var(--rd, 0ms); }
-
-@media (min-width: 900px) {
-  .hero--deal { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 36px; align-items: center; padding: 40px 0 12px; }
-  .hero--deal .hero-copy { padding-bottom: 8px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* v2 motion off, full construction visible: flat readable stack,
-     static ticker row, no ghost, no float. */
-  .hero-stage { animation: none; }
-  .deal-stack { transform: none; transition: none; }
-  .ticker-track { animation: none; flex-wrap: wrap; width: auto; }
-  .ghost-strip { display: none; }
-}
-
-/* v2 round-2 fixes: keep a figure ratio on one line; let the static
-   ticker wrap inside its groups under reduced motion. */
-.nowrap { white-space: nowrap; }
-@media (prefers-reduced-motion: reduce) {
-  .ticker-group { flex-wrap: wrap; }
-}
-
-/* v2 round-3 fixes: tool names break only at underscores (never
-   mid-token) with a usable first column; under reduced motion the
-   marquee's duplicate track is hidden instead of repeated statically. */
-.depth-table td:first-child { overflow-wrap: normal; word-break: normal; min-width: 118px; }
-@media (prefers-reduced-motion: reduce) {
-  .ticker-group[aria-hidden="true"] { display: none; }
-}
-
-/* v2 round-4: on narrow viewports tighten the depth table so the
-   status stamps need as little horizontal scrolling as possible. */
-@media (max-width: 640px) {
-  .depth-table th, .depth-table td { padding: 10px 8px; }
-  .depth-table .stamp { font-size: 0.8rem; padding: 3px 6px; }
-}
-
-/* v2 round-4b: on narrow viewports let status stamps wrap so the
-   depth table fits instead of forcing a 700px-wide scroll. */
-@media (max-width: 640px) {
-  .depth-table .stamp { white-space: normal; }
-}
-
-/* POLISH v3 — section color system (2026-10-29).
-   Appended only; no existing rule above is changed. Washes are
-   color-mix derivations of the primary palette ONLY (paper / ink /
-   cadmium orange) — no new hues. Card washes keep the sheets readable;
-   full-bleed strips carry the rhythm between cards. Contrast numbers
-   were computed from the oklch tokens (see coordinator report). */
-
-:root {
-  --wash-orange: color-mix(in oklab, var(--color-accent) 10%, var(--color-paper));
-  --wash-orange-8: color-mix(in oklab, var(--color-accent) 8%, var(--color-paper));
-  --wash-cream: color-mix(in oklab, var(--color-accent) 6%, var(--color-paper));
-  --wash-ink-8: color-mix(in oklab, var(--color-ink) 8%, var(--color-paper));
-  --wash-ink-10: color-mix(in oklab, var(--color-ink) 10%, var(--color-paper));
-  --wash-row-ink: color-mix(in oklab, var(--color-ink) 8%, var(--color-paper));
-  --wash-row-org: color-mix(in oklab, var(--color-accent) 14%, var(--color-paper));
-}
-
-html, body { overflow-x: clip; }
-
-/* Full-bleed bands: strips escape the 1080 column to the viewport edges
-   while their content stays on the column (max() padding). */
-.band { margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); padding-left: max(16px, calc(50vw - 524px)); padding-right: max(16px, calc(50vw - 524px)); }
-.band--orange { background: var(--wash-orange-8); }
-.band--inkwash { background: var(--wash-ink-8); }
-.band--inkwash10 { background: var(--wash-ink-10); }
-.band--deep { background: var(--color-ink); border-top: 1px solid var(--color-accent); }
-.band--deep p, .band--deep .label, .band--deep .colophon { color: var(--color-paper-2); }
-
-/* Card washes: the tool and race sheets sit on pale orange; depth and
-   ledger sheets sit on warm cream; formula stays paper. */
-.centerpiece { background: var(--wash-orange); }
-.depth-card { background: var(--wash-cream); }
-#raceSection.sheet { background: var(--wash-orange); }
-.ledger-card { background: var(--wash-cream); }
-
-/* Specimen headers: serif + ink + a 1px orange guide rule. No orange text. */
-.specimen { font-family: var(--font-display); font-size: 0.95rem; letter-spacing: 0.06em; color: var(--color-ink); margin: 0 0 10px; }
-.specimen::before { content: ""; display: inline-block; width: 22px; height: 1px; background: var(--color-accent); vertical-align: middle; margin-right: 10px; }
-
-/* Ghost band, strengthened: 65% ink on the orange wash (5.80:1 computed),
-   on its own band so it reads as a designed strip, never an error. */
-.ghost-strip span { color: color-mix(in oklab, var(--color-ink) 65%, transparent); }
-
-/* Depth table: rows banded by status; stamps differentiated by fill.
-   Tool names, descriptions, and status texts are untouched. */
-.depth-table tbody tr.row-live { background: var(--wash-row-ink); }
-.depth-table tbody tr.row-wired { background: var(--wash-row-org); }
-.depth-table .row-live .stamp { background: var(--color-ink); color: var(--color-paper); border-color: var(--color-ink); }
-.depth-table .row-wired .stamp { background: transparent; color: var(--color-ink); border-color: var(--color-ink); }
-
-/* Ticker: stronger edge fades, wider spacing, slower loop, ink-2 text
-   (muted on the ink wash was too close to the AA line). Pause on hover
-   already existed above and is kept. */
-.ticker { -webkit-mask-image: linear-gradient(to right, transparent, black 14%, black 86%, transparent); mask-image: linear-gradient(to right, transparent, black 14%, black 86%, transparent); }
-.ticker-track { animation-duration: 60s; }
-.ticker-item { padding: 0 36px; color: var(--color-ink-2); }
-
-/* Hero entrance choreography: staggered copy rise + stage fade-in.
-   The stage fade animates opacity ONLY so it never fights the stack
-   float (transform) or the pointer tilt (inline transform). */
-@keyframes hero-copy-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-.hero--deal .hero-copy .hero-sub { animation: hero-copy-in 600ms var(--ease-out) 100ms both; }
-.hero--deal .hero-copy .hero-support { animation: hero-copy-in 600ms var(--ease-out) 200ms both; }
-.hero--deal .hero-copy .guide { animation: guide-draw 700ms var(--ease-out) 300ms both; }
-.hero--deal .hero-copy .hero-cta { animation: hero-copy-in 600ms var(--ease-out) 400ms both; }
-@keyframes stage-fade { from { opacity: 0; } to { opacity: 1; } }
-.hero--deal .hero-stage { animation: stage-fade 700ms var(--ease-out) 150ms both, stack-float 7s ease-in-out 850ms infinite; }
-
-/* Hover depth: lift via the independent `translate` property so it
-   composes with (never fights) reveal transform animations. */
-.btn, .how-card, .fig { transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out), translate var(--dur-short) var(--ease-out); }
-.btn:hover { translate: 0 -1px; box-shadow: 0 8px 20px -10px color-mix(in oklab, var(--color-ink) 45%, transparent); }
-.how-card:hover { translate: 0 -2px; box-shadow: 1px 2px 0 color-mix(in oklab, var(--color-ink) 7%, transparent), 12px 22px 40px -14px color-mix(in oklab, var(--color-ink) 40%, transparent); }
-.fig:hover { translate: 0 -2px; }
-
-/* Parallax-lite: JS sets --pl per figure; the independent `translate`
-   property composes with reveal transforms instead of fighting them. */
-.fig[data-plx] { translate: 0 calc(var(--pl, 0) * 1px); }
-.fig[data-plx]:hover { translate: 0 calc(var(--pl, 0) * 1px - 2px); }
-
-/* Footer colophon on the deep band. */
-.colophon { font-size: 0.9rem; }
-
-@media (prefers-reduced-motion: reduce) {
-  .hero--deal .hero-copy .hero-sub, .hero--deal .hero-copy .hero-support,
-  .hero--deal .hero-copy .hero-cta { animation: none; opacity: 1; transform: none; }
-  .hero--deal .hero-stage { animation: none; opacity: 1; }
-  .fig[data-plx] { translate: 0 0; }
-  .btn, .how-card, .fig { transition: none; translate: 0 0; }
-}
-
-/* CTA FADE FIX (polish v3): the .proof bottom mask (78–100%) was fading
-   the hero's primary action on desktop, where the CTA sits below 78% of
-   section height — it photographed pale/outlined although its computed
-   background is solid accent. A child cannot escape an ancestor mask, so
-   the ground (dot grid + grain) moves onto a masked ::before: the ground
-   still dissolves into the next section, but content (CTA, caption,
-   stack) always paints fully opaque. Scoped to the hero only; nav keeps
-   the original .proof mask (its content sits above its fade zone). */
-.hero--deal.proof { background-image: none; -webkit-mask-image: none; mask-image: none; }
-.hero--deal.proof::before {
-  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
-    radial-gradient(circle at 1px 1px, var(--color-dot) 1px, transparent 1.4px);
-    background-size: 160px 160px, 24px 24px;
-  -webkit-mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
-}
-.hero--deal.proof > * { position: relative; z-index: 1; }
-
-/* SPLIT v4 — landing/app split (2026-10-29).
-   Appended only; no existing rule above is changed. All washes and
-   colors are the primary palette ONLY (paper / ink / cadmium orange) —
-   no new hues, no mono face. */
-
-/* App dashboard bar: sticky, solid paper, no proof fade (a fading sticky
-   bar would read as broken while content scrolls beneath it). */
-.appbar { position: sticky; top: 0; z-index: 60; background: var(--color-paper-hi); }
-.appbar.proof { background-image: none; -webkit-mask-image: none; mask-image: none; }
-.app-kicker {
-  display: inline-block; vertical-align: super; margin-left: 6px;
-  font-family: var(--font-body); font-size: 0.8rem; font-weight: 500;
-  letter-spacing: 0.08em; color: var(--color-muted);
-}
-.nav-cta { min-height: 40px; padding: 0 16px; }
-
-/* Arms showcase: three arm cards + a recorded-example label + miss ledger. */
-.arms-card { border: 1px solid var(--color-ink); }
-.recorded-label {
-  border: 1px solid var(--color-ink); border-left: 1px solid var(--color-accent);
-  border-radius: var(--radius-card); padding: 12px 14px; background: var(--color-paper);
-  color: var(--color-ink);
-}
-.arms-grid { display: grid; gap: 28px; margin-top: 20px; }
-.arm-card { background: var(--color-paper-hi); border: 1px solid var(--color-rule); border-radius: var(--radius-card); box-shadow: var(--shadow-sheet); padding: 18px; }
-.arm-card--graph { border: 1px solid var(--color-ink); }
-.arm-card h3 { margin-bottom: 8px; }
-.arm-card p { margin: 0 0 8px; }
-.arm-card p:last-child { margin-bottom: 0; }
-.arm-pick { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.04; color: var(--color-ink); }
-.miss-ledger { border-left: 1px solid var(--color-accent); padding-left: 18px; margin: 22px 0 0; color: var(--color-ink); }
-
-/* Refusal showcase: ink-wash band, refusal cards like how-cards. */
-.refuse-band { background: var(--color-paper-2); border-top: 1px solid var(--color-ink); border-bottom: 1px solid var(--color-ink); padding: 24px 20px; margin: 28px 0; }
-.refuse-band h2 { margin-bottom: 16px; }
-.refuse-grid { display: grid; gap: 28px; margin-top: 20px; }
-.refuse-card { background: var(--color-paper-hi); border: 1px solid var(--color-rule); border-radius: var(--radius-card); box-shadow: var(--shadow-sheet); padding: 18px; }
-.refuse-card h3 { margin-bottom: 8px; }
-.refuse-card p { margin: 0; }
-
-/* CTA band: orange wash, centered, one primary action. */
-.cta-band { text-align: center; padding-top: 36px; padding-bottom: 44px; }
-.cta-band h2 { margin-bottom: 10px; }
-.cta-band p { max-width: 56ch; margin-left: auto; margin-right: auto; }
-
-/* Hover depth for the new cards (same translate-composed pattern). */
-.arm-card, .refuse-card { transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out), translate var(--dur-short) var(--ease-out); }
-.arm-card:hover, .refuse-card:hover { translate: 0 -2px; box-shadow: 1px 2px 0 color-mix(in oklab, var(--color-ink) 7%, transparent), 12px 22px 40px -14px color-mix(in oklab, var(--color-ink) 40%, transparent); }
-
-@media (min-width: 720px) {
-  .arms-grid { grid-template-columns: repeat(3, 1fr); }
-  .refuse-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .arm-card, .refuse-card { transition: none; translate: 0 0; }
-}
-
-/* SPLIT v4b: anchored sections on the app page clear the sticky bar when
-   jumped to (nav clicks, in-page links). Scoped to the app page only. */
-.app-page section[id] { scroll-margin-top: 96px; }
-
-/* SHIP round (29 Oct 2026): citation chips, confidence, checklist,
-   trial cards + tally, verdict sheet, leg states. Studio palette only;
-   no mono face (pre inherits the body font, as elsewhere). */
-.cite-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
-.cite-chip { font: inherit; font-size: 14px; color: var(--color-ink); background: var(--color-paper-hi); border: 1px solid var(--color-ink); border-radius: var(--radius-pill); padding: 6px 10px; cursor: pointer; text-align: left; }
-.cite-chip:hover { background: color-mix(in oklab, var(--color-accent) 14%, var(--color-paper-hi)); }
-.receipt--flash { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-.confidence-box { border-left: 3px solid var(--color-ink); padding: 8px 12px; margin: 12px 0; background: var(--color-paper-hi); }
-.confidence-box p { margin: 0 0 6px; }
-.confidence-box ul { margin: 0; padding-left: 20px; }
-.sign-checklist { border: 1px solid var(--color-rule); border-radius: var(--radius-card); padding: 12px 14px; margin: 0 0 14px; background: var(--color-paper-hi); }
-.sign-checklist ul { margin: 6px 0; padding-left: 20px; }
-.sign-checklist p { margin: 6px 0 0; }
-.thin-badge { display: inline-block; background: color-mix(in oklab, var(--color-accent) 18%, var(--color-paper-hi)); border: 1px solid var(--color-accent); color: var(--color-ink); border-radius: var(--radius-pill); padding: 4px 10px; font-size: 14px; margin: 8px 0; }
-.leg-state { display: inline-block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; border: 1px solid var(--color-rule); border-radius: var(--radius-pill); padding: 1px 6px; margin-right: 6px; }
-.leg-state--ok { border-color: var(--color-ink); color: var(--color-ink); }
-.leg-state--partial { border-color: var(--color-accent); color: var(--color-ink-2); }
-.leg-summary { margin: 8px 0 12px; }
-.tally-line { font-weight: 600; margin-top: 12px; }
-.trial-cards { margin-top: 16px; }
-.trial-cards-row { display: grid; gap: 12px; margin-top: 10px; }
-.trial-card { font: inherit; text-align: left; background: var(--color-paper-hi); border: 1px solid var(--color-ink); border-radius: var(--radius-card); box-shadow: var(--shadow-sheet); padding: 14px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; color: var(--color-ink-2); transition: translate var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out); }
-.trial-card:hover { translate: 0 -2px; }
-.trial-card--blank { border-style: dashed; }
-.trial-card-be { font-weight: 600; color: var(--color-ink); }
-.verdict-sheet .sheet-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
-.verdict-sheet s { color: var(--color-muted); }
-.doc-prose { max-width: 72ch; }
-.doc-prose pre { background: var(--color-paper-hi); border: 1px solid var(--color-rule); border-radius: var(--radius-card); padding: 14px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
-@media (min-width: 720px) {
-  .trial-cards-row { grid-template-columns: repeat(2, 1fr); }
-}
-@media print {
-  .nav, .appbar, .scroll-progress, #tool, #status, #raceToggleWrap, #raceSection, #trialTally, #receiptSection, #depth, #formula, #ledger, #limits, .safety, .footer, #verdict, #partialSection { display: none !important; }
-  #verdictSheet { display: block !important; box-shadow: none; border: none; }
+@media (max-width: 820px) {
+  section { padding: 64px 20px; }
+  .rotating-badge { display: none; }
+  .fan { flex-direction: column; }
+  .fan-card:nth-child(2), .fan-card:nth-child(3) { margin-top: 0; }
+  .arms-grid, .stat-grid, .steps { grid-template-columns: 1fr; }
+  .refuse-grid { grid-template-columns: 1fr; }
+  .nav-links { gap: 2px; }
+  .nav-links a { padding: 0 12px; font-size: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .trial-card { transition: none; translate: 0 0; }
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  [data-reveal] .rl { opacity: 1; transform: none; }
+  [data-clip].js-clip { clip-path: none; }
+  .draw-svg.js-draw .draw-path { stroke-dashoffset: 0; }
+  .btn--glow, .btn--glow:hover { box-shadow: 0 0 0 1px rgba(255, 255, 255, .25); }
 }
 
-/* Phase 3: source tags + expandable receipt step logs. Studio palette only. */
-.source-tag { display: inline-block; font-size: 13px; color: var(--color-muted); border: 1px solid var(--color-rule); border-radius: var(--radius-pill); padding: 2px 8px; margin: 2px 4px 2px 0; }
-.source-tag-chip { font: inherit; font-size: 13px; color: var(--color-ink); background: var(--color-paper-hi); border: 1px solid var(--color-ink); border-radius: var(--radius-pill); padding: 0 8px; cursor: pointer; }
-.source-tag-line { margin: 8px 0; }
-.receipt-step { margin-top: 8px; }
-.receipt-step summary { cursor: pointer; font-size: 14px; color: var(--color-ink); }
-.receipt-step p { font-size: 14px; color: var(--color-muted); word-break: break-word; }
-.receipt-step code { color: var(--color-ink); word-break: break-all; }
-
-/* Phase 3 Wave 2: miss taxonomy, re-rank section, proof-pack exports. */
-.miss-taxonomy { margin-top: 16px; }
-.miss-taxonomy h3 { margin: 0 0 6px; }
-.miss-taxonomy ul { margin: 6px 0; }
-.rerank-section { margin-top: 16px; border-top: 1px solid var(--color-rule); padding-top: 12px; }
-.rerank-section h3 { margin: 0 0 6px; }
-.rerank-out { margin-top: 10px; }
-.proof-pack-wrap { margin-top: 16px; border-top: 1px solid var(--color-rule); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
-.proof-pack-wrap h3 { margin: 0; width: 100%; }
-.proof-pack-wrap .label { width: 100%; }
-
-/* G5/G7/G8/G9/G10/G12/G13 (superiority, additive — dashboard merge: KEEP).
-   Studio tokens only; no layout restyle. Skip link is visually hidden
-   until focused; the step lead, rail, and how-made summary are plain
-   text/controls in the existing type scale. */
-.skip-link { position: absolute; left: -9999px; top: 0; background: var(--color-paper-hi); color: var(--color-ink); border: 2px solid var(--color-ink); padding: 8px 16px; z-index: 100; }
-.skip-link:focus { position: static; left: auto; }
-.step-lead { font-size: 14px; color: var(--color-ink); word-break: break-all; }
-.verdict-jump { margin-top: 12px; }
-.export-rail { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; margin-top: 12px; }
-.share-note { font-size: 14px; color: var(--color-muted); word-break: break-all; }
-.how-made { margin-top: 16px; border-top: 1px solid var(--color-rule); padding-top: 12px; }
-.how-made summary { cursor: pointer; font-size: 14px; color: var(--color-ink); }
-.how-made ol { margin: 6px 0; }
-
-/* G15 (superiority, copy lock): the verbatim tagline line in the hero. */
-.hero-tagline { font-family: var(--font-display); font-size: 1.1rem; line-height: 1.3; color: var(--color-ink); max-width: 62ch; margin: 0 0 10px; }
+/* T5 mobile surface (coordinator fix): landing footer links are real
+   targets (48px), and the footer respects the bottom safe-area inset
+   on notched phones. The 120px bottom room (glass-nav clearance) is
+   kept as the floor. */
+.footer-meta a { min-height: 48px; display: inline-flex; align-items: center; }
+.footer.band--deep { padding-bottom: max(120px, calc(120px + env(safe-area-inset-bottom))); }

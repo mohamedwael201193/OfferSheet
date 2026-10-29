@@ -49,7 +49,7 @@ Madison Square Garden venue record and printed only its top-level keys plus
 capacity-like fields. Result, 2026-10-29:
 
 - HTTP 200, venue "Madison Square Garden".
-- Top-level keys (24): `_links`, `accessibleSeatingDetail`, `ada`, `address`,
+- Top-level keys (25): `_links`, `accessibleSeatingDetail`, `ada`, `address`,
   `aliases`, `boxOfficeInfo`, `city`, `country`, `dmas`, `generalInfo`, `id`,
   `images`, `locale`, `location`, `markets`, `name`, `parkingDetail`,
   `postalCode`, `social`, `state`, `test`, `timezone`, `type`,

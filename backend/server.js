@@ -11,8 +11,8 @@ import { fileURLToPath } from 'node:url';
 import { config } from './src/config.js';
 import { Guards } from './src/guards.js';
 import { ReceiptStore } from './src/receipts.js';
-import { McpSession, MCP_TOOLS } from './src/mcp.js';
-import { qlooRest, REST_PATHS } from './src/rest.js';
+import { McpSession, MCP_TOOLS, validateMcpReplayArgs } from './src/mcp.js';
+import { qlooRest, REST_PATHS, REST_PARAM_ALLOWLIST } from './src/rest.js';
 import { searchEvents, searchVenues } from './src/ticketmaster.js';
 import { geocode } from './src/osm.js';
 import { geocodeCities } from './src/geostrip.js';
@@ -225,6 +225,11 @@ async function handleReplay(req, res) {
     if (body.args !== undefined && (typeof body.args !== 'object' || body.args === null || Array.isArray(body.args))) {
       throw new OfferError('INVALID_INPUT', 400, 'Replay MCP args must be an object');
     }
+    // T1: per-tool arg-key validation BEFORE guards and before any session
+    // is spawned — an unallowlisted key never spends guard budget and never
+    // reaches the upstream, where a silently ignored key could stamp a
+    // false ID match on a different call.
+    validateMcpReplayArgs(body.tool, body.args || {});
     guards.checkVisitor(visitorIp);
     guards.checkCall();
     const session = new McpSession({
@@ -236,14 +241,21 @@ async function handleReplay(req, res) {
       await session.start();
       const envelope = await session.call(body.tool, body.args || {});
       const results = Array.isArray(envelope?.results) ? envelope.results : [];
+      // T1: like-with-like result count. The readiness envelope carries its
+      // list under `operations`, not `results` — counting results.length
+      // would report 0 against a recorded 9 and mislead the comparator's
+      // count note. requestHash lets the frontend prove the replayed call
+      // IS the recorded call (call fidelity), distinct from result equality.
+      const operationsCount = Array.isArray(envelope?.operations) ? envelope.operations.length : null;
       send(res, 200, {
         kind: 'mcp',
         tool: body.tool,
         envelope,
+        requestHash: argsHashFor(body.tool, body.args || {}),
         // Both names: the replay comparator reads `ids` first, `entityIds` second.
         ids: orderedEntityIds(results),
         entityIds: orderedEntityIds(results),
-        resultCount: envelope?.result_count ?? results.length,
+        resultCount: envelope?.result_count ?? operationsCount ?? results.length,
       });
     } finally {
       session.close();
@@ -262,6 +274,25 @@ async function handleReplay(req, res) {
     if (body.params !== undefined && (typeof body.params !== 'object' || body.params === null || Array.isArray(body.params))) {
       throw new OfferError('INVALID_INPUT', 400, 'Replay REST params must be an object');
     }
+    // T1: REST param validation BEFORE guards, mirroring the caller gate
+    // in qlooRest (which stays the authoritative gate — this pre-check only
+    // stops an invalid replay from spending guard budget before it fails).
+    // Without it, an unallowlisted param consumed budget, then failed
+    // inside qlooRest; the call itself never reached Qloo either way.
+    {
+      const allowedParams = REST_PARAM_ALLOWLIST[body.path] || [];
+      for (const k of Object.keys(body.params || {})) {
+        if (!allowedParams.includes(k)) {
+          throw new OfferError('INVALID_INPUT', 400, `Replay REST param not allowlisted for ${body.path}: ${k}`);
+        }
+      }
+      if (body.path === '/v2/insights') {
+        const ft = (body.params || {})['filter.type'];
+        if (typeof ft !== 'string' || ft === '') {
+          throw new OfferError('INVALID_INPUT', 400, 'Replay REST /v2/insights requires a non-empty filter.type');
+        }
+      }
+    }
     guards.checkVisitor(visitorIp);
     guards.checkCall();
     const result = await qlooRest({
@@ -276,6 +307,7 @@ async function handleReplay(req, res) {
       kind: 'rest',
       path: body.path,
       result,
+      requestHash: result.requestHash,
       // Both names: the replay comparator reads `ids` first, `entityIds` second.
       ids: orderedEntityIds(result.entities),
       entityIds: orderedEntityIds(result.entities),
@@ -547,7 +579,17 @@ async function handleVerdictStream(req, res, url) {
       const t0 = Date.now();
       try {
         const out = await deps.restCall({ path, params });
-        emit('leg', { call: `rest:${path}`, path, status: out?.ok ? 'ok' : 'error', elapsedMs: Date.now() - t0 });
+        // T3: transport-ok is not leg-ok. A 2xx with an empty list and no
+        // payload becomes leg status 'empty' in the pipeline (restLeg), so
+        // the streamed line must say 'empty' too — otherwise the progress
+        // list showed 'ok' for a leg the verdict card then shows as empty.
+        // The test mirrors restLeg exactly: empty list + null/0 count +
+        // no payload => 'empty'; anything else on a 2xx => 'ok'.
+        const entities = Array.isArray(out?.entities) ? out.entities : [];
+        const count = out?.resultCount ?? entities.length;
+        const restStatus = !out?.ok ? 'error'
+          : (entities.length === 0 && (count === null || count === 0) && !out?.payloadPresent ? 'empty' : 'ok');
+        emit('leg', { call: `rest:${path}`, path, status: restStatus, elapsedMs: Date.now() - t0 });
         return out;
       } catch (e) {
         emit('leg', { call: `rest:${path}`, path, status: 'error', elapsedMs: Date.now() - t0 });

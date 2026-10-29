@@ -21,10 +21,17 @@
   var DELTA_LABEL = 'arithmetic on the two break-evens at the recorded net — not a forecast of money made or lost';
   var mismatchKeys = new Set();
   var compareCount = 1;
+  // In-flight guard for Compare: setBusy() alone only disables a DOM
+  // button, and render() rebuilds that button on every panel re-render,
+  // so a second submit during a long compare flight used to start a
+  // second server run. This flag survives re-renders; the handler below
+  // refuses a second submit while it is set, and clears it on every
+  // settle path (ok, refused, unavailable, or failed) next to setBusy().
+  var compareInFlight = false;
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function fmt(n) {
     return (typeof n === 'number' && isFinite(n)) ? n.toLocaleString('en-US') : '—';
@@ -53,9 +60,108 @@
       var raw = localStorage.getItem(KEY);
       if (!raw) return null;
       var o = JSON.parse(raw);
-      if (!o || o.workspaceVersion !== 1 || !o.baseOffer) return null;
+      if (!isValidWorkspaceShape(o)) return null;
       return o;
     } catch (e) { return null; }
+  }
+  // ---- import/load shape validation (fail-closed) ----
+  // Render() dereferences nested arrays and property chains (.map on
+  // receipts, areas, ranked/candidates, flags, and step lists;
+  // baseVerdict.openers.ranked, baseVerdict.audience.areas). A workspace
+  // that passed the old top-level check (version + baseOffer presence)
+  // but broke one of those dereferences used to be SAVED over the good
+  // workspace and then throw on every page load, bricking the panel (no
+  // Clear button renders once render() aborts). This validator checks
+  // every shape render() depends on BEFORE any assign/save: a malformed
+  // import is rejected with the prior workspace untouched, and a malformed
+  // stored workspace loads as "no workspace" (left inert in storage,
+  // recoverable by seeding a new verdict) instead of throwing. It is a
+  // render-safety gate, not server verification — the Verify button still
+  // owns schema + arithmetic + receipt-hash verification.
+  function isNum(v) { return typeof v === 'number' && isFinite(v); }
+  function isStr(v) { return typeof v === 'string'; }
+  function isNonEmptyStr(v) { return typeof v === 'string' && v.trim().length > 0; }
+  function isObj(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }
+  function isValidWorkspaceShape(o) {
+    if (!isObj(o)) return false;
+    if (o.workspaceVersion !== 1) return false;
+    if (o.workspaceId !== undefined && !isStr(o.workspaceId)) return false;
+    var b = o.baseOffer;
+    if (!isObj(b)) return false;
+    if (!isNonEmptyStr(b.artist) || !isNonEmptyStr(b.city)) return false;
+    if (!isNum(b.guarantee) || b.guarantee < 0) return false;
+    if (!(b.ticketPrice === null || b.ticketPrice === undefined || (isNum(b.ticketPrice) && b.ticketPrice > 0))) return false;
+    if (!(b.variableCost === null || b.variableCost === undefined || (isNum(b.variableCost) && b.variableCost >= 0))) return false;
+    if (typeof b.variableCostProvided !== 'boolean') return false;
+    if (!(b.capacity === null || b.capacity === undefined || (isNum(b.capacity) && b.capacity > 0))) return false;
+    if (!(b.venue === null || b.venue === undefined || isStr(b.venue))) return false;
+    if (!(b.capacitySource === null || b.capacitySource === undefined || isStr(b.capacitySource))) return false;
+    var bv = o.baseVerdict;
+    if (bv !== null && bv !== undefined) {
+      if (!isObj(bv)) return false;
+      if (!Number.isInteger(bv.tickets) || bv.tickets < 0) return false;
+      if (!isNum(bv.net)) return false;
+      if (!(bv.verdict === null || bv.verdict === undefined || isStr(bv.verdict))) return false;
+      if (!(bv.capacityState === 'known' || bv.capacityState === 'unknown')) return false;
+      if (!isStr(bv.recordedAt)) return false;
+      if (!Array.isArray(bv.receipts)) return false;
+      if (!isObj(bv.audience) || !Array.isArray(bv.audience.areas) || !isNum(bv.audience.areasCount)) return false;
+      if (!isObj(bv.openers) || !Array.isArray(bv.openers.ranked) || !Array.isArray(bv.openers.candidates)) return false;
+      if (!(bv.openers.topPick === null || bv.openers.topPick === undefined || isStr(bv.openers.topPick))) return false;
+      if (bv.missTrial !== null && bv.missTrial !== undefined) {
+        if (!isObj(bv.missTrial)) return false;
+        if (bv.missTrial.misses !== undefined && !Array.isArray(bv.missTrial.misses)) return false;
+      }
+    }
+    // Steps is required as an object: render() reads ws.steps.* (header
+    // settlement status, all panels) without a missing-steps guard, and
+    // every producer — seed, edit-base, import normalisation — writes
+    // steps, so requiring it rejects nothing legitimate. The import
+    // normalisation below stays as defense-in-depth for the in-memory
+    // object, even though validation already guarantees steps exists.
+    var st = o.steps;
+    if (!isObj(st)) return false;
+    if (st.replacements !== undefined && !Array.isArray(st.replacements)) return false;
+    if (st.settlements !== undefined && !Array.isArray(st.settlements)) return false;
+    if (st.renegotiation !== undefined && st.renegotiation !== null && !isObj(st.renegotiation)) return false;
+    if (st.routing !== undefined && st.routing !== null && !isObj(st.routing)) return false;
+    if (st.envelope !== undefined && st.envelope !== null && !isObj(st.envelope)) return false;
+    if (st.comparison !== undefined && st.comparison !== null && !isObj(st.comparison)) return false;
+    var reps = st.replacements || [];
+    for (var i = 0; i < reps.length; i++) {
+      if (!isObj(reps[i])) return false;
+      var rr = reps[i].result || reps[i];
+      if (!isObj(rr)) return false;
+      if (rr.receipts !== undefined && !Array.isArray(rr.receipts)) return false;
+      if (reps[i].receipts !== undefined && !Array.isArray(reps[i].receipts)) return false;
+      if (rr.missTrial !== null && rr.missTrial !== undefined
+        && (!isObj(rr.missTrial) || (rr.missTrial.misses !== undefined && !Array.isArray(rr.missTrial.misses)))) return false;
+    }
+    var settles = st.settlements || [];
+    for (var j = 0; j < settles.length; j++) {
+      if (!isObj(settles[j])) return false;
+      var sr = settles[j].result || settles[j];
+      if (!isObj(sr)) return false;
+      if (sr.flags !== undefined && !Array.isArray(sr.flags)) return false;
+    }
+    var routing = st.routing ? (st.routing.result || st.routing) : null;
+    if (routing && routing.candidates !== undefined) {
+      if (!Array.isArray(routing.candidates)) return false;
+      for (var k = 0; k < routing.candidates.length; k++) {
+        if (!isObj(routing.candidates[k])) return false;
+        if (routing.candidates[k].areas !== undefined && !Array.isArray(routing.candidates[k].areas)) return false;
+        if (routing.candidates[k].receipts !== undefined && !Array.isArray(routing.candidates[k].receipts)) return false;
+      }
+    }
+    var comp = st.comparison ? (st.comparison.result || st.comparison) : null;
+    if (comp && comp.rows !== undefined) {
+      if (!Array.isArray(comp.rows)) return false;
+      for (var m = 0; m < comp.rows.length; m++) {
+        if (!isObj(comp.rows[m])) return false;
+        if (comp.rows[m].receipts !== undefined && !Array.isArray(comp.rows[m].receipts)) return false;
+      }
+    }
+    return true;
   }
   function save() {
     try { if (ws) localStorage.setItem(KEY, JSON.stringify(ws)); } catch (e) { /* storage full: export still works */ }
@@ -153,7 +259,7 @@
       },
       steps: { replacements: [], renegotiation: null, routing: null, envelope: null, comparison: null, settlements: [] }
     };
-    ws = obj; save(); render();
+    ws = obj; mismatchKeys = new Set(); save(); render();
     if (note) note.innerHTML = '<p class="ws-msg ws-msg--ok">Workspace seeded from the verdict for ' + esc(baseOffer.artist) + ' in ' + esc(baseOffer.city) + '.</p>';
     return clone(ws);
   }
@@ -448,7 +554,7 @@
       var curC = st.comparison ? comparisonHtml(st.comparison.result || st.comparison) : '<p class="ws-label">No comparison yet.</p>';
       cp.innerHTML = '<form id="wsCompForm" class="ws-form">' + rows +
         '<button type="button" class="ws-btn" id="wsCompAddBtn">Add an offer</button> ' +
-        '<button type="submit" class="ws-btn ws-btn--primary">Compare offers</button> <span class="ws-out" id="wsCompOut"></span></form>' +
+        '<button type="submit" class="ws-btn ws-btn--primary"' + (compareInFlight ? ' disabled' : '') + '>' + (compareInFlight ? 'Working…' : 'Compare offers') + '</button> <span class="ws-out" id="wsCompOut"></span></form>' +
         '<div id="wsCompRefusal"></div>' + curC;
     }
     // Settlement
@@ -456,7 +562,13 @@
     if (stl) {
       var listS = (st.settlements || []).map(function (e) {
         var r = e.result || e;
-        return '<article class="ws-row"><p>Reported attendance: ' + fmt(r.actualAttendance) + ' (' + esc(r.sourceLabel || 'promoter-reported, unverified') + ') · recorded break-even: ' + fmt(r.breakEvenTickets) + ' tickets</p>' +
+        // Renegotiation and envelope render their local fallback with
+        // a label; settlements did not, so a locally computed entry
+        // (server step unavailable) rendered identically to a
+        // server-verified one. The arithmetic is the same formula, but
+        // the provenance differs, so it is labelled.
+        var settleLocal = r._local ? localNoteHtml() : '';
+        return '<article class="ws-row">' + settleLocal + '<p>Reported attendance: ' + fmt(r.actualAttendance) + ' (' + esc(r.sourceLabel || 'promoter-reported, unverified') + ') · recorded break-even: ' + fmt(r.breakEvenTickets) + ' tickets</p>' +
           '<p>Gap: ' + fmt(r.gapTickets) + ' tickets · money gap: ' + money2(r.moneyGap) + ' at settled net ' + money2(r.netSettled) + costLabel() + '</p>' +
           '<p>' + esc(r.assessment || '') + '</p>' +
           ((r.flags || []).length ? '<p>Flags: ' + r.flags.map(esc).join('; ') + '</p>' : '') +
@@ -638,16 +750,63 @@
     if (!r) return '';
     var bv = ws.baseVerdict, b = ws.baseOffer;
     var baseRow = '<tr><td>0 (base — from the verified base, never re-run)</td><td>' + esc(b.artist) + ' · ' + esc(b.city) + '</td><td>' + guaranteeLine(b.guarantee) + '</td><td>' + fmt(bv ? bv.tickets : null) + '</td><td>' + (bv && bv.capacityState === 'known' ? fmt(b.capacity) : 'unknown') + '</td><td>' + (bv ? receiptsHtml(bv.receipts, 'base') : '') + '</td></tr>';
-    var rows = (r.rows || []).map(function (row, i) {
+    // The server result already carries its own base row (offerIndex 0);
+    // rendering it as well would show row 0 twice. The row above is the
+    // only base row: it carries the verified base receipts, while the
+    // server base row carries none. Rows sharing an offerIndex are also
+    // shown once only, so a repeated submit can never duplicate a row.
+    var seenOfferIndex = {};
+    var rows = (r.rows || []).filter(function (row) {
+      if (row.offerIndex === 0) return false;
+      if (row.offerIndex != null) {
+        if (seenOfferIndex[row.offerIndex]) return false;
+        seenOfferIndex[row.offerIndex] = true;
+      }
+      return true;
+    }).map(function (row, i) {
       if (row.status === 'refused' || !row.tickets && row.tickets !== 0) {
         var ref = row.refusal || {};
         return '<tr class="ws-row--refused"><td>' + esc(row.offerIndex != null ? row.offerIndex : i + 1) + '</td><td>' + esc(row.artist || '') + ' · ' + esc(row.city || '') + '</td><td>—</td><td>refused — no numbers</td><td>' + esc(row.capacity ? (row.capacity.state || '') : '') + '</td><td>Code: ' + esc(ref.code || '') + ' — ' + esc(ref.reason || '') + '</td></tr>';
       }
-      return '<tr><td>' + esc(row.offerIndex != null ? row.offerIndex : i + 1) + '</td><td>' + esc(row.artist || '') + ' · ' + esc(row.city || '') + '</td><td>' + guaranteeLine(row.guarantee) + '</td><td>' + fmt(row.tickets) + '</td><td>' + (row.capacity ? (row.capacity.state === 'known' ? fmt(row.capacity.value) : 'unknown') : 'unknown') + '</td><td>' + receiptsHtml(row.receipts || [], 'comp' + i) + '</td></tr>';
+      // Receipt keys are the row's offerIndex, NOT the filtered-array
+      // index: filtering out the server base row (offerIndex 0) shifts
+      // every later row by one, so a filtered index key made the first
+      // offer's replay button resolve to the base row (no receipts) and
+      // every later offer's button replay the previous offer's receipt
+      // (findReceipts indexes the unfiltered rows array).
+      var compKey = 'comp' + (row.offerIndex != null ? row.offerIndex : i + 1);
+      return '<tr><td>' + esc(row.offerIndex != null ? row.offerIndex : i + 1) + '</td><td>' + esc(row.artist || '') + ' · ' + esc(row.city || '') + '</td><td>' + guaranteeLine(row.guarantee) + '</td><td>' + fmt(row.tickets) + '</td><td>' + (row.capacity ? (row.capacity.state === 'known' ? fmt(row.capacity.value) : 'unknown') : 'unknown') + '</td><td>' + receiptsHtml(row.receipts || [], compKey) + '</td></tr>';
     }).join('');
     return '<article class="ws-row"><div class="ws-table-wrap"><table class="ws-table"><thead><tr><th>Row</th><th>Offer</th><th>Guarantee</th><th>Tickets needed</th><th>Capacity</th><th>Receipts / refusal</th></tr></thead><tbody>' + baseRow + rows + '</tbody></table></div>' +
       '<p>' + esc(SORT_NOTE) + '</p>' +
       (r.supersedes ? '<p class="ws-label">Supersedes the entry recorded ' + esc(r.supersedes) + '</p>' : '') + '</article>';
+  }
+
+  // Import shape gate: steps must be the shape render() consumes, or
+  // render() throws on the imported file (a string where rows must be
+  // an array bricks the panel until Clear). A null baseVerdict is only
+  // admissible with every step empty — the edit-base shape — since
+  // steps computed from a verdict cannot exist without that verdict.
+  function validImportSteps(o) {
+    if (o.steps === undefined || o.steps === null) return true;
+    var st = o.steps;
+    if (typeof st !== 'object' || Array.isArray(st)) return false;
+    if (!Array.isArray(st.replacements) && st.replacements !== undefined) return false;
+    if (!Array.isArray(st.settlements) && st.settlements !== undefined) return false;
+    var singles = ['renegotiation', 'routing', 'envelope', 'comparison'];
+    for (var si = 0; si < singles.length; si++) {
+      var s = st[singles[si]];
+      if (s !== undefined && s !== null && typeof s !== 'object') return false;
+    }
+    if (st.comparison && st.comparison.result && !Array.isArray(st.comparison.result.rows)) return false;
+    if (st.routing && st.routing.result && !Array.isArray(st.routing.result.candidates)) return false;
+    if (o.baseVerdict == null) {
+      var empty = (!st.replacements || st.replacements.length === 0) &&
+        (!st.settlements || st.settlements.length === 0) &&
+        st.renegotiation == null && st.routing == null && st.envelope == null && st.comparison == null;
+      if (!empty) return false;
+    }
+    return true;
   }
 
   // ---- bindings ----
@@ -659,15 +818,40 @@
     }); }
     var imp = $('wsImportFile'); if (imp && !imp.dataset.bound) { imp.dataset.bound = '1'; imp.addEventListener('change', function () {
       var f = imp.files && imp.files[0]; if (!f) return;
+      // Size cap first (a workspace export is kilobytes): an oversize file
+      // is rejected without parsing, and without touching stored state.
+      if (f.size !== undefined && f.size !== null && f.size > 1000000) { var oBig = $('wsActionsOut'); if (oBig) oBig.textContent = 'Import rejected: file is over 1MB — not a workspace export. Nothing was overwritten.'; return; }
       var rd = new FileReader();
-      rd.onload = function () {
+      rd.onload = async function () {
+        var out = $('wsActionsOut');
         try {
           var o = JSON.parse(rd.result);
           if (!o || o.workspaceVersion !== 1 || !o.baseOffer || typeof o.baseOffer.artist !== 'string' || typeof o.baseOffer.city !== 'string' || typeof o.baseOffer.guarantee !== 'number') throw new Error('bad shape');
+          if (!validImportSteps(o)) throw new Error('bad steps shape');
+          if (!isValidWorkspaceShape(o)) throw new Error('bad shape');
+          // A workspace with no seeded verdict (the edit-base shape:
+          // baseVerdict null, all steps empty) has no numbers to
+          // recompute, so shape alone admits it. Anything with a
+          // verdict MUST pass server verification first: the server
+          // recomputes the base arithmetic and re-verifies every base
+          // receipt hash, so a tampered ticket count or forged hash
+          // cannot import silently. Verification unavailable (404 or
+          // network failure) refuses the import rather than admitting
+          // an unverified workspace. Nothing is assigned to ws until
+          // every check passes, so a rejection overwrites nothing.
+          // Step rows themselves are NOT recomputed here: the verify
+          // endpoint covers the base only, and recomputing a step row
+          // would mean re-running its live verdict — see REPORT.
+          if (o.baseVerdict != null) {
+            var res = await fetch('/api/workspace/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ workspace: o }) });
+            if (res.status === 404) throw new Error('verification unavailable');
+            var d = await res.json().catch(function () { return null; });
+            if (!d || d.status !== 'verified') throw new Error('verification failed: ' + ((d && d.mismatches || []).map(function (m) { return typeof m === 'string' ? m : JSON.stringify(m); }).join('; ') || 'see response'));
+          }
           ws = o; if (!ws.steps) ws.steps = { replacements: [], renegotiation: null, routing: null, envelope: null, comparison: null, settlements: [] };
-          save(); render();
-          var out = $('wsActionsOut'); if (out) out.textContent = 'Imported.';
-        } catch (e) { var out2 = $('wsActionsOut'); if (out2) out2.textContent = 'Import rejected: file is not a valid workspace (version 1 with a base offer). Nothing was overwritten.'; }
+          mismatchKeys = new Set(); save(); render();
+          var out2 = $('wsActionsOut'); if (out2) out2.textContent = 'Imported.';
+        } catch (e) { var out3 = $('wsActionsOut'); if (out3) out3.textContent = 'Import rejected: ' + e.message + ' Nothing was overwritten.'; }
       };
       rd.readAsText(f);
     }); }
@@ -684,8 +868,14 @@
     document.querySelectorAll('[data-ws-replay]').forEach(function (btn) {
       if (btn.dataset.bound) return; btn.dataset.bound = '1';
       btn.addEventListener('click', function () {
-        var parts = btn.getAttribute('data-ws-replay').split('|');
-        var rowKey = parts[0], idx = Number(parts[1]);
+        // Split on the LAST separator: a routing row key is 'route-<city>'
+        // and a city may itself contain '|', which the old first-split
+        // parsing silently misread (dead replay button, never corruption —
+        // runReplay still early-returns on a missing receipt).
+        var rawReplay = btn.getAttribute('data-ws-replay') || '';
+        var sep = rawReplay.lastIndexOf('|');
+        var rowKey = sep >= 0 ? rawReplay.slice(0, sep) : rawReplay;
+        var idx = sep >= 0 ? Number(rawReplay.slice(sep + 1)) : NaN;
         var receipts = findReceipts(rowKey);
         runReplay(rowKey, idx, receipts);
       });
@@ -702,7 +892,14 @@
     }
     if (rowKey.indexOf('comp') === 0) {
       var cr = ws.steps.comparison && (ws.steps.comparison.result || ws.steps.comparison);
-      var row = cr && (cr.rows || [])[Number(rowKey.slice(4))];
+      var rows = (cr && cr.rows) || [];
+      var want = Number(rowKey.slice(4));
+      var row = null;
+      for (var ci = 0; ci < rows.length; ci++) { if (rows[ci] && rows[ci].offerIndex === want) { row = rows[ci]; break; } }
+      // Fallback for rows without an offerIndex (never server-produced):
+      // those render with key i + 1 for filtered index i, and with no
+      // base row to filter, filtered order is row order, so key - 1.
+      if (!row) row = rows[want - 1];
       return row ? row.receipts || [] : [];
     }
     return [];
@@ -856,6 +1053,7 @@
     });
     var cf = $('wsCompForm'); if (cf) cf.addEventListener('submit', async function (e) {
       e.preventDefault();
+      if (compareInFlight) { var oBusy = $('wsCompOut'); if (oBusy) oBusy.textContent = 'A comparison is already running.'; return; }
       var offers = [];
       for (var i = 0; i < compareCount; i++) {
         var a = strVal('ws-comp-artist-' + i), c = strVal('ws-comp-city-' + i), g = numVal('ws-comp-g-' + i);
@@ -865,17 +1063,33 @@
       var out = $('wsCompOut'), ref = $('wsCompRefusal');
       var dup = offers.some(function (of) { return of.artist.toLowerCase() === b.artist.toLowerCase() && of.city.toLowerCase() === b.city.toLowerCase() && of.guarantee === b.guarantee && of.ticketPrice === b.ticketPrice && (of.variableCost || null) === (b.variableCost || null) && (of.capacity || null) === (b.capacity || null); });
       if (dup) { if (out) out.textContent = 'An offer identical to the base offer on every commercial term is not a comparison — change at least one term.'; return; }
+      var submitWorkspaceId = ws.workspaceId;
+      compareInFlight = true;
       setBusy('wsComparison', true);
       try {
         var d = await postStep('/api/workspace/compare', { offers: offers });
+        // Re-query after the await: any mid-flight render (Add-an-offer,
+        // a new seeded verdict, another panel) replaces the panel's
+        // elements, so the pre-await out/ref can point at detached nodes
+        // and a refusal would be written nowhere visible.
+        out = $('wsCompOut'); ref = $('wsCompRefusal');
         if (d.notAvailable) { if (ref) ref.innerHTML = notAvailableHtml('Comparison'); }
         else if (d.status === 'step_refused') { if (ref) ref.innerHTML = refusalHtml('comparison', d.error && d.error.code, d.error && d.error.message, d.detail); }
         else if (d.status === 'ok') {
-          var prev = ws.steps.comparison; var res = d.result || {};
-          if (prev) res.supersedes = prev.recordedAt;
-          ws.steps.comparison = { result: res, recordedAt: d.recordedAt || isoNow() }; save(); render();
+          // postStep sent the pre-flight workspace, but seed() may have
+          // replaced ws mid-flight (a new verdict run). Storing this
+          // result would attach offers priced against the old base to
+          // the new base — discard it and write nothing.
+          if (!ws || ws.workspaceId !== submitWorkspaceId) {
+            var oD = $('wsCompOut'); if (oD) oD.textContent = 'Comparison finished, but the workspace changed while it ran — the result was discarded and nothing was written.';
+          } else {
+            var prev = ws.steps.comparison; var res = d.result || {};
+            if (prev) res.supersedes = prev.recordedAt;
+            ws.steps.comparison = { result: res, recordedAt: d.recordedAt || isoNow() }; save(); render();
+          }
         } else { if (ref) ref.innerHTML = refusalHtml('comparison', 'UNKNOWN', 'Unexpected server response — discarded.', ''); }
-      } catch (err) { if (ref) ref.innerHTML = refusalHtml('comparison', 'REQUEST_FAILED', err.message, ''); }
+      } catch (err) { ref = $('wsCompRefusal'); if (ref) ref.innerHTML = refusalHtml('comparison', 'REQUEST_FAILED', err.message, ''); }
+      compareInFlight = false;
       setBusy('wsComparison', false, 'Compare offers');
     });
     // Settlement

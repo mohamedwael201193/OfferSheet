@@ -2,336 +2,172 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OfferSheet — check a live-show offer before you sign it</title>
-<link href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&family=Geist:wght@400;500&family=Sofia+Sans+Extra+Condensed:wght@500&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OfferSheet — how many tickets must sell before you sign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="landing-mobile.css">
 <link rel="stylesheet" href="mobile-section.css">
+<link rel="stylesheet" href="sim-animation.css">
 <link rel="manifest" href="/manifest.webmanifest">
-<meta name="theme-color" content="#030e1a">
+<meta name="theme-color" content="#0A0A0A">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
-<body>
-<div id="scrollProgress" class="scroll-progress" aria-hidden="true"></div>
-<header class="nav proof">
-  <div class="wrap nav-inner">
-    <div class="wordmark">OfferSheet</div>
-    <nav class="nav-links" aria-label="Page sections">
-      <a href="#problem">The problem</a>
-      <a href="#how">How it works</a>
-      <a href="#arms">Three arms</a>
-      <a href="#refuses">What it refuses</a>
-      <a href="#formula">Formula</a>
-      <a href="app.html">Check an offer</a>
-      <a href="oracle.html">Oracle</a>
-    </nav>
-    <a class="btn btn--primary nav-cta" href="app.html">Open the app</a>
+<body class="landing-page">
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="appbar">
+  <div class="appbar-inner">
+    <div class="wordmark">OfferSheet <span class="app-kicker">Landing</span></div>
+    <a class="btn btn--primary nav-cta" href="app.html">Try the live demo</a>
   </div>
-</header>
-
-<main class="wrap">
-  <!-- 1. Deal-sheet hero: the promoter's deal sheet becomes the page.
-       Headline left, 3D deal stack right — no giant figure burying the tool. -->
-  <section class="hero proof hero--deal" id="problem" aria-label="The problem">
-    <div class="hero-copy">
-      <p class="specimen">No. 01 — The problem</p>
-      <h1>A promoter signs a guarantee with his own money. If the room does not fill, he eats it.</h1>
-      <p class="hero-sub">It tells a promoter how many tickets he must sell before he signs.</p>
-      <p class="hero-tagline">One money decision, before you sign.</p>
-      <p class="hero-support">One number decides the signature: how many tickets must sell before the guarantee pays for itself — checked against live taste evidence, not a guess.</p>
-      <div class="guide" aria-hidden="true"></div>
-      <div class="hero-cta">
-        <a class="btn btn--primary" href="app.html">Check an offer</a>
-        <a class="link-btn" href="#formula">See how the number is computed</a>
-      </div>
+</div>
+<nav class="nav-links" aria-label="Sections">
+  <a href="#hero">Verdict</a>
+  <a href="#collage">Collage</a>
+  <a href="#problem">Statement</a>
+  <a href="#how">How</a>
+  <a href="#arms">Evidence</a>
+  <a href="#formula">Formula</a>
+  <a href="#trials">Trials</a>
+  <a href="#ledger">Ledger</a>
+  <a href="#refuses">Refusals</a>
+  <a href="#get-the-app">Get the app</a>
+  <a href="oracle.html">Oracle</a>
+  <a class="glass-nav-cta" href="app.html">Try the live demo</a>
+</nav>
+<main id="main">
+  <section class="hero" id="hero" aria-label="Introduction">
+    <div class="hero-beam" aria-hidden="true"></div>
+    <p class="micro-label">For independent promoters</p>
+    <h1 class="display" data-reveal>How many tickets must sell before you sign?</h1>
+    <p class="hero-sub">Enter the artist, the city, and the guarantee. OfferSheet returns the break-even ticket count — with the audience evidence and the receipts behind it — before you sign anything.</p>
+    <div class="hero-ctas">
+      <a class="btn btn--primary btn--glow" href="app.html">Try the live demo</a>
+      <a class="btn btn--ghost" href="#arms">See the recorded evidence</a>
     </div>
-    <div class="hero-stage" id="heroStage">
-      <div class="deal-stack" id="dealStack">
-        <div class="deal-sheet deal-sheet--back"><img src="assets/sheet-receipt.webp" alt="Stack of checked proof slips" width="1920" height="1280"></div>
-        <div class="deal-sheet deal-sheet--mid"><img src="assets/sheet-ticket.webp" alt="Perforated ticket strip" width="2736" height="912"></div>
-        <figure class="deal-sheet deal-sheet--front crop">
-          <img id="heroImg" src="assets/hero-plan.webp" alt="Venue plan drawn as a light proof sheet: seating bowl and stage" width="1920" height="1280">
-          <figcaption>If the room does not fill, the promoter eats the guarantee. <span class="nowrap">Figure 1 — 3 : 2.</span></figcaption>
-          <div id="heroFallback" class="hero-fallback" role="note">
-            <p><strong>Venue plan, proof sheet.</strong> Blue-black line drawing on studio-white proof paper: seating bowl and stage, with crop marks and a dot grid. No text or numbers are baked into the drawing — the break-even number on this page is real page text, computed live.</p>
-          </div>
-        </figure>
-      </div>
-      <p class="deal-caption">Example deal, not a live verdict — Billie Eilish · New York · 2,084 tickets to break even.</p>
-    </div>
-  </section>
-
-  <!-- Ghost velocity band: oversized display words, drifting with scroll
-       velocity (aria-hidden, 7% ink — its own band, never over text). -->
-  <div class="ghost-strip band band--orange" aria-hidden="true"><span>SELL — BEFORE — YOU — SIGN — SELL — BEFORE — YOU — SIGN — SELL — BEFORE — YOU — SIGN —</span></div>
-
-  <!-- Stats ticker: the same four spec-honest facts, as one slow line
-       (marquee pattern, adapted to vanilla CSS — duplicated track, seamless loop). -->
-  <section class="ticker reveal band band--inkwash" aria-label="What this page is built from">
-    <div class="ticker-track">
-      <div class="ticker-group">
-        <span class="ticker-item"><strong>10 / 10</strong> Tools wired (not all live-verified)</span>
-        <span class="ticker-item"><strong>Every claim</strong> Receipts on Qloo claims</span>
-        <span class="ticker-item"><strong>3 arms wired</strong> 3 live trials recorded 29 Oct 2026</span>
-        <span class="ticker-item"><strong>Ticketmaster</strong> Ticketmaster capacity when available</span>
-      </div>
-      <div class="ticker-group" aria-hidden="true">
-        <span class="ticker-item"><strong>10 / 10</strong> Tools wired (not all live-verified)</span>
-        <span class="ticker-item"><strong>Every claim</strong> Receipts on Qloo claims</span>
-        <span class="ticker-item"><strong>3 arms wired</strong> 3 live trials recorded 29 Oct 2026</span>
-        <span class="ticker-item"><strong>Ticketmaster</strong> Ticketmaster capacity when available</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- Three arms, one answer: RECORDED 29 Oct 2026 trial 1 — never a live verdict. -->
-  <section class="sheet crop arms-card reveal" id="arms" aria-label="Three arms, one answer">
-    <p class="specimen">No. 02 — Three arms</p>
-    <h2>Three arms, one answer</h2>
-    <p class="recorded-label"><strong>Recorded example — 29 Oct 2026 trial, not a live verdict.</strong> This section never runs a verdict. Run the app for a live verdict on your own offer.</p>
-    <p>Billie Eilish in New York — who is the best opening act for this audience? The same offer the app checks: guarantee $250,000, ticket price $120 — break-even 2,084 tickets.</p>
-    <figure class="fig crop reveal" style="--rd:60ms" data-plx="0.03">
-      <img src="assets/arms-showcase.webp" alt="Three stage lanes on proof paper: an acoustic singer, a pop performer, and a hip-hop performer" width="1920" height="1280" data-fallback="armsFallback">
-      <figcaption>Three lanes, one question. No numbers are baked into the drawing.</figcaption>
-      <div id="armsFallback" class="fig-fallback" role="note">
-        <p><strong>Three lanes, one question.</strong> Three stage lanes on studio-white proof paper: an acoustic singer, a pop performer, and a hip-hop performer. No numbers are baked into the drawing.</p>
-      </div>
+    <figure class="hero-figure">
+      <img src="assets/hero-plan.webp" alt="Venue plan: seating bowl and stage" width="1920" height="1280" fetchpriority="high">
+      <figcaption>The venue plan is the question, not the answer. The answer is a number, with receipts.</figcaption>
     </figure>
+    <div class="rotating-badge" aria-hidden="true">
+      <svg viewBox="0 0 120 120"><defs><path id="badge-circle" d="M 60,60 m -44,0 a 44,44 0 1,1 88,0 a 44,44 0 1,1 -88,0"></path></defs><text><textPath href="#badge-circle">ONE MONEY DECISION • BEFORE YOU SIGN • </textPath></text><circle cx="60" cy="60" r="4"></circle></svg>
+    </div>
+  </section>
+
+  <div class="marquee" aria-hidden="true"><div class="marquee-track"><span>ONE MONEY DECISION, BEFORE YOU SIGN ✦ EVIDENCE ✦ RECEIPTS ✦ REPLAY ✦ WORKSPACE ✦ FORMULA ✦ </span><span>ONE MONEY DECISION, BEFORE YOU SIGN ✦ EVIDENCE ✦ RECEIPTS ✦ REPLAY ✦ WORKSPACE ✦ FORMULA ✦ </span></div></div>
+
+  <section class="collage" id="collage" aria-label="The product in pictures">
+    <p class="micro-label">The product, in pictures</p>
+    <h2 class="display display--section" data-reveal>Proof you can hold up to the light.</h2>
+    <div class="fan">
+      <figure class="fan-card" data-parallax="0.04"><img src="assets/sheet-receipt.webp" alt="Stack of checked proof slips" width="1920" height="1280" loading="lazy" decoding="async"><figcaption>The verdict sheet.</figcaption></figure>
+      <figure class="fan-card" data-parallax="-0.03"><img src="assets/proof-receipts.webp" alt="Receipts with hashes" width="2352" height="1008" loading="lazy" decoding="async"><figcaption>Receipts with hashes.</figcaption></figure>
+      <figure class="fan-card" data-parallax="0.05"><img src="assets/race-ticket-stack.webp" alt="Ticket stack for the gut-versus-graph race" width="1920" height="1280" loading="lazy" decoding="async"><figcaption>The race: gut vs graph.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="statement" id="problem" aria-label="Statement">
+    <h2 class="display display--giant" data-clip>One money decision, before you sign.</h2>
+    <p>Illustrative arithmetic on the recorded trial. being wrong by 100 tickets = $12,000 of guarantee exposure (100 × 120 = 12,000). That 100-ticket gap is hypothetical — not a measured outcome, not a real loss, and not a prediction.</p>
+    <p>A promoter signs a guarantee with a number in mind. OfferSheet makes that number explicit — tickets to break even — and shows exactly which audience evidence produced it, so the signature is a decision, not a guess.</p>
+  </section>
+
+  <section class="how" id="how" aria-label="How it works">
+    <p class="micro-label">How it works</p>
+    <h2 class="display display--section">Three steps, then a signature.</h2>
+    <ol class="steps">
+      <li><strong>Enter the offer.</strong> Artist, city, guarantee, ticket price.</li>
+      <li><strong>Run the verdict.</strong> Break-even count, audience evidence, receipts.</li>
+      <li><strong>Check before you sign.</strong> Replay any receipt; re-rank without the top pick.</li>
+    </ol>
+  </section>
+
+  <section class="evidence" id="arms" aria-label="Evidence from a recorded trial">
+    <p class="micro-label">Evidence — recorded, not live</p>
+    <h2 class="display display--section" data-reveal>Three arms, one answer.</h2>
+    <p class="recorded-label">Recorded trial — 29 Oct 2026, not a live verdict. The numbers below come from a trial that already ran; this page computes nothing.</p>
     <div class="arms-grid">
-      <article class="arm-card crop reveal" style="--rd:0ms">
-        <h3>Gut (LLM alone)</h3>
-        <p class="arm-pick">Clairo</p>
-        <p>Her intimate, moody indie-pop fits a New York Billie Eilish audience well.</p>
-      </article>
-      <article class="arm-card arm-card--graph crop reveal" style="--rd:90ms">
-        <h3>Graph (Qloo-grounded — the verdict)</h3>
-        <p class="arm-pick">Olivia Rodrigo</p>
-        <p>The Qloo-grounded pick on this recorded run.</p>
-      </article>
-      <article class="arm-card crop reveal" style="--rd:180ms">
-        <h3>Web (LLM + Wikidata facts)</h3>
-        <p class="arm-pick">Armani White</p>
-        <p>The only viable opening-act candidate supported by the supplied Wikidata facts, via the 2022 single “Billie Eilish” by Armani White.</p>
-      </article>
+      <article class="arm-card"><p class="arm-name">Gut (LLM alone)</p><p class="arm-pick">Clairo</p><p>The pick without audience data. It missed.</p></article>
+      <article class="arm-card"><p class="arm-name">Graph (Qloo-grounded)</p><p class="arm-pick">Olivia Rodrigo</p><p>The pick with audience overlap. It stood.</p></article>
+      <article class="arm-card"><p class="arm-name">Web (LLM + Wikidata facts)</p><p class="arm-pick">Armani White</p><p>The pick from public facts alone. It missed.</p></article>
     </div>
-    <p class="miss-ledger">Where the gut pick was wrong on this run: Gut picked Clairo while Graph picked Olivia Rodrigo; Web picked Armani White while Graph picked Olivia Rodrigo.</p>
-    <p class="miss-ledger" id="armsTally">Recorded tally unavailable — trial-pack data could not be loaded.</p>
-    <p class="miss-ledger">Test rig — the tally above is computed from the same recorded 3-trial pack the bench panel replays. Recorded, not live; live runs vary, and the ledger records what actually ran.</p>
+    <figure class="arms-figure">
+      <img src="assets/arms-showcase.webp" alt="Three stage lanes: an acoustic singer, a pop performer, and a hip-hop performer" width="1920" height="1280" loading="lazy" decoding="async">
+      <figcaption>Recorded example — 29 Oct 2026 trial, not a live verdict. Break-even: 2,084 tickets.</figcaption>
+    </figure>
+    <p class="how-made">How this verdict was made: every Qloo-backed claim carries a SHA-256 hash and a request ID, and every receipt can be clicked to re-run the exact call. A match means the same IDs in the same order; a mismatch is surfaced, never hidden. Legs with no upstream request ID show “—” and carry an argument hash instead — “—” is not a missing value to fill, and no request ID is ever invented.</p>
+    <p id="armsTally">Recorded tally unavailable</p>
     <script>
-    // Arms tally, computed in this browser from the static trial-pack.json
-    // (the same file the app uses). Display-only: no data endpoint, no
-    // verdict machinery. On any fetch failure the unavailable label above
-    // stays — no number is ever invented.
-    (function () {
-      var el = document.getElementById('armsTally');
-      if (!el) return;
-      fetch('trial-pack.json').then(function (res) {
-        if (!res.ok) throw new Error('trial-pack fetch failed');
-        return res.json();
-      }).then(function (pack) {
-        var trials = (pack && Array.isArray(pack.trials)) ? pack.trials : [];
-        if (trials.length === 0) return;
-        var n = trials.length;
-        var missed = function (t, arm) {
-          return (Array.isArray(t.misses) ? t.misses : []).some(function (m) { return m.arm === arm; });
-        };
-        var gutSame = trials.filter(function (t) { return !missed(t, 'gut'); }).length;
-        var webSame = trials.filter(function (t) { return !missed(t, 'web'); }).length;
-        var changed = trials.filter(function (t) { return missed(t, 'gut') || missed(t, 'web'); }).length;
-        el.textContent = 'Recorded, not live. Qloo changed the pick in ' + changed + '/' + n +
-          ' trials (Gut agreed ' + gutSame + '/' + n + '; Web agreed ' + webSame + '/' + n + ').';
-      }).catch(function () { /* unavailable label stays */ });
-    })();
+      fetch('trial-pack.json').then(function (r) { return r.json(); }).then(function (pack) {
+        var missed = function (t, arm) { return (t.misses || []).some(function (m) { return m.arm === arm; }); };
+        var changed = pack.trials.filter(function (t) { return missed(t, 'gut') || missed(t, 'web'); }).length;
+        var gutSame = pack.trials.filter(function (t) { return !missed(t, 'gut'); }).length;
+        var webSame = pack.trials.filter(function (t) { return !missed(t, 'web'); }).length;
+        var el = document.getElementById('armsTally');
+        if (el) el.textContent = 'Qloo changed the pick in ' + changed + '/' + pack.trials.length + ' trials. Gut agreed ' + gutSame + '/' + pack.trials.length + '. Web agreed ' + webSame + '/' + pack.trials.length + '. Recorded, not live.';
+      }).catch(function () {});
     </script>
+    <p>Run a live verdict on the app to see receipts on your own offer: <a href="app.html">Try the live demo</a>.</p>
   </section>
 
-  <!-- How it works: editorial depth, describing only what the tool already does. -->
-  <section class="how-band reveal band band--inkwash10" id="how" aria-label="How it works">
-    <p class="specimen">No. 03 — The method</p>
-    <h2>How it works</h2>
-    <figure class="fig crop reveal" style="--rd:60ms" data-plx="0.03">
-      <img id="stepsImg" src="assets/proof-steps.webp" alt="Three panels on proof paper: a contract sheet with a pen, a magnifying glass over audience dots, and a ticket with a dimension line" width="2736" height="912" data-fallback="stepsFallback">
-      <figcaption>Figure 3 — offer, evidence, count. 3 : 1.</figcaption>
-      <div id="stepsFallback" class="fig-fallback" role="note">
-        <p><strong>Offer, evidence, count.</strong> Three panels on proof paper: a contract sheet with a pen, a magnifying glass over audience dots, and a ticket with a dimension line.</p>
-      </div>
-    </figure>
-    <div class="how-grid">
-      <article class="how-card crop reveal" style="--rd:0ms">
-        <h3>Enter the offer</h3>
-        <p>Artist, city, guarantee — and the room, if it is known. A starting example is prefilled; it is not a real deal.</p>
-      </article>
-      <article class="how-card crop reveal" style="--rd:90ms">
-        <h3>Live evidence is gathered</h3>
-        <p>Audience, openers, venue, and prices — the receipted lines re-run live from the drawer below; arithmetic lines carry no receipt by design.</p>
-      </article>
-      <article class="how-card crop reveal" style="--rd:180ms">
-        <h3>A count, or a withheld verdict</h3>
-        <p>A break-even ticket count when the evidence is complete; "Verdict withheld: evidence incomplete" with the missing legs named, never a fabricated number.</p>
-      </article>
+  <section class="formula-strip" id="formula" aria-label="The formula">
+    <p class="micro-label">The formula</p>
+    <svg class="draw-svg" viewBox="0 0 600 120" aria-hidden="true"><path class="draw-path" pathLength="100" d="M 20 100 L 200 100 L 200 40 L 400 40 L 400 100 L 580 100"></path></svg>
+    <p class="formula-text">$250,000 ÷ $120 = 2,083.33 — rounded up — <strong>2,084 tickets to break even.</strong></p>
+    <p class="recorded-label">Recorded trial — Billie Eilish, New York, 29 Oct 2026, not a live verdict. Net is before variable costs.</p>
+  </section>
+
+  <section class="stats" id="trials" aria-label="Recorded trials">
+    <p class="micro-label">Stats — recorded trials only</p>
+    <h2 class="display display--section" data-reveal>Three trials. Same method, three rooms.</h2>
+    <div class="stat-grid">
+      <div class="stat"><p class="stat-number">2,084</p><p>Billie Eilish — New York — $250,000 / $120 — 35.3s</p></div>
+      <div class="stat"><p class="stat-number">2,084</p><p>Taylor Swift — New York — $250,000 / $120 — 26.2s</p></div>
+      <div class="stat"><p class="stat-number">1,895</p><p>Olivia Rodrigo — Los Angeles — $180,000 / $95 — 40.1s</p></div>
     </div>
+    <p class="stat-tally">Qloo changed the pick in 3/3 trials. Gut agreed 0/3. Web agreed 0/3.</p>
+    <p class="recorded-label">Recorded, not live. Typical verdict time: 26–40 seconds — measured across the 3 recorded trials, 29 Oct 2026.</p>
   </section>
 
-  <!-- What it refuses to do: fail-closed showcase, sentences reused verbatim from the safety/depth text. -->
-  <section class="refuse-band reveal band band--inkwash10" id="refuses" aria-label="What it refuses to do">
-    <p class="specimen">No. 04 — What it refuses</p>
-    <h2>What it refuses to do</h2>
-    <figure class="fig crop reveal" style="--rd:60ms" data-plx="-0.03">
-      <img src="assets/refusal-proof.webp" alt="A deal-sheet contract on proof paper with a large refusal cross over an unsigned signature line, pen beside it" width="1920" height="1280" data-fallback="refusalFallback">
-      <figcaption>Refused, in writing — the page would rather withhold than invent. No numbers are baked into the drawing.</figcaption>
-      <div id="refusalFallback" class="fig-fallback" role="note">
-        <p><strong>Refused, in writing.</strong> A deal-sheet contract on studio-white proof paper with a large refusal cross over an unsigned signature line, pen beside it. No numbers are baked into the drawing.</p>
-      </div>
-    </figure>
+  <section class="ledger" id="ledger" aria-label="Trial ledger preview">
+    <p class="micro-label">Ledger preview</p>
+    <h2 class="display display--section">The ledger, at a glance.</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Trial</th><th>Artist / City</th><th>Guarantee / Price</th><th>Break-even</th><th>Graph pick</th><th>Gut pick</th><th>Web pick</th><th>Time</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Billie Eilish / New York</td><td>$250,000 / $120</td><td>2,084</td><td>Olivia Rodrigo</td><td>Clairo</td><td>Armani White</td><td>35.3s</td></tr>
+        <tr><td>2</td><td>Taylor Swift / New York</td><td>$250,000 / $120</td><td>2,084</td><td>Carly Rae Jepsen</td><td>Sabrina Carpenter</td><td>Def Leppard</td><td>26.2s</td></tr>
+        <tr><td>3</td><td>Olivia Rodrigo / Los Angeles</td><td>$180,000 / $95</td><td>1,895</td><td>King Princess</td><td>Gracie Abrams</td><td>Declined to pick — recorded as differing</td><td>40.1s</td></tr>
+      </tbody>
+    </table></div>
+    <p class="recorded-label">Recorded trial ledger — 29 Oct 2026. The full ledger, with hashes and replay, lives on the app.</p>
+  </section>
+
+  <section class="refuses" id="refuses" aria-label="What it refuses to do">
+    <p class="micro-label">What it refuses to do</p>
+    <h2 class="display display--section">Fail-closed, on purpose.</h2>
     <div class="refuse-grid">
-      <article class="refuse-card crop reveal" style="--rd:0ms">
-        <h3>No verdict without live Qloo</h3>
-        <p>The verdict depends on Qloo — it cannot render without it. If Qloo is unconfigured or any required evidence leg fails, the page shows “Verdict withheld: evidence incomplete” with no numbers at all.</p>
-      </article>
-      <article class="refuse-card crop reveal" style="--rd:90ms">
-        <h3>No mock data, ever</h3>
-        <p>No mock data, no demo numbers, no silent fallback — ever.</p>
-      </article>
-      <article class="refuse-card crop reveal" style="--rd:180ms">
-        <h3>No sellout percentage without capacity</h3>
-        <p>No sellout percentage is ever shown when capacity is unknown.</p>
-      </article>
-      <article class="refuse-card crop reveal" style="--rd:0ms">
-        <h3>No personal data, no predictions about individuals</h3>
-        <p>No personal data is sent to Qloo. Aggregate audiences only. Qloo affinities are aggregate taste-overlap signals — how much two audiences share — never predictions about any individual, and never a causal claim that a show will sell out.</p>
-      </article>
-      <article class="refuse-card crop reveal" style="--rd:90ms">
-        <h3>No headcount, no sellout prediction</h3>
-        <p>No headcount is ever shown (Qloo returns matched areas and entities, not a population number). No sellout prediction is ever shown.</p>
-      </article>
-      <article class="refuse-card crop reveal" style="--rd:180ms">
-        <h3>What this idea is NOT</h3>
-        <p>Not a sales forecast. Not a demand predictor. Not a booking agent. Not a ticket seller. It is one break-even count, receipted, before a signature.</p>
-      </article>
+      <article class="refuse-card"><h3>No verdict without live evidence</h3><p>If the evidence legs fail, the verdict is withheld with a visible reason — never a mock number.</p></article>
+      <article class="refuse-card"><h3>No sellout percentage without capacity</h3><p>Unknown room size means tickets needed only — never a percentage invented from nothing.</p></article>
+      <article class="refuse-card"><h3>No headcount, no sales prediction</h3><p>Break-even is arithmetic, not a forecast. Attendance and sales are never predicted.</p></article>
+      <article class="refuse-card"><h3>No personal data</h3><p>Aggregate audience signals only. No names, no emails, no individual behavior.</p></article>
+      <article class="refuse-card"><h3>Not a booking agent, not a ticket seller</h3><p>It answers one money question before signing. It books nothing and sells nothing.</p></article>
     </div>
-  </section>
-
-  <!-- CTA band: the only way into the working app from the landing. -->
-  <section class="cta-band reveal band band--orange" aria-label="Open the app">
-    <h2>Open the app</h2>
-    <p>Check a live-show offer before you sign it. One number decides the signature.</p>
-    <p class="label">Typical verdict time: 26–40 seconds — measured across the 3 recorded trials, 29 Oct 2026. Live Qloo + LLM calls, not instant.</p>
-    <div class="hero-cta" style="justify-content:center">
-      <a class="btn btn--primary" href="app.html">Open the app</a>
-    </div>
-  </section>
-
-  <!-- Formula panel -->
-  <section id="formula" class="sheet crop" aria-label="Formula">
-    <p class="specimen">No. 05 — The formula</p>
-    <div class="sheet-head">
-      <img src="assets/icon-chart.webp" alt="" width="56" height="56">
-      <div>
-        <h2>How the number is computed</h2>
-        <p class="label">Recompute it yourself from the live verdict numbers.</p>
-      </div>
-    </div>
-    <figure class="fig crop reveal" style="--rd:120ms" data-plx="0.03">
-      <img id="formulaImg" src="assets/proof-formula.webp" alt="A dimension line, a ticket strip, and a segmented bar drawn on studio-white proof paper" width="1920" height="1280" data-fallback="formulaFallback">
-      <figcaption>Figure 5 — the count, drawn as a dimension. 3 : 2. No numbers are baked into the drawing.</figcaption>
-      <div id="formulaFallback" class="fig-fallback" role="note">
-        <p><strong>The count, drawn as a dimension.</strong> A dimension line, a ticket strip, and a segmented bar on studio-white proof paper. No numbers are baked into the drawing.</p>
-      </div>
+    <figure class="refuse-figure">
+      <img src="assets/refusal-proof.webp" alt="A deal sheet with a refusal cross over an unsigned signature line" width="1920" height="1280" loading="lazy" decoding="async">
+      <figcaption>Refusal, on paper: an unsigned line stays unsigned when the evidence fails.</figcaption>
     </figure>
-    <p>Break-even tickets = ceil(guarantee ÷ (ticket price − variable cost per ticket))</p>
-    <p class="num">Run a verdict in the app to see its worked example — <a href="app.html">Open the app</a>.</p>
-    <p>When capacity is known and break-even tickets exceed it, the verdict is: “Cannot break even in this room at this guarantee.” When capacity is unknown, no sellout percentage is shown at all.</p>
   </section>
 
-  <!-- Safety strip -->
-  <section class="safety reveal band band--inkwash10" aria-label="Safety">
-    <p><strong>No personal data is sent to Qloo.</strong> Aggregate audiences only. If Qloo is not configured, the page fails closed with a visible 503 — never mock data. Qloo affinities are aggregate taste-overlap signals — how much two audiences share — never predictions about any individual, and never a causal claim that a show will sell out.</p>
-  </section>
-
-  <!-- Maya story walkthrough: illustrative persona, real recorded trials only. -->
-  <section class="story-section" id="maya-story" aria-label="A promoter walkthrough">
-    <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
-    <h2>Maya, and the offer on the table</h2>
-    <p class="story-intro">Maya is an independent promoter weighing a guarantee offer. Her walkthrough replays a recorded trial, step by step. The workspace reads offers, routing, then settlement as a season.</p>
-
-    <article class="beat">
-      <p class="beat-num">Beat 1 — The doubt</p>
-      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
-      <h3>Should I sign this guarantee?</h3>
-      <p>Maya has an offer on the table and a number in her head. One of them is wrong, and signing will tell her which — after the money is gone.</p>
-    </article>
-
-    <article class="beat">
-      <p class="beat-num">Beat 2 — The inputs</p>
-      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
-      <h3>The offer, written down before anyone guesses.</h3>
-      <p>Artist: Billie Eilish. City: New York. Guarantee: $250,000. Ticket: $120. No vibes, no 'feels like a sellout' — four inputs, on the record, before the verdict.</p>
-    </article>
-
-    <article class="beat">
-      <p class="beat-num">Beat 3 — The verdict</p>
-      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
-      <h3>2,084 tickets. That is the break-even.</h3>
-      <p>Break-even = guarantee ÷ net per-ticket contribution, rounded up. At these inputs, Maya must sell 2,084 tickets before the guarantee is covered. Below that, she loses money on the deal.</p>
-    </article>
-
-    <div class="same-method-strip">
-      <h3>The cost of being wrong</h3>
-      <p>Illustrative arithmetic on the recorded trial. At the recorded trial's $120 ticket price, being wrong by 100 tickets = $12,000 of guarantee exposure (100 × 120 = 12,000). That 100-ticket gap is hypothetical — not a measured outcome, not a real loss, and not a prediction.</p>
-    </div>
-
-    <div class="same-method-strip">
-      <h3>Same method, different recorded offer</h3>
-      <p>Taylor Swift — New York — $250,000 / $120 → 2,084 tickets (29 Oct 2026).</p>
-      <p>Olivia Rodrigo — Los Angeles — $180,000 / $95 → 1,895 tickets (29 Oct 2026).</p>
-      <p>Same inputs give the same count: the count is ceil(guarantee ÷ net per ticket) — deterministic arithmetic. The arms' picks are not deterministic and may vary run to run.</p>
-      <p class="strip-label">Recorded trials, 29 Oct 2026.</p>
-    </div>
-
-    <article class="beat">
-      <p class="beat-num">Beat 4 — The receipts</p>
-      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
-      <h3>Don't take the number. Take the receipt.</h3>
-      <p>Every verdict ships with a SHA-256 receipt and a clickable re-run. Same inputs in, same count out — the count is deterministic arithmetic (ceil of guarantee ÷ net per ticket). The arms' picks are not deterministic; a re-run may pick differently, and the receipt shows what actually ran.</p>
-    </article>
-
-    <article class="beat">
-      <p class="beat-num">Beat 5 — The gut-check</p>
-      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
-      <h3>Your gut gets a score, too.</h3>
-      <p>Before the graph, write your gut number down. OfferSheet keeps a miss ledger: where gut and graph disagreed, and which one was right. The ledger is the point — a gut feeling with no record is just a story you tell after the show.</p>
-    </article>
-
-    <article class="beat">
-      <p class="beat-num">Beat 6 — The checklist</p>
-      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
-      <h3>Sign only if every box is ticked.</h3>
-      <p>Inputs on the record. Verdict receipted. Re-run clicked. Gut written down before the graph. If live data is unavailable, there is no verdict at all — a fail-closed 503, not a sample plan dressed as an answer.</p>
-    </article>
-
-    <article class="beat">
-      <p class="beat-num">Beat 7 — The signature</p>
-      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
-      <h3>A wrong page costs nothing. A wrong verdict costs real money.</h3>
-      <p>That is why the receipts exist, and why a missing answer is a refusal, not a guess. Maya signs — or walks away — with a number she can re-run, a receipt she can show, and a ledger that remembers when gut beat graph. A demo can afford to be wrong. A promoter cannot.</p>
-      <p>The check is falsifiable: after the show, the promoter-reported attendance either clears the recorded break-even or it does not. No show has settled yet — the settle ledger is empty.</p>
-    </article>
-
-    <article class="beat">
-      <p class="beat-num">Beat 8 — After the show / next season</p>
-      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
-      <h3>The ledger outlives the night.</h3>
-      <p>After the show, the workspace settles the offer: the promoter-reported attendance is recorded against the break-even the verdict gave, and the next offer starts from a ledger that remembers. No show has settled yet — the settle ledger is empty, and no settled figure is claimed anywhere on this page.</p>
-    </article>
-
-    <div class="same-method-strip">
-      <h3>Route, not just a number</h3>
-      <p>In the workspace, one base city and up to ten candidate cities become a route table — cities only, geocoded and mapped. The table is authoritative. This strip promises no venue, no opener, no sponsor, and no date.</p>
-    </div>
+  <section class="cta-band" aria-label="Try the demo">
+    <h2 class="display display--section">Run your own offer.</h2>
+    <p>A verdict still needs a connection. No verdict is computed on this page — the app runs the real legs.</p>
+    <a class="btn btn--primary btn--glow" href="app.html">Try the live demo</a>
   </section>
 
 <section class="ms-section crop" id="get-the-app" aria-label="Get the app">
@@ -341,24 +177,24 @@
 
   <div class="ms-layout">
     <div class="ms-copy">
-      <p class="ms-lede">The frame on this page is not a picture of the app. It <em>is</em> the app, running live at phone width. Tap inside it and you are using the real form, the real verdict flow, and the real fail-closed refusal — not a walkthrough drawn for this page.</p>
+      <p class="ms-lede">The phone on this page plays a <em>recorded demo</em> — an animation that replays the recorded 29 Oct 2026 trial, step by step. It is not the app, it runs no verdict, and nothing inside it can be tapped as if it were live.</p>
 
-      <p class="ms-frame-note">This landing section itself runs no verdict and makes no verdict call. Anything you run inside the frame is the app running on its own, exactly as it runs on its own page. If live data is unavailable, the app inside the frame refuses the same way it refuses outside it: no verdict, no sample plan.</p>
+      <p class="ms-frame-note">This landing section itself runs no verdict and makes no verdict call. The animation replays only the recorded trial below — the same numbers already stated on this page. For a live verdict on your own offer, use the real app, one tap away.</p>
 
       <div class="ms-actions">
         <button class="apk-button ms-apk" type="button" data-apk-url="https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk">Download the Android app (APK)</button>
-        <a class="ms-fullapp" href="app.html">Open the full app</a>
+        <a class="ms-fullapp" href="app.html">Try the live demo</a>
       </div>
       <p class="apk-note">Android APK via GitHub Release. Live verdicts run in the app — this landing page never runs a verdict.</p>
 
       <ul class="ms-features" aria-label="On your phone">
         <li class="ms-feature">
-          <span class="ms-feature-title">Run it in the frame</span>
-          <span class="ms-feature-text">The form, the verdict, and the receipts are the app's own, at phone width. Nothing on this page re-draws them.</span>
+          <span class="ms-feature-title">Watch the recorded demo</span>
+          <span class="ms-feature-text">The animation in the phone replays the recorded 29 Oct 2026 trial only — form, ceil step, verdict, receipts glimpse. It is a recording, never a live run.</span>
         </li>
         <li class="ms-feature">
           <span class="ms-feature-title">Or take it with you</span>
-          <span class="ms-feature-text">Download the Android app, or open the full app in this browser. The frame is a way in, never the only way in.</span>
+          <span class="ms-feature-text">Download the Android app, or open the full app in this browser. The animation is a preview, never the only way in.</span>
         </li>
         <li class="ms-feature">
           <span class="ms-feature-title">Installable, still honest about connection</span>
@@ -366,43 +202,79 @@
         </li>
         <li class="ms-feature">
           <span class="ms-feature-title">Built for thumbs and for stillness</span>
-          <span class="ms-feature-text">Every button and link in this section is at least 48px tall, the section respects safe-area insets, and reduced-motion settings stop all motion in this section.</span>
+          <span class="ms-feature-text">Every button and link in this section is at least 48px tall, the section respects safe-area insets, and reduced-motion settings pause the animation at its final state.</span>
         </li>
       </ul>
 
       <details class="ms-details">
-        <summary>Why there is no picture of a verdict here</summary>
-        <p>The previous section showed drawn screens with pre-written numbers. A drawing of a verdict looks like a verdict, and this page refuses to show one that nobody ran. So the drawn screens are gone. What remains is either the app itself, running in the frame, or — if you prefer — the full app one tap away. There is no third, drawn option.</p>
+        <summary>Why the phone shows a recording, not a live verdict</summary>
+        <p>A drawing of a verdict looks like a verdict, and this page refuses to show one that nobody ran. So the phone plays a clearly labelled recording of a trial that did run — 29 Oct 2026 — and nothing else. For a live verdict on your own offer, use “Try the live demo” or the Android app. There is no third, drawn-live option.</p>
       </details>
     </div>
 
-    <figure class="ms-device-fig" aria-label="The real OfferSheet app, running live inside a phone frame">
-      <div class="ms-dim" aria-hidden="true"><span class="ms-dim-label">The app, at phone width — live, not drawn</span></div>
+    <figure class="ms-device-fig" aria-label="Recorded demo animation inside a phone frame">
+      <div class="ms-dim" aria-hidden="true"><span class="ms-dim-label">Recorded demo, at phone width — not live</span></div>
+      <p class="sim-label">Recorded demo — 29 Oct 2026 trial, not a live verdict</p>
+      <svg class="sim-divider" viewBox="0 0 380 12" aria-hidden="true"><line x1="0" y1="6" x2="380" y2="6" /><line x1="0" y1="1" x2="0" y2="11" /><line x1="380" y1="1" x2="380" y2="11" /></svg>
       <div class="ms-device">
-        <span class="ms-key ms-key--volume" aria-hidden="true"></span>
+        <span class="ms-key ms-key--volume-up" aria-hidden="true"></span>
+        <span class="ms-key ms-key--volume-down" aria-hidden="true"></span>
         <span class="ms-key ms-key--power" aria-hidden="true"></span>
-        <span class="ms-camera" aria-hidden="true"></span>
         <div class="ms-screen">
-          <iframe class="ms-frame" id="msAppFrame" src="app.html" title="OfferSheet app — live, inside the phone frame" loading="lazy" fetchpriority="low" allow="clipboard-write" referrerpolicy="same-origin"></iframe>
+          <div class="sim-stage" id="simStage" aria-label="Recorded demo animation of the 29 Oct 2026 trial">
+            <div class="sim-topbar" aria-hidden="true"><span class="sim-island"><span class="sim-lens"></span></span></div>
+            <p class="sim-screen-label">Recorded demo — 29 Oct 2026 trial, not a live verdict</p>
+            <p class="sim-phase" id="simPhase">Step 1 of 4 — the offer</p>
+            <div class="sim-step sim-step--form" data-sim-step="1">
+              <p class="sim-row"><span class="sim-field">Artist</span><span class="sim-value" data-sim-text="Billie Eilish">Billie Eilish</span></p>
+              <p class="sim-row"><span class="sim-field">City</span><span class="sim-value" data-sim-text="New York">New York</span></p>
+              <p class="sim-row"><span class="sim-field">Guarantee</span><span class="sim-value" data-sim-text="$250,000">$250,000</span></p>
+              <p class="sim-row"><span class="sim-field">Ticket price</span><span class="sim-value" data-sim-text="$120">$120</span></p>
+            </div>
+            <div class="sim-step sim-step--math" data-sim-step="2">
+              <p class="sim-math">$250,000 ÷ $120 = 2,083.33</p>
+              <p class="sim-math sim-math--ceil">Rounded up → 2,084 tickets</p>
+            </div>
+            <div class="sim-step sim-step--verdict" data-sim-step="3">
+              <p class="sim-verdict-num">2,084</p>
+              <p class="sim-verdict-label">tickets to break even</p>
+              <p class="sim-verdict-sub">Billie Eilish · New York · recorded trial</p>
+            </div>
+            <div class="sim-step sim-step--receipts" data-sim-step="4">
+              <p class="sim-receipt">Receipt — Qloo-grounded pick: Olivia Rodrigo (recorded)</p>
+              <p class="sim-receipt">Receipt — recorded trial, 29 Oct 2026</p>
+              <p class="sim-receipt">Fail-closed rule: no live data, no verdict</p>
+            </div>
+            <div class="sim-progress" aria-hidden="true"><span class="sim-progress-bar" id="simProgressBar"></span></div>
+          </div>
         </div>
         <span class="ms-homebar" aria-hidden="true"></span>
       </div>
-      <figcaption class="ms-figcaption">This is the real app, running live inside the frame — the same page as “Open the full app”, unmodified. Whatever you run inside the frame is your own run. This landing section shows no verdict of its own and fakes none.</figcaption>
-      <p class="ms-scroll-hint">Scroll inside the frame to move through the app; scroll outside it to move down this page. Prefer the full page? Use “Open the full app” above, or below.</p>
-      <a class="ms-fullapp ms-fullapp--under" href="app.html">Open the full app</a>
+      <figcaption class="ms-figcaption">Recorded demo animation inside the phone frame — the recorded 29 Oct 2026 trial, not a live verdict. The animation is not clickable as the app. For a live verdict, use “Try the live demo” or the Android app.</figcaption>
+      <p class="ms-scroll-hint">The animation loops on its own; it runs no verdict and takes no input. Prefer the real app? Use “Try the live demo” above, or below.</p>
+      <a class="ms-fullapp ms-fullapp--under" href="app.html">Try the live demo</a>
     </figure>
   </div>
 </section>
-
-  <!-- Footer -->
-  <footer class="footer band band--deep reveal">
-    <p>What results do NOT establish: Qloo affinities are aggregate taste-overlap signals — how much two audiences share — not individual behavior, and not a causal claim that a show will sell out. No sellout percentage is ever shown when capacity is unknown. Quota guards are this product’s own design settings, not Qloo-stated quotas — no numeric Qloo quota is documented.</p>
-    <p class="label">OfferSheet — one money decision, before you sign.</p>
-    <p class="label">Open source — MIT License. Source: github.com/mohamedwael201193/OfferSheet.</p>
-    <p class="colophon">Colophon — Set in Hedvig Letters Serif and Geist. Printed on studio-white proof paper.</p>
-  </footer>
 </main>
+<footer class="footer band--deep">
+  <div class="footer-inner">
+    <div class="footer-cta">
+      <p>One money decision, before you sign.</p>
+      <a class="btn btn--primary btn--glow" href="app.html">Try the live demo</a>
+    </div>
+    <p class="footer-disclaimer">What results do NOT establish: Qloo affinities are aggregate taste-overlap signals — how much two audiences share — not individual behavior, and not a causal claim that a show will sell out. No sellout percentage is ever shown when capacity is unknown. Quota guards are this product’s own design settings, not Qloo-stated quotas — no numeric Qloo quota is documented.</p>
+    <div class="footer-meta">
+      <p class="label">OfferSheet — one money decision, before you sign.</p>
+      <p class="label">Open source — MIT License. Source: <a href="https://github.com/mohamedwael201193/OfferSheet">github.com/mohamedwael201193/OfferSheet</a>. Docs: <a href="docs.html">How the verdict is proven</a> · <a href="tools.html">Qloo tool catalogue</a> · <a href="oracle.html">Oracle</a> · <a href="trial-protocol.html">Trial protocol</a>.</p>
+      <p class="colophon">Colophon — Set in a rounded display face and one grotesk sans.</p>
+    </div>
+    <p class="footer-wordmark" aria-hidden="true">OfferSheet</p>
+    <p class="footer-bottom">© 2026 OfferSheet. Recorded trial numbers on this page are from 29 Oct 2026 and are not live verdicts.</p>
+  </div>
+</footer>
 <script src="landing.js"></script>
+<script src="sim-animation.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

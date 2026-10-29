@@ -27,7 +27,7 @@
     <p>When capacity is known (user-supplied or Ticketmaster venue, source always labelled), the verdict also shows break-even as a percentage of room capacity, and when break-even exceeds capacity it says plainly: “Cannot break even in this room at this guarantee.” When capacity is unknown, no percentage is shown at all — only tickets needed, plus the verbatim unknown-capacity sentence.</p>
 
     <h2>2. The receipt model</h2>
-    <p>Every claim on a verdict traces to a receipt: the claim, the operation (MCP tool name or REST path), a SHA-256 request hash, the upstream requestId (null when the upstream returns none — never invented), a result count, and, where the leg holds one, an ordered ID list. Receipts exist only for legs that returned ok. Every receipt in the drawer carries a Replay button that re-runs the exact call live; a replay matches only when the replayed ID list equals the original ID list in order — counts alone never prove a match.</p>
+    <p>Every Qloo-backed claim on a verdict traces to a receipt (arithmetic lines carry no receipt by design): the claim, the operation (MCP tool name or REST path), a SHA-256 request hash, the upstream requestId (null when the upstream returns none — never invented), a result count, and, where the leg holds one, an ordered ID list. Receipts exist only for legs that returned ok. Every receipt in the drawer carries a Replay button that re-runs the exact call live; a replay matches only when the replayed ID list equals the original ID list in order — counts alone never prove a match.</p>
     <p>Keys never appear in receipts. The REST client sends the key only as an X-Api-Key header, and MCP arguments never contain keys.</p>
 
     <h2>3. The fail-closed rule</h2>

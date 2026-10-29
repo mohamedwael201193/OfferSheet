@@ -9,7 +9,7 @@
 // (method / tool / status), never bodies, URLs with query strings, headers,
 // artist strings, or keys. Keys come from the host environment only, never
 // from a tool argument: the Qloo harness subprocess inherits process.env.
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { config as prodConfig } from './src/config.js';
@@ -436,9 +436,18 @@ export function createMcpApp(deps = {}) {
       let pack;
       let bench;
       try {
+        // Size cap (fail-closed): the pack is a few KB, so a
+        // caller-supplied path must never make this server slurp an
+        // unbounded file into memory. The error never echoes the
+        // caller-supplied path. (The path argument itself is preserved:
+        // the tamper-check workflow passes a copy path, and this channel
+        // is the operator's own stdio host, not a remote API — see the
+        // security report for the same-privilege assessment.)
+        const st = await stat(packFile);
+        if (!st.isFile() || st.size > 1000000) throw new Error('pack file unusable');
         pack = JSON.parse(await readFile(packFile, 'utf8'));
       } catch (e) {
-        throw new OfferError('NOT_FOUND', 404, `Trial pack could not be read: ${packFile}`);
+        throw new OfferError('NOT_FOUND', 404, 'Trial pack could not be read');
       }
       try {
         bench = JSON.parse(await readFile(benchPath, 'utf8'));

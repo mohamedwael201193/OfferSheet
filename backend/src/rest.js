@@ -63,9 +63,14 @@ export async function qlooRest({
   if (typeof path !== 'string' || !path.startsWith('/') || path.includes('://') || path.startsWith('//')) {
     throw new Error('Qloo REST path must be a relative path');
   }
-  // G3: per-path param allowlist + mandatory filter.type for /v2/insights.
-  // Checked before any fetch: an unallowlisted key (typo or replay-injected)
-  // or a missing filter.type fails closed here, never under a receipt.
+  // G3: per-path param allowlist + pinned filter.type for /v2/insights.
+  // Checked before any fetch: an unallowlisted key (typo or replay-injected),
+  // a missing filter.type, or any filter.type other than the artist entity
+  // type fails closed here, never under a receipt. The pin is exact, not
+  // merely non-empty: every in-tree caller (verdict leg, MCP tool, both
+  // replay paths) sends urn:entity:artist, and a replay carrying any other
+  // filter.type would otherwise return differently-filtered data under a
+  // receipt claiming the intended filter.
   const allowedParams = REST_PARAM_ALLOWLIST[path];
   if (!allowedParams) {
     throw invalidInput(`Qloo REST path not allowlisted: ${path}`);
@@ -77,8 +82,8 @@ export async function qlooRest({
   }
   if (path === '/v2/insights') {
     const ft = params['filter.type'];
-    if (typeof ft !== 'string' || ft === '') {
-      throw invalidInput('Qloo REST /v2/insights requires a non-empty filter.type');
+    if (ft !== 'urn:entity:artist') {
+      throw invalidInput('Qloo REST /v2/insights requires filter.type urn:entity:artist');
     }
   }
   const url = new URL(path, baseUrl);
@@ -107,8 +112,17 @@ export async function qlooRest({
         body = null;
       }
       if ((res.status === 429 || res.status >= 500) && attempt === 0) {
-        const retryAfter = Number(res.headers?.get?.('Retry-After') || 0);
-        await sleep(Math.min(Number.isFinite(retryAfter) ? retryAfter * 1000 : 0, 10000));
+        // Retry-After may be delay-seconds OR an HTTP-date; both forms
+        // are honored, and either way the wait is capped at 10s and
+        // floored at 0 (a past date retries immediately, never sleeps
+        // negative). Exactly one retry total: this branch runs only on
+        // attempt 0 of the 2-attempt loop.
+        const rawAfter = res.headers?.get?.('Retry-After');
+        const secs = Number(rawAfter);
+        const dateMs = rawAfter ? Date.parse(rawAfter) : NaN;
+        const waitMs = Number.isFinite(secs) ? secs * 1000
+          : (Number.isFinite(dateMs) ? dateMs - Date.now() : 0);
+        await sleep(Math.max(0, Math.min(waitMs, 10000)));
         continue;
       }
       const entities = extractList(body);

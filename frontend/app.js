@@ -105,6 +105,22 @@ function hideVerdict() {
   ['diagramGuarantee', 'diagramNet', 'diagramNetBuild', 'diagramQuotient', 'diagramCeil'].forEach((id) => {
     const el = $(id); if (el) el.textContent = '—';
   });
+  // T3: verdict aids created OUTSIDE the hidden verdict section must also
+  // go, or they survive a later withheld/price-unknown/needs-input run as
+  // stale content from the previous verdict. The 'howMade' summary is
+  // inserted before #receiptSection (a sibling of the verdict section, not
+  // inside it), so hiding the verdict alone left the previous run's leg
+  // statuses on screen. The jump link and export rail live inside the
+  // verdict section and are hidden with it, but removing them here too
+  // keeps hideVerdict a complete reset; wireVerdictAids recreates all
+  // three on the next successful render. The headliner figure is likewise
+  // removed (renderHeadlinerImage also removes its predecessor).
+  for (const id of ['howMade', 'verdictJumpLink', 'exportRail', 'headlinerImage']) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    if (typeof el.remove === 'function') el.remove();
+    else if (el.parentNode && typeof el.parentNode.removeChild === 'function') el.parentNode.removeChild(el);
+  }
 }
 function setRunning(on) {
   document.querySelectorAll('#offerForm button').forEach((b) => { b.disabled = on; });
@@ -185,7 +201,14 @@ function renderArms(v) {
 // renders without a verdict.
 const KEY_LIKE_ARG = /(key|secret|token|password|auth|credential|hash)/i;
 function sanitizedReplayArgs(replay) {
-  const args = replay && typeof replay === 'object' ? replay.args : null;
+  // MCP replays carry `args`; REST replays carry `params` instead. Showing
+  // the REST params (same key-like filter) replaces the misleading
+  // 'no argument object' text on REST step-log lines — the parameters are
+  // already on the verdict object, so nothing new is fetched or invented.
+  const args = replay && typeof replay === 'object'
+    ? (replay.args && typeof replay.args === 'object' && !Array.isArray(replay.args) ? replay.args
+      : (replay.params && typeof replay.params === 'object' && !Array.isArray(replay.params) ? replay.params : null))
+    : null;
   if (!args || typeof args !== 'object' || Array.isArray(args)) return null;
   const out = {};
   for (const [k, val] of Object.entries(args)) {
@@ -199,6 +222,12 @@ const OPERATION_LEG = {
   qloo_rank: 'rank', qloo_where_popular: 'wherePopular',
   qloo_audience_demographics: 'demographics', qloo_entity_tags: 'entityTags',
   qloo_trends: 'trends', qloo_compare_audiences: 'compare',
+  // T1: REST receipts previously fell through to 'receipted (no leg status
+  // recorded)' even though the pipeline records a leg status for every REST
+  // leg. The readiness probe (qloo_capabilities) keeps the generic line:
+  // it is not a verdict leg and has no leg entry to map to.
+  'rest:/search': 'restSearch', 'rest:/v2/insights': 'restInsights',
+  'rest:/v2/analysis/compare': 'restCompare', 'rest:/entities': 'restEntities',
 };
 function stepLogHtml(r, v) {
   const op = (r.replay && r.replay.tool) || r.operation;
@@ -372,11 +401,23 @@ function canonicalStringify(v) {
 }
 function buildProofPackObject(v) {
   const be = v.breakEven || {};
+  // T1: prefer the pipeline's server-attached taxonomy when present (same
+  // rule renderMissTaxonomy already uses for display). The pack used to
+  // recompute the taxonomy from its frontend mirror even when the verdict
+  // carried server codes, so a future mirror drift would put different
+  // codes in the pack than on screen. Verdicts predating server codes
+  // fall back to the mirror, unchanged.
   const coded = classifyMisses(v.missTrial?.misses || [], {
     artist: v.artist,
     ranked: v.openers?.ranked || [],
     candidates: v.openers?.candidates || [],
   });
+  const serverTaxonomy = v.missTrial && v.missTrial.taxonomy && typeof v.missTrial.taxonomy.total === 'number'
+    ? v.missTrial.taxonomy : null;
+  const missLedger = serverTaxonomy ? (v.missTrial.misses || []) : coded.misses;
+  const missTaxonomy = serverTaxonomy
+    ? { counts: serverTaxonomy.counts, total: serverTaxonomy.total }
+    : { counts: coded.counts, total: coded.total };
   const confidence = computeConfidence(v);
   return {
     format: 'offersheet-proof-pack-1',
@@ -393,12 +434,18 @@ function buildProofPackObject(v) {
       net: be.net ?? null,
       formula: 'ceil(guarantee ÷ net per ticket)',
       arithmetic: { guarantee: v.guarantee ?? null, net: be.net ?? null },
+      // T3: the pack previously carried no capacity and no cannot verdict,
+      // so a pack reader could not tell whether the ticket count fits the
+      // room. Both fields come from this same verdict object; no % is
+      // computed here and no new claim is added.
+      verdict: be.verdict ?? ((v.capacity?.state === 'known' && typeof v.capacity?.value === 'number' && typeof be.tickets === 'number' && be.tickets > v.capacity.value) ? 'Cannot break even in this room at this guarantee' : null),
+      capacity: { value: v.capacity?.value ?? null, state: v.capacity?.state ?? null, source: v.capacity?.source ?? null },
     },
     rankedPick: v.openers?.topPick || null,
     ranked: v.openers?.ranked || [],
     candidates: v.openers?.candidates || [],
-    missLedger: coded.misses,
-    missTaxonomy: { counts: coded.counts, total: coded.total },
+    missLedger,
+    missTaxonomy,
     receipts: (v.receipts || []).map((r) => ({
       operation: r.operation,
       hash: r.requestHash ?? null,
@@ -461,7 +508,7 @@ function downloadVerdictCsv(v) {
   const pack = buildProofPackObject(v);
   downloadFile(safeFilename(v, 'csv'), buildVerdictCsv(pack), 'text/csv');
   const note = $('proofPackNote');
-  if (note) note.textContent = 'Verdict CSV downloaded — same proof-pack object, second rendering.';
+  if (note) note.textContent = 'Verdict CSV downloaded — same inputs, break-even, and receipts as the proof pack, in tabular form (replay payloads and the pack hash live in the JSON pack).';
 }
 
 // I. Re-rank section: rendered SEPARATELY from the original verdict, which
@@ -591,6 +638,16 @@ function buildSheetLines(v) {
   lines.push({ kind: 'header', text: `OfferSheet verdict — ${v.artist || 'artist'} in ${v.city || 'city'}`, struck: false });
   lines.push({ kind: 'terms', text: `Guarantee ${money(v.guarantee ?? 0)} · ticket price ${money(be.price?.value ?? 0)} (${be.price?.source ?? 'unknown source'}) · net per ticket ${money(be.net ?? 0)}${be.variableCost?.provided === false ? ' (before variable costs)' : ''}`, struck: false });
   lines.push({ kind: 'breakeven', text: `Break-even: ${fmt(be.tickets ?? 0)} tickets${known ? ` (${((be.tickets / cap.value) * 100).toFixed(1)}% of room capacity ${fmt(cap.value)}, ${cap.source})` : ' (capacity unknown — no sellout percentage)'}`, struck: false });
+  // T3: the cannot-break-even verdict must travel with the sheet/brief.
+  // Previously only the main card showed it (cannotBox + beVerdict), so a
+  // printed sheet or copied brief for an impossible room read as a plain
+  // share above 100% with no warning. Never struck: it is arithmetic +
+  // capacity, like the break-even line itself, not a receipt-backed claim.
+  // be.verdict is preferred when the backend attached it; otherwise the
+  // same known-capacity comparison the main card uses recomputes it.
+  if (known && typeof be.tickets === 'number' && be.tickets > cap.value) {
+    lines.push({ kind: 'cannot', text: be.verdict || 'Cannot break even in this room at this guarantee', struck: false });
+  }
   // G11 (superiority): the same code-filled liveness line the sheet
   // carries, so sheet and brief agree on this run's leg state.
   lines.push({ kind: 'legs', text: legSummaryLine(v), struck: false });
@@ -600,6 +657,41 @@ function buildSheetLines(v) {
   if (unknowns.length) lines.push({ kind: 'unknowns', text: `Unknowns: ${unknowns.join(', ')}.`, struck: false });
   lines.push({ kind: 'disclaimer', text: 'Aggregate taste signals only — not a sellout prediction, not a signing recommendation. The promoter decides.', struck: false });
   return lines;
+}
+
+// T1 (provenance): pure replay-comparison text, so the not-comparable
+// branches can be unit-tested without a DOM or a fetch. Match/mismatch
+// strings are unchanged. The not-comparable branches gain ONLY
+// transparency the replay already returned — live status, the two
+// timestamps, and whether the replayed call's hash equals the recorded
+// hash (call fidelity). None of it claims result equality: a leg with no
+// ID list stays not comparable no matter what these values say. Absent
+// values are omitted, never defaulted to a reassuring value.
+function formatReplayComparisonText(o) {
+  const countNote = ` (Replay result count: ${o.count ?? 'unavailable'}; receipt recorded: ${o.recordedCount ?? 'unavailable'}.)`;
+  const transparency = [];
+  if (o.replayStatus !== null && o.replayStatus !== undefined) transparency.push(`Replay status: ${o.replayStatus}`);
+  if (o.recordedAt) transparency.push(`original recorded ${o.recordedAt}`);
+  if (o.replayedAt) transparency.push(`replayed ${o.replayedAt}`);
+  const transparencyNote = transparency.length > 0 ? ` (${transparency.join('; ')}.)` : '';
+  const callNote = o.callHashMatch === true
+    ? ' The replayed call matches the recorded call (same request hash) — result equality is still not comparable.'
+    : (o.callHashMatch === false
+      ? ' The replayed call hash differs from the recorded hash — this was not the recorded call.'
+      : '');
+  if (!o.originalIds) {
+    return `Replayed live, but the original run did not hold an ID list for this leg — not comparable. Counts alone never prove a match.${countNote}${transparencyNote}${callNote}`;
+  }
+  if (!o.replayedIds) {
+    return `Replayed live, but the replay did not return an ID list — not comparable. Counts alone never prove a match.${countNote}${transparencyNote}${callNote}`;
+  }
+  if (o.replayedIds.length === o.originalIds.length && o.replayedIds.every((id, i) => String(id) === String(o.originalIds[i]))) {
+    return `Replay match: live re-run returned the same IDs in the same order (${o.replayedIds.length} results).`;
+  }
+  if (o.replayedIds.length === o.originalIds.length) {
+    return `Replay mismatch: count matches but order/IDs differ — live data changed between runs. The receipt is the record of the original run.${countNote}`;
+  }
+  return `Replay mismatch: live re-run returned ${o.replayedIds.length} results, but the receipt recorded ${o.originalIds.length}. Live data changed between runs — the receipt is the record of the original run.`;
 }
 
 function renderReceipts(v) {
@@ -651,19 +743,19 @@ function renderReceipts(v) {
           : (Array.isArray(out.result?.entityIds) ? out.result.entityIds
           : (Array.isArray(out.envelope?.ids) ? out.envelope.ids : null))));
         const count = out.resultCount ?? out.result?.resultCount ?? out.envelope?.result_count ?? out.result_count ?? null;
-        const countNote = ` (Replay result count: ${count ?? 'unavailable'}; receipt recorded: ${recordedCount ?? 'unavailable'}.)`;
-        if (!originalIds) {
-          // Honest, never a false match: without original IDs, counts prove nothing.
-          $('replayOut').textContent = `Replayed live, but the original run did not hold an ID list for this leg — not comparable. Counts alone never prove a match.${countNote}`;
-        } else if (!replayedIds) {
-          $('replayOut').textContent = `Replayed live, but the replay did not return an ID list — not comparable. Counts alone never prove a match.${countNote}`;
-        } else if (replayedIds.length === originalIds.length && replayedIds.every((id, i) => String(id) === String(originalIds[i]))) {
-          $('replayOut').textContent = `Replay match: live re-run returned the same IDs in the same order (${replayedIds.length} results).`;
-        } else if (replayedIds.length === originalIds.length) {
-          $('replayOut').textContent = `Replay mismatch: count matches but order/IDs differ — live data changed between runs. The receipt is the record of the original run.${countNote}`;
-        } else {
-          $('replayOut').textContent = `Replay mismatch: live re-run returned ${replayedIds.length} results, but the receipt recorded ${originalIds.length}. Live data changed between runs — the receipt is the record of the original run.`;
-        }
+        // T1: transparency inputs for the not-comparable branches only —
+        // live status + timestamps + call-hash equality. All are read from
+        // the replay response and the held verdict; nothing is invented
+        // when absent (null stays null and the helper omits the segment).
+        const replayStatus = out.envelope?.status ?? (out.result
+          ? (out.result.ok ? `ok (HTTP ${out.result.status})` : `error (HTTP ${out.result.status})`) : null);
+        const callHashMatch = (out.requestHash && receipt?.requestHash)
+          ? (out.requestHash === receipt.requestHash) : null;
+        $('replayOut').textContent = formatReplayComparisonText({
+          originalIds, replayedIds, count, recordedCount,
+          replayStatus, recordedAt: receipt?.recordedAt ?? null,
+          replayedAt: new Date().toISOString(), callHashMatch,
+        });
       } catch (e) {
         $('replayOut').textContent = `Replay failed: ${e.message}`;
       }
@@ -687,6 +779,8 @@ const PLAIN_LEGS = {
   trends: 'whether the artist is rising or falling',
   restSearch: 'searching for the artist',
   restInsights: 'audience insights',
+  restCompare: 'headliner-vs-opener audience comparison (REST)',
+  restEntities: 'entity details (REST)',
   ticketmaster: 'Ticketmaster venue and event history',
   osm: 'city confirmation',
   wikidata: 'public facts cross-check',
@@ -706,7 +800,25 @@ function legRowHtml(key, l) {
   // SHIP item 8: ok/partial state badge on every leg row. A leg counts
   // ONLY at ok; anything else is partial, never a pass.
   const state = l.status === 'ok' ? '<span class="leg-state leg-state--ok">ok</span>' : '<span class="leg-state leg-state--partial">partial</span>';
-  return `<div><dt>${esc(plain)}${secondary}</dt><dd>${state} ${esc(l.status)}${l.reason ? ` — ${esc(l.reason)}` : ''}${l.note ? ` — ${esc(l.note)}` : ''}</dd></div>`;
+  // T3: surface the already-fetched REST payloads on the leg row itself
+  // (no new call). Previously a receipted insights/compare leg rendered
+  // only its status, so its fetched data was invisible on the page even
+  // though the verdict object carried it. Entities are named (capped at
+  // 10 names with a count, so a long list never becomes a wall of text);
+  // an ok leg with an empty list says so instead of looking data-less.
+  // The comparison body has no fixed shape, so it renders as bounded JSON.
+  let payload = '';
+  if (Array.isArray(l.entities)) {
+    if (l.entities.length === 0) payload = ' — no entities returned';
+    else {
+      const names = l.entities.slice(0, 10).map((e) => (e && typeof e === 'object' ? (e.name || e.id || '') : String(e))).filter(Boolean);
+      payload = ` — ${l.entities.length} entit${l.entities.length === 1 ? 'y' : 'ies'}: ${esc(names.join(', '))}${l.entities.length > 10 ? ', …' : ''}`;
+    }
+  } else if (l.comparison !== undefined && l.comparison !== null) {
+    const raw = typeof l.comparison === 'string' ? l.comparison : JSON.stringify(l.comparison);
+    payload = ` — comparison: ${esc(raw.length > 400 ? raw.slice(0, 400) + '…' : raw)}`;
+  }
+  return `<div><dt>${esc(plain)}${secondary}</dt><dd>${state} ${esc(l.status)}${l.reason ? ` — ${esc(l.reason)}` : ''}${l.note ? ` — ${esc(l.note)}` : ''}${payload}</dd></div>`;
 }
 
 // Shared leg rows for the verdict card and the partial-evidence section.
@@ -879,7 +991,7 @@ function renderCiteChips(v) {
     }
   }
   if (chips.length === 0) {
-    box.innerHTML = `<p>${sourceTagHtml('not receipt-backed this run')}</p><p class="label">No Qloo-backed citation chip this run — the receipts below still carry every claim.</p>`;
+    box.innerHTML = `<p>${sourceTagHtml('not receipt-backed this run')}</p><p class="label">No Qloo-backed citation chip this run — the receipts below still carry every Qloo-backed claim.</p>`;
     return;
   }
   box.innerHTML = `<p>${sourceTagHtml('receipt-backed', graphIdx)}</p>` + chips.map((c, i) => `<button type="button" class="cite-chip" data-receipt-idx="${c.idx}" data-chip="${i}">${c.label}</button>`).join('');
@@ -1066,6 +1178,7 @@ function renderVerdictSheet(v) {
   body.innerHTML = [
     `<h3>${esc(v.artist || '')} in ${esc(v.city || '')}</h3>`,
     `<p><strong>${fmt(be.tickets ?? 0)} tickets to break even</strong>${known ? ` — ${((be.tickets / cap.value) * 100).toFixed(1)}% of room capacity ${fmt(cap.value)} (${esc(cap.source)})` : ' — capacity unknown, no sellout percentage'}</p>`,
+    (known && typeof be.tickets === 'number' && be.tickets > cap.value) ? `<p><strong>${esc(be.verdict || 'Cannot break even in this room at this guarantee')}</strong></p>` : '',
     `<p>Guarantee ${money(v.guarantee ?? 0)} · ticket price ${money(be.price?.value ?? 0)} (${esc(be.price?.source ?? 'unknown source')}) · net per ticket ${money(be.net ?? 0)}${be.variableCost?.provided === false ? ' (before variable costs)' : ''}</p>`,
     `<p>${esc(legSummaryLine(v))}</p>`,
     v.openers?.topPick ? (backed ? `<p>Graph pick: ${esc(v.openers.topPick)}</p>` : strike(`Graph pick: ${v.openers.topPick}`)) : '',
@@ -1684,6 +1797,11 @@ async function submitVerdict(race, entityHint) {
       if (v) { resOk = true; resStatus = 200; }
     }
     if (!v) {
+      // T3: a failed stream leaves its first-attempt leg lines in #status;
+      // clear them before the POST fallback run so the progress display
+      // never mixes two attempts. (On success/failure of the POST path the
+      // status is hidden or replaced, so this only matters mid-fallback.)
+      try { const ul = $('legProgress'); if (ul) ul.innerHTML = ''; } catch { /* progress never breaks a verdict */ }
       const res = await fetch(race ? '/api/race' : '/api/verdict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

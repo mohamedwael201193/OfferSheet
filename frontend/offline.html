@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OfferSheet — needs a connection</title>
 <style>
   :root { color-scheme: light; }
   body { margin: 0; background: #f1f7f8; color: #030e1a;
     font-family: ui-sans-serif, system-ui, sans-serif; line-height: 1.55; }
-  main { max-width: 34rem; margin: 0 auto; padding: 4rem 1.25rem; }
+  main { max-width: 34rem; margin: 0 auto; padding: 4rem 1.25rem; padding-bottom: max(4rem, calc(4rem + env(safe-area-inset-bottom))); padding-top: max(4rem, calc(4rem + env(safe-area-inset-top))); }
   h1 { font-family: ui-serif, Georgia, serif; font-weight: 400;
     letter-spacing: -0.022em; font-size: 2rem; line-height: 1.05; margin: 0 0 1rem; }
   .rule { height: 1px; background: #e97219; margin: 1.5rem 0; }
   p { margin: 0 0 0.75rem; color: #2a3644; }
   button { appearance: none; border: 0; border-radius: 3px; background: #e97219;
-    color: #fff; font: inherit; font-weight: 600; padding: 0.75rem 1.25rem; cursor: pointer; }
+    color: #fff; font: inherit; font-weight: 600; padding: 0.75rem 1.25rem; min-height: 48px; cursor: pointer; }
   a { color: #030e1a; }
   .note { font-size: 0.8125rem; color: #5a6a7a; margin-top: 1.5rem; }
 </style>
@@ -24,7 +24,7 @@
   <h1>OfferSheet needs a connection.</h1>
   <div class="rule"></div>
   <p>Verdicts are computed live from Qloo, Ticketmaster and the other sources — they are never shown from a saved copy.</p>
-  <p>Reconnect, then run the verdict again. Nothing you entered was kept on this phone.</p>
+  <p>Reconnect, then run the verdict again. A saved workspace, if you made one, stays on this device only and is never sent anywhere while you are offline.</p>
   <p><button type="button" onclick="location.reload()">Try again</button></p>
   <p class="note">If you are offline, this page is the only thing OfferSheet shows. No verdict, no number, no stale result.</p>
 </main>

@@ -89,3 +89,38 @@
     padding: 32px 16px;
   }
 }
+
+/* ---------- Redesign round: footer + landing polish (appended only;
+   the story-section rules above are untouched) ---------- */
+/* Footer: the disclaimer keeps its full width and its exact words;
+   the three short lines become a ruled meta row (3 columns desktop,
+   stacked with hairline dividers at 390px) instead of an undifferen-
+   tiated wall. The source text becomes a real link with the same
+   visible words; the long URL wraps instead of overflowing. */
+.footer-inner { max-width: 1080px; margin: 0 auto; }
+.footer-disclaimer { max-width: 72ch; margin: 0 0 24px; line-height: 1.6; }
+.footer-meta {
+  display: grid; gap: 0; border-top: 1px solid rgba(241, 247, 248, 0.32);
+  padding-top: 20px;
+}
+.footer-meta p { margin: 0; padding: 12px 0; border-bottom: 1px solid rgba(241, 247, 248, 0.18); overflow-wrap: anywhere; }
+.footer-meta p:last-child { border-bottom: 0; }
+.footer-meta a { color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.footer-meta a:hover { text-decoration-thickness: 2px; }
+.footer-meta a:focus-visible { outline: 2px solid #e97219; outline-offset: 2px; }
+.footer .colophon { color: rgba(241, 247, 248, 0.72); }
+@media (min-width: 720px) {
+  .footer-meta { grid-template-columns: 1fr 1.4fr 1fr; gap: 24px; }
+  .footer-meta p { border-bottom: 0; padding: 0 0 0 24px; border-left: 1px solid rgba(241, 247, 248, 0.18); }
+  .footer-meta p:first-child { padding-left: 0; border-left: 0; }
+}
+
+/* Landing rhythm: sections breathe on a shared 8pt rhythm and cards
+   lift on hover (translate-composed, so reveal transforms are never
+   fought). Figures keep their prominence: full column width, no crop
+   shrink. All motion below is killed under prefers-reduced-motion. */
+main.wrap > section { scroll-margin-top: 16px; }
+.arm-card, .refuse-card, .how-card { transition: translate 180ms ease-out, box-shadow 180ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .arm-card, .refuse-card, .how-card { transition: none; }
+}

@@ -1,9 +1,8 @@
 # OfferSheet — check a live-show offer before you sign it
 
 An independent promoter enters an offer (artist, room, guarantee) and gets,
-on one page, no sign-in (design target: about 30 seconds — the timed
-end-to-end run on a deployed demo is UNCOVERED, see §8 T15): the break-even ticket count plus
-whether the room's taste audience will show up — with a receipt on every
+on one page, no sign-in (measured 26–40 seconds across the 3 recorded trials, 29 Oct 2026; a fresh timed end-to-end run on the deployed demo is UNCOVERED, see §8 T15): the break-even ticket count plus
+whether the room's taste audience will show up — with a receipt on every Qloo-backed
 claim, a Gut-vs-Graph verdict, and a fail-closed guarantee (no key means a
 visible 503, never a mock).
 
@@ -21,7 +20,7 @@ OfferSheet is a free demo with no sign-in: an independent promoter pastes an art
 
 ## 2. How it works
 
-Run path: `POST /api/verdict` → MCP chain (10 tools wired; live verification pending — see §8) → REST receipt
+Run path: `POST /api/verdict` → MCP chain (10 tools wired; all 10 invoked per verdict, 3 trials recorded 29 Oct 2026 — see bench/results.json) → REST receipt
 legs → Ticketmaster / OpenStreetMap / Wikidata legs → break-even calculator
 → one-page card. The frontend never calls Qloo directly; the Node backend
 runs `qloo mcp` over stdio and the REST receipt layer, same-origin only.
@@ -32,7 +31,7 @@ cost per ticket))`. If break-even exceeds a known capacity, the verdict is
 
 ## 3. Qloo tools and workflows — and why they fit
 
-All 10 MCP tools are wired (wired, not yet all live-verified — see §8):
+All 10 MCP tools are wired and invoked per verdict (8 receipted live; trends/compare returned empty on live runs so far — see the app depth panel):
 
 | Tool | OfferSheet use |
 |---|---|
@@ -68,17 +67,16 @@ never a causal claim, and never a population headcount (Qloo returns none).
 
 ## 5. Demo
 
-The deployed demo URL is pending (see §9 — push is done, no deploy has
-happened yet). No screenshots are included here: none have been captured from a
+The deployed demo is live (see §9). No screenshots are included here: none have been captured from a
 deployed demo, and none are fabricated. The frontend in this repo is the
 full Studio design system (light studio-white proof paper, ink dot grid,
 blue-black ink, Hedvig Letters Serif heads, crop marks, cadmium-orange
 construction guides + the one primary action): compact wound line + form
 first, verdict card as page hero, hero figure collapsible below the
 verdict, spec-honest stats strip (tools wired, not all live-verified;
-receipts on Qloo claims; 3 arms wired, live run pending), race as a
-secondary toggle below the verdict (live three-arm run UNCOVERED, see
-§8 T07), receipt drawer with replay, formula panel, safety strip, and
+receipts on Qloo claims; 3 arms wired; 3 trials run live and recorded
+29 Oct 2026, see bench/results.json), race as a
+secondary toggle below the verdict, receipt drawer with replay, formula panel, safety strip, and
 benchmark ledger — with designed loading, empty, error,
 unknown-capacity, and verdict-withheld states. The capacity box renders
 the backend's per-cause message verbatim (not-configured, Ticketmaster
@@ -137,12 +135,11 @@ repo):
   render `unavailable`, never a fabricated pick. The answering provider
   is named on each arm result.
 
-## 8. Test ledger — final green run, 2026-10-29
+## 8. Test ledger — historical build ledger (superseded totals; see note)
 
-`npm test` from the repo root: **197 tests, 197 pass, 0 fail** — unit/stub/staging tests only; live rows T05/T07/T15 are UNCOVERED and T06/T08 PARTIAL (see table)
+Historical note (numbers audit, 29 Oct 2026): this ledger predates the 3 recorded trials and the current suite — its rows sum to 178, and its old header total (197) matches neither the rows nor any later run. Do not cite a total from this section. The filing-time suite count must come from a fresh `npm test` run on the frozen filing tree.
 (full output: `test/ledger/FINAL-RUN.txt`; red→green process evidence:
-`test/ledger/T09-red.txt`, `test/ledger/T09-green.txt`). Counts come only
-from this green run. Any row without a passing run is UNCOVERED, never
+`test/ledger/T09-red.txt`, `test/ledger/T09-green.txt`). Any row without a passing run is UNCOVERED, never
 claimed.
 
 | Row | What it covers | Result |

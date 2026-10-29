@@ -141,8 +141,7 @@
 }
 .ms-section .apk-button.ms-apk:focus-visible,
 .ms-fullapp:focus-visible,
-.ms-details summary:focus-visible,
-.ms-frame:focus-visible {
+.ms-details summary:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
@@ -222,17 +221,16 @@
 }
 .ms-details p { font-size: 15px; line-height: 22px; padding-bottom: 4px; }
 
-/* Device figure: a hairline technical drawing around a real screen.
-   The shell is deliberately NOT the old thick black blob (2px border,
-   40px radius, 8px black padding). It is a 1px ink rule with a 1px
-   accent dimension line above it, side keys as 1px ticks, a punch-hole
-   camera, and a home bar in the bottom bezel. The shell's corner radius
-   is the one documented exception to the 3px/2px card tokens: it is a
-   hardware silhouette, not a UI card, and a 3px corner would read as a
-   framed rectangle rather than a device. Everything inside the shell
-   that is UI (buttons, boxes, the caption card) keeps the tokens.
-   The keys and camera are decorative (aria-hidden, not buttons) — the
-   48px rule applies to interactive targets, and these are not targets. */
+/* Device figure: a professional phone, not a cartoon box and not a
+   hairline drawing. The shell is a real bezel: solid ink body, deep
+   layered shadow, 48px hardware corners (the documented exception to
+   the 3px/2px card tokens — a hardware silhouette, not a UI card),
+   protruding side buttons, a dynamic-island pill inside the screen,
+   and a home bar in the bottom bezel. The screen holds ONLY the
+   recorded-demo animation (sim-animation.css/js) — no live app, no
+   embed of any kind. The keys and island are decorative (aria-hidden,
+   not buttons) — the 48px rule applies to interactive targets, and
+   these are not targets. */
 .ms-device-fig { margin: 0; min-width: 0; }
 .ms-dim {
   height: 1px;
@@ -265,58 +263,46 @@
   width: 100%;
   max-width: 380px;
   margin: 0 auto;
-  background: var(--color-paper-hi);
-  border: 1px solid var(--color-ink);
-  border-radius: 28px;
-  box-shadow: var(--shadow-sheet);
-  padding: 12px 10px 14px;
+  background: #0a121e;
+  border: 1px solid #000;
+  border-radius: 48px;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.28),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.6),
+    0 2px 0 rgba(3, 14, 26, 0.9),
+    0 24px 48px -16px color-mix(in oklab, var(--color-ink) 55%, transparent),
+    0 48px 90px -32px color-mix(in oklab, var(--color-ink) 35%, transparent);
+  padding: 14px 12px 16px;
 }
 .ms-key {
   position: absolute;
-  right: -3px;
-  width: 3px;
-  background: var(--color-ink);
-  border-radius: 2px;
+  width: 4px;
+  background: #1c2733;
+  border: 1px solid #000;
+  border-radius: 3px;
 }
-.ms-key--power { top: 150px; height: 44px; }
-.ms-key--volume { right: auto; left: -3px; top: 120px; height: 64px; }
-.ms-camera {
-  display: block;
-  width: 10px;
-  height: 10px;
-  margin: 0 auto 10px;
-  border-radius: 50%;
-  background: var(--color-ink);
-  box-shadow: 0 0 0 2px var(--color-paper-hi), 0 0 0 3px var(--color-rule);
-}
-/* The screen is a fixed phone viewport, not a content-sized box: the
-   app scrolls inside it (see approach.md). No drawn content lives
-   here — the iframe paints the app, and nothing else is layered over
-   it, so there is no overlay that could fake a screen. */
+.ms-key--power { right: -4px; top: 160px; height: 72px; }
+.ms-key--volume-up { left: -4px; top: 130px; height: 36px; }
+.ms-key--volume-down { left: -4px; top: 174px; height: 36px; }
+/* The screen is a fixed phone viewport at ~9/19.5, not a content-sized
+   box: the recorded animation plays inside it, and nothing else is
+   layered over it, so there is no overlay that could fake a screen. */
 .ms-screen {
   position: relative;
-  aspect-ratio: 9 / 18.5;
+  aspect-ratio: 9 / 19.5;
   background: var(--color-paper);
-  border: 1px solid var(--color-rule);
-  border-radius: 3px;
+  border: 1px solid #000;
+  border-radius: 36px;
   overflow: hidden;
-}
-.ms-frame {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  display: block;
-  background: var(--color-paper);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.12);
 }
 .ms-homebar {
   display: block;
-  width: 96px;
-  height: 3px;
-  margin: 12px auto 0;
-  border-radius: 2px;
-  background: color-mix(in oklab, var(--color-ink) 32%, transparent);
+  width: 120px;
+  height: 4px;
+  margin: 14px auto 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.65);
 }
 .ms-figcaption {
   font-weight: 500;
@@ -356,9 +342,9 @@
 }
 
 /* Reduced motion: this section adds no animation and no transition
-   survives the kill. The app inside the iframe governs its own motion
-   under its own stylesheet; nothing in this section re-enables it, and
-   no content here is ever hidden by motion. */
+   survives the kill. The recorded animation resolves to its static
+   final state under its own stylesheet; nothing in this section
+   re-enables it, and no content here is ever hidden by motion. */
 @media (prefers-reduced-motion: reduce) {
   .ms-section *, .ms-section *::before, .ms-section *::after {
     animation: none !important;
@@ -368,8 +354,65 @@
   .ms-section .apk-button.ms-apk:hover, .ms-fullapp:hover { translate: 0 0; box-shadow: none; }
 }
 
-/* Print: an iframe prints as a blank box, so it is hidden and the
-   caption + full-app link carry the section instead. */
+/* Print: the animation device is hidden and the caption + live-demo
+   link carry the section instead. */
 @media print {
   .ms-device, .ms-dim { display: none !important; }
+}
+
+/* ---------- Dark landing override (coordinator, merge) ----------
+   The phone section sits on the dark landing now. The device shell was
+   already dark; the screen stays light (a lit phone in a dark room) and
+   sim-animation.css is untouched. Only section chrome is recolored. */
+.ms-section { background: #0A0A0A; color: #D4D4D4; --color-mark: rgba(255, 255, 255, .35); }
+.ms-section h2 { font-family: "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif; font-weight: 800; color: #FFFFFF; font-size: clamp(40px, 6vw, 64px); }
+.ms-kicker { color: #AAAAAA; font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+.ms-section .get-app-subline, .ms-lede { color: #D4D4D4; }
+.ms-section .ms-lede em { color: #FFFFFF; }
+.ms-dim, .ms-dim::before, .ms-dim::after { background: #FFFFFF; }
+.ms-dim-label { background: #0A0A0A; color: #AAAAAA; }
+.ms-section .sim-divider line { stroke: #FFFFFF; }
+.ms-section .ms-figcaption, .ms-scroll-hint { color: #AAAAAA; }
+
+/* Dark phone-section chrome (J1 B3 fix): the override above recolored the
+   section background and headings but left copy chrome light or
+   illegible. Every rule below recolors that chrome into the dark
+   tokens. The phone SCREEN itself stays light (a lit phone in a dark
+   room); only the surrounding chrome changes. These rules sit after the
+   base rules and match or beat their specificity, so they win. */
+.ms-section .ms-frame-note {
+  background: #1A1A1A; color: #D4D4D4;
+  border: 1px solid #2A2A2A; border-left: 1px solid #FFFFFF;
+  box-shadow: none;
+}
+.ms-section .apk-button.ms-apk {
+  background: #FFFFFF; color: #0A0A0A; border: 1px solid #FFFFFF;
+}
+.ms-section .ms-fullapp {
+  background: #1A1A1A; color: #FFFFFF; border: 1px solid #2A2A2A;
+}
+.ms-section .ms-features { border-top: 1px solid #2A2A2A; }
+.ms-section .ms-feature { border-bottom: 1px solid #2A2A2A; }
+.ms-section .ms-feature-title {
+  font-family: "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif;
+  color: #FFFFFF;
+}
+.ms-section .ms-feature-text { color: #D4D4D4; }
+.ms-section .ms-details {
+  background: #1A1A1A; border: 1px solid #2A2A2A;
+}
+.ms-section .ms-details summary { color: #FFFFFF; }
+.ms-section .ms-details p { color: #D4D4D4; }
+.ms-section .apk-note { color: #AAAAAA; }
+.ms-section .apk-button.ms-apk:focus-visible,
+.ms-section .ms-fullapp:focus-visible,
+.ms-section .ms-details summary:focus-visible { outline-color: #FFFFFF; }
+
+/* T5 mobile surface (tech): safe-area bottom padding. The section
+   already pads left/right with safe-area insets; those insets are
+   only non-zero once the page opts into viewport-fit=cover (see the
+   viewport meta on index.html). Appended only. */
+.ms-section { padding-bottom: max(48px, calc(48px + env(safe-area-inset-bottom))); }
+@media (max-width: 480px) {
+  .ms-section { padding-bottom: max(32px, calc(32px + env(safe-area-inset-bottom))); }
 }

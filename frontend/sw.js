@@ -16,7 +16,10 @@
  */
 'use strict';
 
-var CACHE = 'offersheet-static-v1';
+/* T5: cache name bumped v1 -> v2 so the corrected offline.html
+   (see its workspace sentence) reaches already-installed users: a
+   service worker only re-installs when sw.js itself changes bytes. */
+var CACHE = 'offersheet-static-v2';
 var OFFLINE_PAGE = '/offline.html';
 
 self.addEventListener('install', function (event) {
