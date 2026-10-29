@@ -587,3 +587,114 @@ a.btn:hover { text-decoration: none; }
 @media (max-width: 640px) {
   .depth-table .stamp { white-space: normal; }
 }
+
+/* POLISH v3 — section color system (2026-10-29).
+   Appended only; no existing rule above is changed. Washes are
+   color-mix derivations of the primary palette ONLY (paper / ink /
+   cadmium orange) — no new hues. Card washes keep the sheets readable;
+   full-bleed strips carry the rhythm between cards. Contrast numbers
+   were computed from the oklch tokens (see coordinator report). */
+
+:root {
+  --wash-orange: color-mix(in oklab, var(--color-accent) 10%, var(--color-paper));
+  --wash-orange-8: color-mix(in oklab, var(--color-accent) 8%, var(--color-paper));
+  --wash-cream: color-mix(in oklab, var(--color-accent) 6%, var(--color-paper));
+  --wash-ink-8: color-mix(in oklab, var(--color-ink) 8%, var(--color-paper));
+  --wash-ink-10: color-mix(in oklab, var(--color-ink) 10%, var(--color-paper));
+  --wash-row-ink: color-mix(in oklab, var(--color-ink) 8%, var(--color-paper));
+  --wash-row-org: color-mix(in oklab, var(--color-accent) 14%, var(--color-paper));
+}
+
+html, body { overflow-x: clip; }
+
+/* Full-bleed bands: strips escape the 1080 column to the viewport edges
+   while their content stays on the column (max() padding). */
+.band { margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); padding-left: max(16px, calc(50vw - 524px)); padding-right: max(16px, calc(50vw - 524px)); }
+.band--orange { background: var(--wash-orange-8); }
+.band--inkwash { background: var(--wash-ink-8); }
+.band--inkwash10 { background: var(--wash-ink-10); }
+.band--deep { background: var(--color-ink); border-top: 1px solid var(--color-accent); }
+.band--deep p, .band--deep .label, .band--deep .colophon { color: var(--color-paper-2); }
+
+/* Card washes: the tool and race sheets sit on pale orange; depth and
+   ledger sheets sit on warm cream; formula stays paper. */
+.centerpiece { background: var(--wash-orange); }
+.depth-card { background: var(--wash-cream); }
+#raceSection.sheet { background: var(--wash-orange); }
+.ledger-card { background: var(--wash-cream); }
+
+/* Specimen headers: serif + ink + a 1px orange guide rule. No orange text. */
+.specimen { font-family: var(--font-display); font-size: 0.95rem; letter-spacing: 0.06em; color: var(--color-ink); margin: 0 0 10px; }
+.specimen::before { content: ""; display: inline-block; width: 22px; height: 1px; background: var(--color-accent); vertical-align: middle; margin-right: 10px; }
+
+/* Ghost band, strengthened: 65% ink on the orange wash (5.80:1 computed),
+   on its own band so it reads as a designed strip, never an error. */
+.ghost-strip span { color: color-mix(in oklab, var(--color-ink) 65%, transparent); }
+
+/* Depth table: rows banded by status; stamps differentiated by fill.
+   Tool names, descriptions, and status texts are untouched. */
+.depth-table tbody tr.row-live { background: var(--wash-row-ink); }
+.depth-table tbody tr.row-wired { background: var(--wash-row-org); }
+.depth-table .row-live .stamp { background: var(--color-ink); color: var(--color-paper); border-color: var(--color-ink); }
+.depth-table .row-wired .stamp { background: transparent; color: var(--color-ink); border-color: var(--color-ink); }
+
+/* Ticker: stronger edge fades, wider spacing, slower loop, ink-2 text
+   (muted on the ink wash was too close to the AA line). Pause on hover
+   already existed above and is kept. */
+.ticker { -webkit-mask-image: linear-gradient(to right, transparent, black 14%, black 86%, transparent); mask-image: linear-gradient(to right, transparent, black 14%, black 86%, transparent); }
+.ticker-track { animation-duration: 60s; }
+.ticker-item { padding: 0 36px; color: var(--color-ink-2); }
+
+/* Hero entrance choreography: staggered copy rise + stage fade-in.
+   The stage fade animates opacity ONLY so it never fights the stack
+   float (transform) or the pointer tilt (inline transform). */
+@keyframes hero-copy-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.hero--deal .hero-copy .hero-sub { animation: hero-copy-in 600ms var(--ease-out) 100ms both; }
+.hero--deal .hero-copy .hero-support { animation: hero-copy-in 600ms var(--ease-out) 200ms both; }
+.hero--deal .hero-copy .guide { animation: guide-draw 700ms var(--ease-out) 300ms both; }
+.hero--deal .hero-copy .hero-cta { animation: hero-copy-in 600ms var(--ease-out) 400ms both; }
+@keyframes stage-fade { from { opacity: 0; } to { opacity: 1; } }
+.hero--deal .hero-stage { animation: stage-fade 700ms var(--ease-out) 150ms both, stack-float 7s ease-in-out 850ms infinite; }
+
+/* Hover depth: lift via the independent `translate` property so it
+   composes with (never fights) reveal transform animations. */
+.btn, .how-card, .fig { transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out), translate var(--dur-short) var(--ease-out); }
+.btn:hover { translate: 0 -1px; box-shadow: 0 8px 20px -10px color-mix(in oklab, var(--color-ink) 45%, transparent); }
+.how-card:hover { translate: 0 -2px; box-shadow: 1px 2px 0 color-mix(in oklab, var(--color-ink) 7%, transparent), 12px 22px 40px -14px color-mix(in oklab, var(--color-ink) 40%, transparent); }
+.fig:hover { translate: 0 -2px; }
+
+/* Parallax-lite: JS sets --pl per figure; the independent `translate`
+   property composes with reveal transforms instead of fighting them. */
+.fig[data-plx] { translate: 0 calc(var(--pl, 0) * 1px); }
+.fig[data-plx]:hover { translate: 0 calc(var(--pl, 0) * 1px - 2px); }
+
+/* Footer colophon on the deep band. */
+.colophon { font-size: 0.9rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero--deal .hero-copy .hero-sub, .hero--deal .hero-copy .hero-support,
+  .hero--deal .hero-copy .hero-cta { animation: none; opacity: 1; transform: none; }
+  .hero--deal .hero-stage { animation: none; opacity: 1; }
+  .fig[data-plx] { translate: 0 0; }
+  .btn, .how-card, .fig { transition: none; translate: 0 0; }
+}
+
+/* CTA FADE FIX (polish v3): the .proof bottom mask (78–100%) was fading
+   the hero's primary action on desktop, where the CTA sits below 78% of
+   section height — it photographed pale/outlined although its computed
+   background is solid accent. A child cannot escape an ancestor mask, so
+   the ground (dot grid + grain) moves onto a masked ::before: the ground
+   still dissolves into the next section, but content (CTA, caption,
+   stack) always paints fully opaque. Scoped to the hero only; nav keeps
+   the original .proof mask (its content sits above its fade zone). */
+.hero--deal.proof { background-image: none; -webkit-mask-image: none; mask-image: none; }
+.hero--deal.proof::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
+    radial-gradient(circle at 1px 1px, var(--color-dot) 1px, transparent 1.4px);
+    background-size: 160px 160px, 24px 24px;
+  -webkit-mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
+}
+.hero--deal.proof > * { position: relative; z-index: 1; }

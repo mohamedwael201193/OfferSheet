@@ -591,6 +591,21 @@ try {
   };
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
+  // Parallax-lite (polish v3): figures drift a few px at different rates
+  // via the independent `translate` property, which composes with (never
+  // fights) reveal transform animations. Reduced motion skips it.
+  const plxFigs = Array.from(document.querySelectorAll('.fig[data-plx]'));
+  const updatePlx = () => {
+    if (reducedMotion) return;
+    const vh = window.innerHeight;
+    plxFigs.forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const off = (r.top + r.height / 2 - vh / 2) * parseFloat(el.dataset.plx || '0');
+      el.style.setProperty('--pl', off.toFixed(1));
+    });
+  };
+  window.addEventListener('scroll', updatePlx, { passive: true });
+  updatePlx();
   if (!reducedMotion) {
     // Hero-stack pointer tilt (TiltedCard pattern, vanilla): perspective
     // 1200px on the stage, base pose 10/-12, pointer adds at most 8deg.

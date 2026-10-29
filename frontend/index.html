@@ -33,6 +33,7 @@
        Headline left, 3D deal stack right — no giant figure burying the tool. -->
   <section class="hero proof hero--deal" id="problem" aria-label="The problem">
     <div class="hero-copy">
+      <p class="specimen">No. 01 — The problem</p>
       <h1>A promoter signs a guarantee with his own money. If the room does not fill, he eats it.</h1>
       <p class="hero-sub">It tells a promoter how many tickets he must sell before he signs.</p>
       <p class="hero-support">One number decides the signature: how many tickets must sell before the guarantee pays for itself — checked against live taste evidence, not a guess.</p>
@@ -60,11 +61,11 @@
 
   <!-- Ghost velocity band: oversized display words, drifting with scroll
        velocity (aria-hidden, 7% ink — its own band, never over text). -->
-  <div class="ghost-strip" aria-hidden="true"><span>SELL — BEFORE — YOU — SIGN — SELL — BEFORE — YOU — SIGN — SELL — BEFORE — YOU — SIGN —</span></div>
+  <div class="ghost-strip band band--orange" aria-hidden="true"><span>SELL — BEFORE — YOU — SIGN — SELL — BEFORE — YOU — SIGN — SELL — BEFORE — YOU — SIGN —</span></div>
 
   <!-- Stats ticker: the same four spec-honest facts, as one slow line
        (marquee pattern, adapted to vanilla CSS — duplicated track, seamless loop). -->
-  <section class="ticker reveal" aria-label="What this page is built from">
+  <section class="ticker reveal band band--inkwash" aria-label="What this page is built from">
     <div class="ticker-track">
       <div class="ticker-group">
         <span class="ticker-item"><strong>10 / 10</strong> Tools wired (not all live-verified)</span>
@@ -83,6 +84,7 @@
 
   <!-- Verdict tool: the centerpiece of the page. -->
   <section class="sheet crop centerpiece perf reveal" id="tool" aria-label="Check an offer">
+    <p class="specimen">No. 02 — The offer</p>
     <div class="sheet-head">
       <img src="assets/icon-ticket.webp" alt="" width="56" height="56">
       <div>
@@ -196,9 +198,17 @@
 
   <!-- Qloo integration depth: final copy from the integration-depth audit, 2026-10-29. -->
   <section class="sheet crop depth-card reveal" id="depth" aria-label="Qloo integration depth">
+    <p class="specimen">No. 03 — The proof</p>
     <h2>How deep does OfferSheet's Qloo integration go?</h2>
     <p><strong>10 of 10 official Qloo tools, wired into the verdict — 8 of them receipted live.</strong></p>
-    <figure class="fig crop reveal" style="--rd:120ms">
+    <figure class="fig crop reveal" style="--rd:60ms" data-plx="0.03">
+      <img src="assets/depth-bowl-detail.webp" alt="Seating bowl, detail: amphitheater seating rows drawn on studio-white proof paper" width="1920" height="1280" data-fallback="bowlFallback">
+      <figcaption>Seating bowl, detail — amphitheater rows on proof paper. No numbers are baked into the drawing.</figcaption>
+      <div id="bowlFallback" class="fig-fallback" role="note">
+        <p><strong>Seating bowl, detail.</strong> Amphitheater seating rows on studio-white proof paper, dot grid and crop marks. No numbers are baked into the drawing.</p>
+      </div>
+    </figure>
+    <figure class="fig crop reveal" style="--rd:120ms" data-plx="-0.03">
       <img id="depthImg" src="assets/proof-receipts.webp" alt="Proof slips, checked: six plain receipt slips with check marks on studio-white proof paper" width="2352" height="1008" data-fallback="depthFallback">
       <figcaption>Figure 2 — proof slips, checked. 7 : 3. No numbers are baked into the drawing.</figcaption>
       <div id="depthFallback" class="fig-fallback" role="note">
@@ -208,18 +218,7 @@
     <h3>Qloo tools wired into the verdict</h3>
     <div class="table-wrap"><table class="depth-table">
       <thead><tr><th>Tool</th><th>What it does</th><th>Live status</th></tr></thead>
-      <tbody id="depthToolsBody">
-        <tr><td>qloo_<wbr>capabilities</td><td>Readiness gate — runs first on every verdict; the "Qloo live" badge turns green only after a live call succeeds, never from config alone</td><td><span class="stamp">Live, receipted</span></td></tr>
-        <tr><td>qloo_<wbr>find_<wbr>tags</td><td>Tag-first path — the headliner is resolved to Qloo tags before any audience call; unresolved input shows as unmeasured, never guessed</td><td><span class="stamp">Live, receipted</span></td></tr>
-        <tr><td>qloo_<wbr>describe</td><td>Headliner + opener cards; an ambiguous name returns candidates to pick from — the verdict never guesses</td><td><span class="stamp">Live, receipted</span></td></tr>
-        <tr><td>qloo_<wbr>recommend</td><td>Opener candidates from fans of the headliner</td><td><span class="stamp">Live, receipted</span></td></tr>
-        <tr><td>qloo_<wbr>rank</td><td>The opener shortlist ranked for the city audience</td><td><span class="stamp">Live, receipted (second live run)</span></td></tr>
-        <tr><td>qloo_<wbr>where_<wbr>popular</td><td>Where the headliner is popular — the city-audience areas behind the verdict</td><td><span class="stamp">Live, receipted</span></td></tr>
-        <tr><td>qloo_<wbr>audience_<wbr>demographics</td><td>Full age/gender bands for the headliner audience — not a single top band</td><td><span class="stamp">Live, receipted</span></td></tr>
-        <tr><td>qloo_<wbr>entity_<wbr>tags</td><td>Top shared tags between headliner and opener</td><td><span class="stamp">Live, receipted</span></td></tr>
-        <tr><td>qloo_<wbr>trends</td><td>90-day momentum leg</td><td><span class="stamp">Wired; returned empty on live runs so far — shown as no data, never faked</span></td></tr>
-        <tr><td>qloo_<wbr>compare_<wbr>audiences</td><td>Headliner-vs-opener audience overlap</td><td><span class="stamp">Wired; returned empty on live runs so far — shown as no data, never faked</span></td></tr>
-      </tbody>
+      <tbody id="depthToolsBody"><tr class="row-live"><td>qloo_<wbr>capabilities</td><td>Readiness gate — runs first on every verdict; the "Qloo live" badge turns green only after a live call succeeds, never from config alone</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>find_<wbr>tags</td><td>Tag-first path — the headliner is resolved to Qloo tags before any audience call; unresolved input shows as unmeasured, never guessed</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>describe</td><td>Headliner + opener cards; an ambiguous name returns candidates to pick from — the verdict never guesses</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>recommend</td><td>Opener candidates from fans of the headliner</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>rank</td><td>The opener shortlist ranked for the city audience</td><td><span class="stamp">Live, receipted (second live run)</span></td></tr><tr class="row-live"><td>qloo_<wbr>where_<wbr>popular</td><td>Where the headliner is popular — the city-audience areas behind the verdict</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>audience_<wbr>demographics</td><td>Full age/gender bands for the headliner audience — not a single top band</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>entity_<wbr>tags</td><td>Top shared tags between headliner and opener</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-wired"><td>qloo_<wbr>trends</td><td>90-day momentum leg</td><td><span class="stamp">Wired; returned empty on live runs so far — shown as no data, never faked</span></td></tr><tr class="row-wired"><td>qloo_<wbr>compare_<wbr>audiences</td><td>Headliner-vs-opener audience overlap</td><td><span class="stamp">Wired; returned empty on live runs so far — shown as no data, never faked</span></td></tr></tbody>
     </table></div>
     <div class="proof-note" id="depthEndpoints">
       <p><strong>REST cross-check layer.</strong> Four endpoints wired — /search, /v2/insights (with explainability), /v2/analysis/compare, /entities — so the REST legs cross-check the MCP legs on the same question.</p>
@@ -232,9 +231,10 @@
   </section>
 
   <!-- How it works: editorial depth, describing only what the tool already does. -->
-  <section class="how-band reveal" aria-label="How it works">
+  <section class="how-band reveal band band--inkwash10" aria-label="How it works">
+    <p class="specimen">No. 04 — The method</p>
     <h2>How it works</h2>
-    <figure class="fig crop reveal" style="--rd:60ms">
+    <figure class="fig crop reveal" style="--rd:60ms" data-plx="0.03">
       <img id="stepsImg" src="assets/proof-steps.webp" alt="Three panels on proof paper: a contract sheet with a pen, a magnifying glass over audience dots, and a ticket with a dimension line" width="2736" height="912" data-fallback="stepsFallback">
       <figcaption>Figure 3 — offer, evidence, count. 3 : 1.</figcaption>
       <div id="stepsFallback" class="fig-fallback" role="note">
@@ -264,6 +264,7 @@
 
   <!-- Gut-vs-Graph race: secondary to the verdict (G21), collapsed when hollow (G44). -->
   <section id="raceSection" class="sheet crop" hidden aria-label="Gut versus Graph race">
+    <p class="specimen">No. 05 — The race</p>
     <div class="sheet-head">
       <img src="assets/icon-venue.webp" alt="" width="56" height="56">
       <div>
@@ -271,7 +272,14 @@
         <p class="label">Gut vs Graph, live. An arm with no provider is shown as unavailable, never given a pick.</p>
       </div>
     </div>
-    <figure class="fig crop reveal" style="--rd:120ms">
+    <figure class="fig crop" data-plx="-0.03">
+      <img src="assets/race-ticket-stack.webp" alt="Ticket stack, close-up: fanned perforated tickets on studio-white proof paper" width="1920" height="1280" data-fallback="stackFallback">
+      <figcaption>Ticket stack, close-up — fanned perforated tickets on proof paper. No numbers are baked into the drawing.</figcaption>
+      <div id="stackFallback" class="fig-fallback" role="note">
+        <p><strong>Ticket stack, close-up.</strong> Fanned perforated tickets on studio-white proof paper, dot grid and crop marks. No numbers are baked into the drawing.</p>
+      </div>
+    </figure>
+    <figure class="fig crop reveal" style="--rd:120ms" data-plx="-0.03">
       <img id="raceImg" src="assets/proof-race.webp" alt="Two parallel race lanes with a finish flag on studio-white proof paper" width="2736" height="912" data-fallback="raceFallback">
       <figcaption>Figure 4 — two lanes, one finish line. 3 : 1.</figcaption>
       <div id="raceFallback" class="fig-fallback" role="note">
@@ -308,6 +316,7 @@
 
   <!-- Formula panel -->
   <section id="formula" class="sheet crop" aria-label="Formula">
+    <p class="specimen">No. 06 — The formula</p>
     <div class="sheet-head">
       <img src="assets/icon-chart.webp" alt="" width="56" height="56">
       <div>
@@ -315,7 +324,7 @@
         <p class="label">Recompute it yourself from the live verdict numbers.</p>
       </div>
     </div>
-    <figure class="fig crop reveal" style="--rd:120ms">
+    <figure class="fig crop reveal" style="--rd:120ms" data-plx="0.03">
       <img id="formulaImg" src="assets/proof-formula.webp" alt="A dimension line, a ticket strip, and a segmented bar drawn on studio-white proof paper" width="1920" height="1280" data-fallback="formulaFallback">
       <figcaption>Figure 5 — the count, drawn as a dimension. 3 : 2. No numbers are baked into the drawing.</figcaption>
       <div id="formulaFallback" class="fig-fallback" role="note">
@@ -328,21 +337,23 @@
   </section>
 
   <!-- Safety strip -->
-  <section class="safety reveal" aria-label="Safety">
+  <section class="safety reveal band band--inkwash10" aria-label="Safety">
     <p><strong>No personal data is sent to Qloo.</strong> Aggregate audiences only. If Qloo is not configured, the page fails closed with a visible 503 — never mock data. Qloo affinities are aggregate taste-overlap signals — how much two audiences share — never predictions about any individual, and never a causal claim that a show will sell out.</p>
   </section>
 
   <!-- Benchmark ledger -->
-  <section class="sheet crop reveal" aria-label="Benchmark ledger">
+  <section class="sheet crop reveal ledger-card" aria-label="Benchmark ledger">
+    <p class="specimen">No. 07 — The ledger</p>
     <h2>Benchmark ledger</h2>
     <p class="label">Committed, rerunnable Qloo-vs-Gut-vs-Web trials. Runs appear here only after real runs.</p>
     <div id="benchBlock">Loading…</div>
   </section>
 
   <!-- Footer -->
-  <footer class="footer proof reveal">
+  <footer class="footer band band--deep reveal">
     <p>What results do NOT establish: Qloo affinities are aggregate taste-overlap signals — how much two audiences share — not individual behavior, and not a causal claim that a show will sell out. No sellout percentage is ever shown when capacity is unknown. Quota guards are this product’s own design settings, not Qloo-stated quotas — no numeric Qloo quota is documented.</p>
     <p class="label">OfferSheet — one page, one money decision.</p>
+    <p class="colophon">Colophon — Set in Hedvig Letters Serif and Geist. Printed on studio-white proof paper.</p>
   </footer>
 </main>
 <script src="app.js"></script>
