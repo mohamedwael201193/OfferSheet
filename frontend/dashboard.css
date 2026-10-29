@@ -439,12 +439,27 @@ details[open] summary { margin-bottom: 8px; }
   background: radial-gradient(320px circle at 50% 30%, rgba(245, 158, 11, .14), transparent 70%);
 }
 
-/* Form: instant usability first. The form enters once (fast fade+rise,
+/* Form: instant usability first. The form enters once (fast rise,
    fields never hidden behind animation, inputs focusable from paint);
    engaging the form intensifies its halo. Focus ring is amber + text
    label change, never color alone (labels stay visible above fields). */
 #offerForm { animation: form-in 600ms ease-out both; }
-@keyframes form-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes form-in { from { transform: translateY(10px); } to { transform: translateY(0); } }
+
+/* Dashboard title letter reveal (JS-gated splitter in app.js; without
+   JS the h1 text stays whole). Words are nowrap wrappers, so words
+   never break mid-word; characters stagger in, capped at 840ms. */
+[data-title-reveal] .tr-word { display: inline-block; white-space: nowrap; }
+[data-title-reveal] .tr-char { display: inline-block; opacity: 0; transform: translateY(.3em); transition: opacity 500ms ease-out, transform 500ms ease-out; transition-delay: var(--d, 0ms); }
+[data-title-reveal].revealed .tr-char { opacity: 1; transform: none; }
+
+/* Formula divider draw-on (decorative only, carries no data). Without
+   JS the full stroke shows; JS adds .js-draw, then .drawn on intersect
+   draws the single horizontal path once to a static full stroke. */
+.formula-divider { display: block; width: 100%; max-width: 600px; height: 24px; margin: 8px 0 16px; }
+.formula-divider-path { fill: none; stroke: rgba(255, 255, 255, .45); stroke-width: 2; }
+.formula-divider.js-draw .formula-divider-path { stroke-dasharray: 100; stroke-dashoffset: 100; }
+.formula-divider.js-draw.drawn .formula-divider-path { stroke-dashoffset: 0; transition: stroke-dashoffset 1.2s ease-out; }
 #tool:focus-within { box-shadow: 0 0 0 1px rgba(245, 158, 11, .4), 0 0 32px rgba(245, 158, 11, .15); }
 form input:focus, .checker-field input:focus { border-color: var(--glow); outline: 2px solid var(--glow); outline-offset: 1px; box-shadow: 0 0 0 4px rgba(245, 158, 11, .18); }
 
@@ -476,6 +491,8 @@ body { padding-bottom: 110px; }
   .btn--primary, .btn--primary:hover, .btn--primary:focus-visible { box-shadow: 0 0 0 1px rgba(245, 158, 11, .55); }
   #offerForm { animation: none; }
   .spotlight::before { display: none; }
+  [data-title-reveal] .tr-char { opacity: 1; transform: none; }
+  .formula-divider.js-draw .formula-divider-path { stroke-dashoffset: 0; }
 }
 
 /* T5 mobile surface (tech): 48px link display, table/nav scroll capture,

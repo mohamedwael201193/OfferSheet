@@ -74,6 +74,12 @@ section > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
 .hero { position: relative; padding-top: 80px; padding-bottom: 96px; overflow: hidden; }
 .hero-beam { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(46, 143, 158, .18), transparent 70%); }
 .hero-sub { font-size: 20px; color: var(--body); max-width: 60ch; }
+/* Hero settle: one short transform/opacity settle on the hero heading
+   and sub-copy (600ms, once). Killed by the reduced-motion block below
+   (its * rule sets animation: none); without the animation the final
+   frame is the natural style, so no-JS still renders the full hero. */
+@keyframes hero-settle { from { opacity: 0; transform: translateY(12px) scale(1.015); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.hero h1.display, .hero-sub { animation: hero-settle 600ms ease-out both; }
 .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin: 28px 0 48px; }
 /* Short viewports: shrink the hero stack so the CTA row's bottom edge
    sits at least 100px above the viewport bottom at first paint,
@@ -162,7 +168,7 @@ td { color: var(--body); }
 .cta-band { border-top: 1px solid var(--hair); text-align: left; }
 .cta-band .btn { margin-top: 8px; }
 
-/* Letter reveals + clip-mask reveals: JS-gated (see dark-motion.js).
+/* Letter reveals + clip-mask reveals: JS-gated (see landing.js).
    No-JS renders full text; reduced-motion CSS (below) forces visible. */
 [data-reveal] .rl { display: inline-block; opacity: 0; transform: translateY(.35em); transition: opacity 500ms ease-out, transform 500ms ease-out; transition-delay: var(--d, 0ms); }
 /* Word wrapper for the letter-reveal splitter: keeps each word intact
@@ -172,7 +178,7 @@ td { color: var(--body); }
 [data-clip].js-clip { clip-path: inset(0 100% 0 0); }
 [data-clip].js-clip.revealed { clip-path: inset(0 0 0 0); transition: clip-path 900ms ease-out; }
 
-/* Preloader (JS-created only; never traps the page — see dark-motion.js). */
+/* Preloader (JS-created only; never traps the page — see landing.js). */
 .preloader { position: fixed; inset: 0; z-index: 300; background: #0A0A0A; display: flex; align-items: center; justify-content: center; }
 .preloader-num { font-family: var(--display); font-size: clamp(64px, 14vw, 160px); font-weight: 800; color: #FFFFFF; }
 .preloader.done { opacity: 0; transition: opacity 300ms ease-out; }

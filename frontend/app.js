@@ -984,16 +984,18 @@ function renderProofSummary(v) {
     + line('Overlap', overlap, receiptTagFor(v, ['qloo_compare_audiences']));
 }
 
-// Motion hook (v2): the verdict number counts up to its REAL value
-// (NumberTicker pattern, vanilla rAF + easeOutQuart). The final value is
-// identical to the direct assignment it replaces; reduced motion (or a
-// non-numeric value) sets it instantly. Never a fabricated figure.
-let ticketsRaf = null;
-function animateTickets(value) {
-  const el = $('beTickets');
+// Count-up (vanilla rAF + easeOutQuart) for RECORDED numbers only.
+// It takes the target element explicitly and never touches the live
+// verdict: the live verdict is assigned directly at its render site.
+// Reduced motion (or a non-numeric value, or no rAF) sets it instantly.
+// The animated figure is always the already-labelled recorded value;
+// never a fabricated figure. Text only — never blocks input.
+function animateTickets(el, value) {
+  if (!el) return;
   if (typeof value !== 'number' || !isFinite(value)) { el.textContent = fmt(value); return; }
-  if (ticketsRaf) cancelAnimationFrame(ticketsRaf);
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (el._countRaf) cancelAnimationFrame(el._countRaf);
+  if ((window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+      || typeof requestAnimationFrame !== 'function') {
     el.textContent = fmt(value);
     return;
   }
@@ -1003,10 +1005,10 @@ function animateTickets(value) {
     const t = Math.min((now - start) / dur, 1);
     const eased = 1 - Math.pow(1 - t, 4);
     el.textContent = fmt(Math.round(value * eased));
-    if (t < 1) ticketsRaf = requestAnimationFrame(step);
-    else { el.textContent = fmt(value); ticketsRaf = null; }
+    if (t < 1) el._countRaf = requestAnimationFrame(step);
+    else { el.textContent = fmt(value); el._countRaf = null; }
   };
-  ticketsRaf = requestAnimationFrame(step);
+  el._countRaf = requestAnimationFrame(step);
 }
 
 // ---- SHIP round (30-agent sweep adoptions, 29 Oct 2026) ----
@@ -1313,13 +1315,20 @@ function renderTrialCards(runs) {
     return `<button type="button" class="trial-card" data-prefill='${esc(JSON.stringify(input))}'>
       <strong>${esc(input.artist || '')}</strong>
       <span>${esc(input.city || '')} · guarantee ${money(input.guarantee ?? 0)} · price ${money(input.ticketPrice ?? 0)}</span>
-      <span class="trial-card-be">${fmt(run.breakEvenTickets ?? 0)} tickets — recorded ${esc(date)}, not live</span>
+      <span class="trial-card-be"><span class="trial-card-be-num" data-recorded-tickets="${Number(run.breakEvenTickets ?? 0)}">${fmt(run.breakEvenTickets ?? 0)}</span> tickets — recorded ${esc(date)}, not live</span>
     </button>`;
   }).join('');
   const your = `<button type="button" class="trial-card trial-card--blank" data-your-artist="1">
     <strong>Your artist</strong><span>Start blank — fill in your own offer.</span>
   </button>`;
   row.innerHTML = cards + your;
+  // Recorded-only count-up: animate ONLY these labelled recorded
+  // numbers on render (text only; the card stays clickable throughout).
+  // The live verdict number is never animated (see its render site).
+  row.querySelectorAll('.trial-card-be-num').forEach((numEl) => {
+    const v = Number(numEl.getAttribute('data-recorded-tickets'));
+    if (isFinite(v)) animateTickets(numEl, v);
+  });
   row.querySelectorAll('[data-prefill]').forEach((b) => {
     b.addEventListener('click', () => { try { prefillForm(JSON.parse(b.getAttribute('data-prefill'))); } catch {} });
   });
@@ -1470,7 +1479,9 @@ function renderVerdict(v, race) {
   if (arithTag) arithTag.innerHTML = arithmeticTagsHtml(v);
   const formulaTag = $('formulaSourceTag');
   if (formulaTag) formulaTag.innerHTML = arithmeticTagsHtml(v);
-  animateTickets(be.tickets);
+  // Live verdict: assign directly, never counted up (count-up is
+  // recorded-numbers only; see animateTickets).
+  $('beTickets').textContent = fmt(be.tickets);
   // SHIP item 4: confidence label next to the verdict. Item 9: thin badge.
   renderConfidence(v);
   renderThinBadge(v);
@@ -2079,8 +2090,8 @@ wirePageAids();
 
 // ---- Redesign v2 motion layer (transform/opacity only, all guarded) ----
 // Scroll progress is page state (like a scrollbar) and updates always;
-// ghost drift, stack tilt, and magnetic buttons are decoration and skip
-// reduced motion entirely. Any failure leaves the page fully usable.
+// ghost drift is decoration and skips reduced motion entirely.
+// Any failure leaves the page fully usable.
 try {
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ghost = document.querySelector('.ghost-strip span');
@@ -2115,32 +2126,50 @@ try {
   window.addEventListener('scroll', updatePlx, { passive: true });
   updatePlx();
   if (!reducedMotion) {
-    // Hero-stack pointer tilt (TiltedCard pattern, vanilla): perspective
-    // 1200px on the stage, base pose 10/-12, pointer adds at most 8deg.
-    const stage = document.getElementById('heroStage');
-    const stack = document.getElementById('dealStack');
-    if (stage && stack) {
-      stage.addEventListener('pointermove', (e) => {
-        const r = stage.getBoundingClientRect();
-        const px = (e.clientX - r.left) / r.width - 0.5;
-        const py = (e.clientY - r.top) / r.height - 0.5;
-        stack.style.transform = `rotateX(${(10 - py * 8).toFixed(2)}deg) rotateY(${(-12 + px * 8).toFixed(2)}deg)`;
+    // Dashboard title letter reveal (vanilla, same one-shot
+    // IntersectionObserver pattern as the landing reveals): split the
+    // [data-title-reveal] h1 into word wrappers (nowrap, so words never
+    // break mid-word) containing character spans with staggered delays,
+    // and add .revealed on intersect. Skipped entirely under
+    // reduced-motion (this block never runs there), and without
+    // IntersectionObserver the text stays whole and fully visible.
+    const titleEl = document.querySelector('[data-title-reveal]');
+    if (titleEl && typeof IntersectionObserver === 'function') {
+      const text = titleEl.textContent;
+      titleEl.textContent = '';
+      text.split(' ').forEach((word, wi, words) => {
+        const wordEl = document.createElement('span');
+        wordEl.className = 'tr-word';
+        Array.from(word).forEach((ch, ci) => {
+          const chEl = document.createElement('span');
+          chEl.className = 'tr-char';
+          chEl.textContent = ch;
+          chEl.style.setProperty('--d', `${Math.min((wi * 6 + ci) * 28, 840)}ms`);
+          wordEl.appendChild(chEl);
+        });
+        titleEl.appendChild(wordEl);
+        if (wi < words.length - 1) titleEl.appendChild(document.createTextNode(' '));
       });
-      const resetStack = () => { stack.style.transform = ''; };
-      stage.addEventListener('pointerleave', resetStack);
-      stage.addEventListener('pointercancel', resetStack);
+      const titleObs = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) { titleEl.classList.add('revealed'); titleObs.disconnect(); }
+        });
+      }, { threshold: 0.2 });
+      titleObs.observe(titleEl);
     }
-    // Magnetic primary buttons: a few pixels toward the pointer, spring back.
-    document.querySelectorAll('.btn--primary').forEach((btn) => {
-      btn.addEventListener('pointermove', (e) => {
-        const r = btn.getBoundingClientRect();
-        const dx = (e.clientX - (r.left + r.width / 2)) / r.width;
-        const dy = (e.clientY - (r.top + r.height / 2)) / r.height;
-        btn.style.transform = `translate(${(dx * 6).toFixed(1)}px, ${(dy * 4).toFixed(1)}px)`;
-      });
-      const resetBtn = () => { btn.style.transform = ''; };
-      btn.addEventListener('pointerleave', resetBtn);
-      btn.addEventListener('pointercancel', resetBtn);
-    });
+    // Formula divider draw-on (decorative only, carries no data): the
+    // SVG path in the formula section draws itself once on intersect.
+    // Without JS the full stroke shows; under reduced-motion this block
+    // never runs, so the stroke stays static and full.
+    const divider = document.querySelector('.formula-divider');
+    if (divider && typeof IntersectionObserver === 'function') {
+      divider.classList.add('js-draw');
+      const drawObs = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) { divider.classList.add('drawn'); drawObs.disconnect(); }
+        });
+      }, { threshold: 0.2 });
+      drawObs.observe(divider);
+    }
   }
 } catch { /* motion is enhancement-only; the page works without it */ }

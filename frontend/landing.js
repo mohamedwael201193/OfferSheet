@@ -33,6 +33,7 @@
   (function () {
     var pre = document.createElement('div');
     pre.className = 'preloader';
+    pre.setAttribute('aria-hidden', 'true');
     var num = document.createElement('span');
     num.className = 'preloader-num';
     num.textContent = '0';
