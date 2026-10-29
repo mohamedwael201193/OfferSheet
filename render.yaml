@@ -1,14 +1,21 @@
 # OfferSheet backend — Render service definition.
 # Deploy to the user-confirmed Render workspace ("Ffcvv's workspace").
 # Secrets are NEVER in this file: values with sync: false must be set in the
-# Render dashboard (or CLI) at deploy time. The connector credential that
+# Render dashboard (or API) at deploy time. The connector credential that
 # serves Muse's calls does NOT transfer to Render — enter the key values from
 # the user's own copies at deploy time.
+# Live deploy 2026-10-29: Starter plan (user-authorized $7, NOT free).
+# The backend's verdict path runs the official Qloo MCP harness, so the
+# build installs it, and the harness is pointed at the hackathon API host:
+# its default is the production host, where the hackathon key does NOT
+# authenticate, and a non-production host additionally requires
+# QLOO_TRUSTED_BASE_URL to pass the harness trust gate.
 services:
   - type: web
     name: offersheet-backend
     env: node
-    plan: free
+    plan: starter
+    buildCommand: npm install @qloo/qloo-harness
     startCommand: node backend/server.js
     healthCheckPath: /api/health
     envVars:
@@ -22,3 +29,11 @@ services:
         sync: false
       - key: LLM_MODEL
         sync: false
+      - key: NODE_VERSION
+        value: "22"
+      - key: QLOO_MCP_COMMAND
+        value: node_modules/.bin/qloo
+      - key: QLOO_BASE_URL
+        value: https://hackathon.api.qloo.com
+      - key: QLOO_TRUSTED_BASE_URL
+        value: https://hackathon.api.qloo.com
