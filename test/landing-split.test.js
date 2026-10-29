@@ -36,7 +36,9 @@ test('landing keeps the display sections and links into the app', () => {
   for (const id of ['problem', 'how', 'arms', 'refuses', 'formula']) {
     assert.ok(landing.includes(`id="${id}"`), `landing must keep id="${id}"`);
   }
-  for (const s of ['arms-showcase.webp', 'refusal-proof.webp']) {
+  // D-IMAGES: old illustration filenames replaced 1:1 by photographs;
+  // the pin keeps its intent (arms + refusal sections still carry an image).
+  for (const s of ['photo-arms-stage.webp', 'photo-refusal-room.webp']) {
     assert.ok(landing.includes(s), `landing must contain ${s}`);
   }
   assert.ok(landing.includes('Recorded example — 29 Oct 2026 trial, not a live verdict'),

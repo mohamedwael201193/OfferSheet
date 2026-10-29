@@ -65,9 +65,11 @@ test('D-HERO hero image slot: exact slot the images agent swaps into', () => {
   assert.ok(m, 'hero figure must contain an img');
   assert.ok(m[0].includes('id="hero-image"'), 'hero img must carry id="hero-image"');
   assert.ok(m[0].includes('class="hero-image"'), 'hero img must carry class="hero-image"');
-  assert.ok(m[0].includes('src="assets/hero-plan.webp"'), 'hero img src must stay assets/hero-plan.webp');
-  assert.ok(m[0].includes('alt="Venue plan: seating bowl and stage"'), 'hero img alt must be unchanged');
-  assert.ok(hero.includes('The venue plan is the question, not the answer. The answer is a number, with receipts.'),
+  // D-IMAGES merge: the swap this test anticipated has landed — the slot pins
+  // now assert the photographic slot (same strictness: exact src/alt/caption).
+  assert.ok(m[0].includes('src="assets/photo-hero-room.webp"'), 'hero img src must be the photographic swap assets/photo-hero-room.webp');
+  assert.ok(m[0].includes('alt="The room, empty, before the show"'), 'hero img alt must be the generic room alt');
+  assert.ok(hero.includes('The room is the question, not the answer. The answer is a number, with receipts.'),
     'hero caption must stay generic (names no artist, claims no live data)');
   assert.ok(css.includes('.hero-figure img { border-radius: 0; width: 100%; height: clamp(440px, 56vh, 680px); object-fit: cover;'),
     'hero image must be a sharp-cornered full-bleed cover frame');
