@@ -225,14 +225,19 @@ test('item 3: Gut-vs-Graph tally matches the 3 recorded trials', () => {
   const runs = benchRuns();
   assert.equal(runs.length, 3);
   const { sandbox, get } = loadApp();
-  assert.deepEqual(JSON.parse(JSON.stringify(sandbox.computeTrialTally(runs))), { n: 3, gutSame: 0, webSame: 0, changed: 3 });
+  // Judge-ordered honesty restatement: refusal ≠ differing pick — trial 3's
+  // web arm declined to pick, so it counts as webRefused, not webDiffered.
+  assert.deepEqual(JSON.parse(JSON.stringify(sandbox.computeTrialTally(runs))), { n: 3, gutSame: 0, webSame: 0, changed: 3, webRefused: 1, webDiffered: 2 });
   sandbox.renderTrialTally(runs);
-  assert.match(get('tallyLine').textContent, /Qloo changed the pick in 3\/3 trials \(Gut agreed 0\/3; Web agreed 0\/3\)\. Recorded, not live\./);
+  assert.match(get('tallyLine').textContent, /Qloo changed the pick in 3\/3 trials \(Gut differed in 3\/3; Web picked differently in 2\/3 and declined to pick in 1\/3\)\. Recorded, not live\./);
   const table = get('tallyTable').innerHTML;
   assert.match(table, /Billie Eilish/);
   assert.match(table, /Clairo/);
   assert.match(table, /Olivia Rodrigo/);
   assert.match(table, /Use these inputs/);
+  // Trial 3's web cell is a refusal, not a differing pick.
+  assert.match(table, /declined \(no pick\)/);
+  assert.match(table, /Web declined to pick \(no pick recorded\)/);
   // An arm with no miss entry matched the Graph pick.
   assert.equal(sandbox.pickFor({ graphPick: 'X', misses: [] }, 'gut'), 'X');
   assert.equal(sandbox.pickFor({ graphPick: 'X', misses: [{ arm: 'gut', pick: 'Y' }] }, 'gut'), 'Y');

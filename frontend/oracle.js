@@ -56,17 +56,27 @@
   function trialInput(t) { return t.input || t.inputs || {}; }
   function trialMisses(t) { return Array.isArray(t.misses) ? t.misses : []; }
   function missed(t, arm) { return trialMisses(t).some(function (m) { return m.arm === arm; }); }
+  function isWebRefusal(t) {
+    var ms = trialMisses(t);
+    for (var i = 0; i < ms.length; i++) {
+      if (ms[i].arm === 'web' && typeof ms[i].pick === 'string' && ms[i].pick.indexOf('cannot be selected') >= 0) return true;
+    }
+    return false;
+  }
   function computeTally(runs) {
     var n = runs.length;
     var gutSame = runs.filter(function (r) { return !missed(r, 'gut'); }).length;
     var webSame = runs.filter(function (r) { return !missed(r, 'web'); }).length;
+    var webRefused = runs.filter(function (r) { return isWebRefusal(r); }).length;
+    var webDiffered = runs.filter(function (r) { return missed(r, 'web'); }).length - webRefused;
     var changed = runs.filter(function (r) { return missed(r, 'gut') || missed(r, 'web'); }).length;
-    return { n: n, gutSame: gutSame, webSame: webSame, changed: changed };
+    return { n: n, gutSame: gutSame, webSame: webSame, changed: changed, webRefused: webRefused, webDiffered: webDiffered };
   }
   function tallyLine(t) {
     return 'Qloo changed the pick in ' + t.changed + '/' + t.n +
-      ' trials (Gut agreed ' + t.gutSame + '/' + t.n +
-      '; Web agreed ' + t.webSame + '/' + t.n + ')';
+      ' trials (Gut differed in ' + (t.n - t.gutSame) + '/' + t.n +
+      '; Web picked differently in ' + t.webDiffered + '/' + t.n +
+      ' and declined to pick in ' + t.webRefused + '/' + t.n + ')';
   }
 
   /* Bench panel: wall time only. The trial pack carries timingMs, picks,
@@ -263,7 +273,7 @@
     if (bench.runs) {
       state.benchRuns = bench.runs;
       var benchTally = computeTally(bench.runs);
-      var fields = ['changed', 'gutSame', 'webSame', 'n'];
+      var fields = ['changed', 'gutSame', 'webSame', 'webRefused', 'webDiffered', 'n'];
       var differing = fields.filter(function (f) { return packTally[f] !== benchTally[f]; });
       if (differing.length === 0) {
         cards.push(checkCard('PASS', 'Tally match with bench data',

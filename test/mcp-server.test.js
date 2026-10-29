@@ -298,6 +298,14 @@ test('mcp tool 17: non-allowlisted replay is INVALID_INPUT before any live call'
   assert.equal(c.payload.code, 'INVALID_INPUT');
   assert.equal(calls, 0);
 });
+test('mcp tool 17: MCP replay with an unallowlisted inner arg key is INVALID_INPUT and never calls the transport', async () => {
+  let calls = 0;
+  const s = makeServer({ mcpCall: async () => { calls += 1; return {}; } });
+  const { payload, isError } = await call(s, 'offersheet_receipt_replay', { kind: 'mcp', tool: 'qloo_describe', args: { entity: 'Billie Eilish', type: 'artist', bogus_key: 'x' }, originalIds: [] });
+  assert.equal(isError, true);
+  assert.equal(payload.code, 'INVALID_INPUT');
+  assert.equal(calls, 0);
+});
 test('mcp tool 17: replay comparison — match, mismatch, and not_comparable (no IDs, no empty match)', async () => {
   const s = makeServer();
   const match = await call(s, 'offersheet_receipt_replay', { kind: 'mcp', tool: 'qloo_describe', args: { entity: 'Billie Eilish', type: 'artist' }, originalIds: ['test-entity-billie'] });

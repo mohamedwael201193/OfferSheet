@@ -1274,12 +1274,22 @@ function trialMissed(run, arm) {
   return (run.misses || []).some((m) => m.arm === arm);
 }
 
+// A web miss counts as a refusal — not a differing pick — when its
+// recorded pick text states that a specific opening act cannot be
+// selected from the given facts. Only the trial-3 web record matches.
+function isWebRefusal(run) {
+  const miss = (run.misses || []).find((m) => m.arm === 'web');
+  return Boolean(miss && typeof miss.pick === 'string' && miss.pick.includes('cannot be selected'));
+}
+
 function computeTrialTally(runs) {
   const n = runs.length;
   const gutSame = runs.filter((r) => !trialMissed(r, 'gut')).length;
   const webSame = runs.filter((r) => !trialMissed(r, 'web')).length;
+  const webRefused = runs.filter((r) => isWebRefusal(r)).length;
+  const webDiffered = runs.filter((r) => trialMissed(r, 'web')).length - webRefused;
   const changed = runs.filter((r) => trialMissed(r, 'gut') || trialMissed(r, 'web')).length;
-  return { n, gutSame, webSame, changed };
+  return { n, gutSame, webSame, changed, webRefused, webDiffered };
 }
 
 function shortPick(text, limit) {
@@ -1302,16 +1312,18 @@ function renderTrialTally(runs) {
     const webPick = pickFor(run, 'web');
     const gutMiss = trialMissed(run, 'gut');
     const webMiss = trialMissed(run, 'web');
+    const webRefused = isWebRefusal(run);
     const missNames = [];
     if (gutMiss) missNames.push(`Gut missed: ${gutPick}`);
-    if (webMiss) missNames.push(`Web missed: ${webPick}`);
+    if (webRefused) missNames.push('Web declined to pick (no pick recorded)');
+    else if (webMiss) missNames.push(`Web missed: ${webPick}`);
     return `<tr>
       <td>${esc(input.artist || '')} · ${esc(input.city || '')}<br><span class="label">${money(input.guarantee ?? 0)} / ${money(input.ticketPrice ?? 0)} → ${fmt(run.breakEvenTickets ?? 0)} tickets</span></td>
       <td>${cell(shortPick(gutPick, 120))}</td>
       <td>${esc(run.graphPick || '')}</td>
       <td>${gutMiss ? 'different' : 'same'}</td>
       <td>${cell(shortPick(webPick, 120))}</td>
-      <td>${webMiss ? 'different' : 'same'}</td>
+      <td>${webRefused ? 'declined (no pick)' : (webMiss ? 'different' : 'same')}</td>
       <td>${missNames.length ? esc(missNames.join('; ')) : 'No miss — both arms matched Graph.'}</td>
       <td><button type="button" class="btn" data-rerun='${esc(JSON.stringify(input))}'>Use these inputs</button></td>
     </tr>`;
@@ -1320,7 +1332,7 @@ function renderTrialTally(runs) {
   table.querySelectorAll('[data-rerun]').forEach((b) => {
     b.addEventListener('click', () => { try { prefillForm(JSON.parse(b.getAttribute('data-rerun'))); } catch {} });
   });
-  line.textContent = `Qloo changed the pick in ${t.changed}/${t.n} trials (Gut agreed ${t.gutSame}/${t.n}; Web agreed ${t.webSame}/${t.n}). Recorded, not live.`;
+  line.textContent = `Qloo changed the pick in ${t.changed}/${t.n} trials (Gut differed in ${t.n - t.gutSame}/${t.n}; Web picked differently in ${t.webDiffered}/${t.n} and declined to pick in ${t.webRefused}/${t.n}). Recorded, not live.`;
   // Phase 3 Wave 2 (E): the recorded-trials tally carries the taxonomy too.
   renderTallyTaxonomy(runs);
 }

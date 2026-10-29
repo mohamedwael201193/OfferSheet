@@ -288,8 +288,8 @@ async function handleReplay(req, res) {
       }
       if (body.path === '/v2/insights') {
         const ft = (body.params || {})['filter.type'];
-        if (typeof ft !== 'string' || ft === '') {
-          throw new OfferError('INVALID_INPUT', 400, 'Replay REST /v2/insights requires a non-empty filter.type');
+        if (ft !== 'urn:entity:artist') {
+          throw new OfferError('INVALID_INPUT', 400, 'Replay REST /v2/insights requires filter.type urn:entity:artist');
         }
       }
     }

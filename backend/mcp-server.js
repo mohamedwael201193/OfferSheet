@@ -16,7 +16,7 @@ import { config as prodConfig } from './src/config.js';
 import { Guards } from './src/guards.js';
 import { ReceiptStore, argsHashFor, requestHashFor, sha256 } from './src/receipts.js';
 import { OfferError, notConfigured, invalidInput } from './src/errors.js';
-import { McpSession, MCP_TOOLS } from './src/mcp.js';
+import { McpSession, MCP_TOOLS, validateMcpReplayArgs } from './src/mcp.js';
 import { qlooRest, REST_PATHS } from './src/rest.js';
 import { searchEvents, searchVenues, extractCapacity, extractPrice, extractFirstVenue, extractFirstVenueResult, extractVenueForCity, venueCityOf } from './src/ticketmaster.js';
 import { geocode } from './src/osm.js';
@@ -368,6 +368,7 @@ export function createMcpApp(deps = {}) {
       if (a.kind === 'mcp') {
         if (typeof a.tool !== 'string' || !MCP_TOOLS.includes(a.tool)) throw invalidInput(`Replay tool not allowlisted: ${a.tool}`);
         if (a.args !== undefined && !isPlainObject(a.args)) throw invalidInput('Replay MCP args must be an object');
+        validateMcpReplayArgs(a.tool, a.args || {});
         guards.checkCall();
         const envelope = await mcpCall(a.tool, a.args || {});
         const ids = orderedEntityIds(envelope?.results);
