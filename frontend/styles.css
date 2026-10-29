@@ -169,9 +169,25 @@ section > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
 .fan-card img { border-radius: 0; width: 100%; }
 .fan-card figcaption { color: #AAAAAA; font-size: 15px; margin-top: 12px; }
 
-/* Statement: theatrical void around one giant line. */
-.statement { padding-top: 140px; padding-bottom: 140px; }
+/* Statement: one line, then the receipts behind it. The giant line is
+   capped so it no longer swallows the section, and the recorded-trial
+   receipt cards below it make the section substantive content, not a
+   theatrical void. Dark cinematic language, same as the rest of the page. */
+.statement { padding-top: 96px; padding-bottom: 96px; }
 .statement p { font-size: 20px; max-width: 60ch; }
+.statement .display--giant { font-size: clamp(48px, 8vw, 96px); }
+.statement-receipts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin: 40px 0 24px; }
+.statement-receipt { border: 1px solid var(--hair); padding: 28px; background: var(--bg-2); }
+.statement .statement-receipt-trial { color: var(--muted); font-size: 14px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; }
+.statement .statement-receipt-num { font-family: var(--display); font-size: clamp(48px, 5vw, 72px); font-weight: 800; color: var(--text); line-height: 1; margin: 12px 0; }
+.statement .statement-receipt-offer { font-size: 18px; }
+.statement-picks { list-style: none; padding: 0; margin: 16px 0; }
+.statement .statement-picks li { padding: 8px 0; border-top: 1px solid var(--hair); font-size: 17px; }
+.statement .statement-picks li strong { color: var(--text); }
+.statement .statement-receipt-note { font-size: 16px; color: var(--muted); }
+.statement .statement-receipt-hash { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.statement .statement-receipt-hash code { color: var(--body); }
+.statement .statement-tally { font-size: 20px; color: var(--text); }
 
 /* How it works: three plain steps. */
 .steps { list-style: none; padding: 0; margin: 32px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
@@ -273,6 +289,7 @@ td { color: var(--body); }
   .fan { flex-direction: column; }
   .fan-card:nth-child(2), .fan-card:nth-child(3) { margin-top: 0; }
   .arms-grid, .stat-grid, .steps { grid-template-columns: 1fr; }
+  .statement-receipts { grid-template-columns: 1fr; }
   .refuse-grid { grid-template-columns: 1fr; }
   .nav-links { gap: 2px; }
   .nav-links a { padding: 0 12px; font-size: 14px; }
