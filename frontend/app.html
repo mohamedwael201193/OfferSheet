@@ -4,9 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OfferSheet — check a live-show offer before you sign it</title>
-<link href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&family=Geist:wght@400;500&family=Sofia+Sans+Extra+Condensed:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="workspace.css">
+<link href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&family=Geist:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dashboard.css">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#030e1a">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -25,159 +24,459 @@
       <a href="#formula">Formula</a>
       <a href="#ledger">Ledger</a>
       <a href="#workspace">Workspace</a>
-      <a href="oracle.html">Oracle</a>
-      <a href="index.html">Landing</a>
+      <a href="oracle.html" target="_top">Oracle</a>
+      <a href="index.html" target="_top">Landing</a>
     </nav>
     <div id="qlooBadge" class="badge">Qloo status: checking…</div>
   </div>
+  <!-- MERGE: proof index (P3 pattern on the P2 base). It lives inside the
+       sticky header so it sticks with it — no top-offset math, no overlap.
+       Every entry opens its target's collapsed ancestors before scrolling
+       (see the disc glue script at the end of the body). -->
+  <nav class="proof-index wrap" aria-label="Proof index">
+    <span class="proof-index-label">Proof index</span>
+    <a href="#verdict">Verdict</a>
+    <a href="#formula">Formula</a>
+    <a href="#receiptSection">Receipts</a>
+    <a href="#verdictSheet">Sheet</a>
+    <a href="#raceSection">Race</a>
+    <a href="#workspace">Workspace</a>
+    <a href="#trialTally">Trials</a>
+    <a href="#depth">Depth</a>
+    <a href="#limits">Limits</a>
+    <a href="#ledger">Ledger</a>
+  </nav>
 </header>
 
 <main class="wrap">
-  <!-- G23: fail-closed banner — shown only when /api/health says Qloo is not configured. -->
+  <!-- Fail-closed banner — shown only when /api/health says Qloo is not configured. -->
   <div id="configBanner" class="config-banner" hidden role="alert">
     <p><strong>Qloo is not configured for this demo. No verdict can be computed without live Qloo data.</strong></p>
     <p class="label">The form below is disabled until Qloo is configured — nothing here is mocked or invented.</p>
   </div>
 
-  <!-- Verdict tool: the centerpiece of the page. -->
-  <section class="sheet crop centerpiece perf reveal" id="tool" aria-label="Check an offer">
-    <p class="specimen">No. 02 — The offer</p>
-    <div class="sheet-head">
-      <img src="assets/icon-ticket.webp" alt="" width="56" height="56">
-      <div>
-        <h2>Check an offer</h2>
-        <p class="label">Start here — edit any field. This starting example is not a real deal.</p>
-      </div>
-    </div>
-    <p class="wedge">Other tools rank openers for a show. OfferSheet answers whether to sign the guarantee at all — a ticket count, not a ranking.</p>
-    <p id="formDisabledNote" class="form-disabled-note" hidden>The form is disabled because Qloo is not configured for this demo — no verdict can be computed without live Qloo data.</p>
-    <form id="offerForm">
-      <div class="field">
-        <label for="artist">Artist</label>
-        <input id="artist" name="artist" value="Billie Eilish" required autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="city">City</label>
-        <input id="city" name="city" value="New York" required autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="venue">Room / venue (optional)</label>
-        <input id="venue" name="venue" placeholder="Leave blank to use the first matching Ticketmaster event" autocomplete="off">
-        <span class="field-hint">The actual room for this offer. If Ticketmaster finds it, its capacity and event prices ground the verdict; otherwise the first matching Ticketmaster event's venue is used and labeled as not the offer room.</span>
-      </div>
-      <div class="field">
-        <label for="guarantee">Guarantee (USD)</label>
-        <input id="guarantee" name="guarantee" type="number" min="0" step="1" value="250000" required inputmode="numeric">
-      </div>
-      <div class="field">
-        <label for="ticketPrice">Ticket price (USD, optional)</label>
-        <input id="ticketPrice" name="ticketPrice" type="number" min="0" step="0.01" value="120" inputmode="decimal">
-        <span class="field-hint">Leave the price blank only if Ticketmaster event history can supply it.</span>
-      </div>
-      <div class="field">
-        <label for="variableCost">Variable cost per ticket (USD, optional)</label>
-        <input id="variableCost" name="variableCost" type="number" min="0" step="0.01" inputmode="decimal">
-        <span class="field-hint">Fees, splits, or other per-ticket costs. Leave blank and the net renders as before variable costs — never as if costs were zero.</span>
-      </div>
-      <div class="field span-2">
-        <label for="capacity">Room capacity (optional)</label>
-        <input id="capacity" name="capacity" type="number" min="1" step="1" placeholder="Leave blank to use Ticketmaster" inputmode="numeric">
-        <span class="field-hint">A value you type here is labeled user-supplied, not Ticketmaster-verified.</span>
-      </div>
-      <div class="form-actions">
-        <button class="btn btn--primary" type="submit">Run the verdict</button>
-      </div>
-    </form>
-    <p class="label" style="margin-top:14px">No sign-in. One money decision, before you sign.</p>
-    <p><a class="link-btn" href="#formula">See how the number is computed</a></p>
-    <div id="trialCards" class="trial-cards" aria-label="Recorded trials — tap to prefill">
-      <p class="label">Four cards — three recorded trials, one blank. Tap a trial to prefill the form; the verdict still requires pressing “Run the verdict”. Nothing auto-runs.</p>
-      <div id="trialCardsRow" class="trial-cards-row"></div>
-    </div>
-  </section>
+  <!-- ================= TWO-COLUMN PROOF DESK =================
+       Left rail: offer form → verdict hero → formula diagram.
+       Right rail: evidence → receipts → verdict sheet → race → workspace.
+       Every element id app.js renders into is preserved; only the
+       DOM order changed. See checklist.md for what-moved-where. -->
+  <div class="desk">
+    <div class="rail rail-left">
 
-  <section id="status" class="status crop" aria-live="polite" hidden></section>
+      <!-- Verdict tool: the compact entry card. Long helper texts are
+           one click away in <details>; their meanings survive verbatim. -->
+      <section class="sheet crop centerpiece perf" id="tool" aria-label="Check an offer">
+        <p class="specimen">No. 02 — The offer</p>
+        <div class="sheet-head">
+          <img src="assets/icon-ticket.webp" alt="" width="56" height="56">
+          <div>
+            <h2>Check an offer</h2>
+            <p class="label">Start here — edit any field. This starting example is not a real deal.</p>
+          </div>
+        </div>
+        <p class="wedge">Other tools rank openers for a show. OfferSheet answers whether to sign the guarantee at all — a ticket count, not a ranking.</p>
+        <p id="formDisabledNote" class="form-disabled-note" hidden>The form is disabled because Qloo is not configured for this demo — no verdict can be computed without live Qloo data.</p>
+        <form id="offerForm">
+          <div class="field">
+            <label for="artist">Artist</label>
+            <input id="artist" name="artist" value="Billie Eilish" required autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="city">City</label>
+            <input id="city" name="city" value="New York" required autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="venue">Room / venue (optional)</label>
+            <input id="venue" name="venue" placeholder="Leave blank to use the first matching Ticketmaster event" autocomplete="off">
+            <span class="field-hint">The actual room for this offer.</span>
+            <details class="field-more">
+              <summary>About this field</summary>
+              <span class="field-hint">The actual room for this offer. If Ticketmaster finds it, its capacity and event prices ground the verdict; otherwise the first matching Ticketmaster event's venue is used and labeled as not the offer room.</span>
+            </details>
+          </div>
+          <div class="field">
+            <label for="guarantee">Guarantee (USD)</label>
+            <input id="guarantee" name="guarantee" type="number" min="0" step="1" value="250000" required inputmode="numeric">
+          </div>
+          <div class="field">
+            <label for="ticketPrice">Ticket price (USD, optional)</label>
+            <input id="ticketPrice" name="ticketPrice" type="number" min="0" step="0.01" value="120" inputmode="decimal">
+            <span class="field-hint">Blank only if event history can supply it.</span>
+            <details class="field-more">
+              <summary>About this field</summary>
+              <span class="field-hint">Leave the price blank only if Ticketmaster event history can supply it.</span>
+            </details>
+          </div>
+          <div class="field">
+            <label for="variableCost">Variable cost per ticket (USD, optional)</label>
+            <input id="variableCost" name="variableCost" type="number" min="0" step="0.01" inputmode="decimal">
+            <span class="field-hint">Blank = net is before variable costs.</span>
+            <details class="field-more">
+              <summary>About this field</summary>
+              <span class="field-hint">Fees, splits, or other per-ticket costs. Leave blank and the net renders as before variable costs — never as if costs were zero.</span>
+            </details>
+          </div>
+          <div class="field">
+            <label for="capacity">Room capacity (optional)</label>
+            <input id="capacity" name="capacity" type="number" min="1" step="1" placeholder="Leave blank to use Ticketmaster" inputmode="numeric">
+            <span class="field-hint">Typed values are user-supplied, not verified.</span>
+            <details class="field-more">
+              <summary>About this field</summary>
+              <span class="field-hint">A value you type here is labeled user-supplied, not Ticketmaster-verified.</span>
+            </details>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn--primary" type="submit">Run the verdict</button>
+          </div>
+        </form>
+        <p class="label" style="margin-top:14px">No sign-in. One money decision, before you sign.</p>
+        <p><a class="link-btn" href="#formula">See how the number is computed</a></p>
+        <div id="trialCards" class="trial-cards" aria-label="Recorded trials — tap to prefill">
+          <p class="label">Four cards — three recorded trials, one blank. Tap a trial to prefill the form; the verdict still requires pressing “Run the verdict”. Nothing auto-runs.</p>
+          <div id="trialCardsRow" class="trial-cards-row"></div>
+        </div>
+      </section>
 
-  <!-- Verdict card: the hero of the page -->
-  <section id="verdict" class="sheet verdict-card crop perf" hidden aria-label="Verdict">
-    <div class="sheet-head">
-      <img src="assets/icon-ticket.webp" alt="" width="56" height="56">
-      <div>
-        <h2>Verdict</h2>
-        <p class="label" id="verdictSubject"></p>
+      <section id="status" class="status crop" aria-live="polite" hidden></section>
+
+      <!-- Verdict card: the hero of the page. First result card, directly
+           under the form, so it is always findable after a run. The four
+           long evidence <details> blocks moved to the Evidence card in
+           the right rail (same ids, same app.js rendering). -->
+      <section id="verdict" class="sheet verdict-card crop perf" hidden aria-label="Verdict" tabindex="-1">
+        <div class="sheet-head">
+          <img src="assets/icon-ticket.webp" alt="" width="56" height="56">
+          <div>
+            <h2>Verdict</h2>
+            <p class="label" id="verdictSubject"></p>
+          </div>
+        </div>
+        <div id="signChecklist" class="sign-checklist" aria-label="Before you sign checklist"></div>
+        <div><span id="beTickets" class="verdict-number num">—</span> <span class="verdict-unit">tickets to break even</span></div>
+        <p id="arithmeticSourceTag" class="source-tag-line"></p>
+        <div id="confidenceBox" class="confidence-box" aria-label="Evidence strength"></div>
+        <div id="thinBadge" class="thin-badge" hidden></div>
+        <p class="aggregate-note">Aggregate taste signals only — they show how much two audiences share, never a prediction about any individual, and never a promise this show will sell out.</p>
+        <p id="beVerdict" class="verdict-line"></p>
+        <div id="citeChips" class="cite-chips" aria-label="Citations for this verdict"></div>
+        <ul id="proofSummary" class="proof-summary"></ul>
+        <div id="cannotBox" class="cannot-box" hidden><p>Cannot break even in this room at this guarantee</p></div>
+        <div id="capacityBadge" class="capacity-badge"></div>
+        <div id="unknownBox" class="unknown-box" hidden>
+          <p id="unknownText"></p>
+        </div>
+        <div id="selloutBox" hidden style="margin-top:12px">
+          <p style="margin:0">Break-even share of seats in this room (not a sellout prediction): <strong id="selloutPct" class="num"></strong></p>
+        </div>
+        <dl class="facts">
+          <div><dt>Ticket price</dt><dd id="bePrice"></dd></div>
+          <div><dt>Net per ticket</dt><dd id="beNet"></dd></div>
+          <div><dt>Capacity</dt><dd id="beCapacity"></dd></div>
+        </dl>
+        <div id="proofPackWrap" class="proof-pack-wrap" hidden aria-label="Proof pack exports">
+          <h3>Proof pack</h3>
+          <p class="label">Downloads serialize this same verdict object — no new server call. The JSON pack carries its own SHA-256; the CSV is the same object, second rendering.</p>
+          <button class="btn" type="button" id="proofPackBtn">Download proof pack</button>
+          <button class="btn" type="button" id="verdictCsvBtn">Download verdict CSV</button>
+          <p id="proofPackNote" class="label"></p>
+        </div>
+        <div id="rerankSection" class="rerank-section" hidden aria-label="Re-rank without the top pick">
+          <h3>Re-rank without the top pick</h3>
+          <p class="label">Re-runs only the ranking step with the same candidate set minus the current top pick. The original verdict above stays untouched.</p>
+          <button class="btn" type="button" id="rerankBtn">Re-rank without the top pick</button>
+          <div id="rerankOut" class="rerank-out" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <!-- Formula panel: the static proof-formula.webp image is GONE.
+           The diagram below is HTML/CSS, bound to the live verdict
+           object by the render update specified in checklist.md. -->
+      <section id="formula" class="sheet crop disc disc--closed" aria-label="Formula">
+    <div class="disc-head-row"><div>
+        <p class="specimen">No. 06 — The formula</p>
+        <div class="sheet-head">
+          <img src="assets/icon-chart.webp" alt="" width="56" height="56">
+          <div>
+            <h2>How the number is computed</h2>
+            <p class="label">Recompute it yourself from the live verdict numbers.</p>
+          </div>
+        </div>
+        
+    </div><button class="btn disc-toggle" type="button" aria-expanded="false" aria-controls="disc-formula-body">Show formula</button></div>
+    <div class="disc-body" id="disc-formula-body"><p>Break-even tickets = ceil(guarantee ÷ (ticket price − variable cost per ticket))</p>
+
+        <!-- DATA-BOUND FORMULA DIAGRAM (hairline technical-drawing language:
+             1px ink rules, dimension lines with end ticks, ruled guides,
+             one 1px cadmium guide on the ceil step only).
+             Live view: filled by renderDiagram(v) from the verdict object.
+             Fallback view: the recorded example, labelled as recorded. -->
+        <div class="diagram" id="formulaDiagram" aria-label="Break-even arithmetic, drawn from the verdict numbers">
+          <div id="diagramLive" hidden>
+            <div class="diagram-row">
+              <div class="diagram-cell">
+                <span class="diagram-dim"><span class="diagram-dim-label">guarantee</span></span>
+                <span id="diagramGuarantee" class="diagram-value num">—</span>
+              </div>
+              <span class="diagram-op" aria-hidden="true">÷</span>
+              <div class="diagram-cell">
+                <span class="diagram-dim"><span class="diagram-dim-label">net per ticket</span></span>
+                <span id="diagramNet" class="diagram-value num">—</span>
+                <span id="diagramNetBuild" class="diagram-build">—</span>
+              </div>
+              <span class="diagram-op" aria-hidden="true">=</span>
+              <div class="diagram-cell">
+                <span class="diagram-dim"><span class="diagram-dim-label">exact quotient — not a ticket count</span></span>
+                <span id="diagramQuotient" class="diagram-value num">—</span>
+              </div>
+            </div>
+            <div class="diagram-ceil" aria-label="Ceil step">
+              <span class="diagram-ceil-line" aria-hidden="true"></span>
+              <span class="diagram-ceil-label">ceil → next whole ticket</span>
+              <span id="diagramCeil" class="diagram-result num">—</span>
+            </div>
+            <p class="label diagram-note">Drawn from this verdict's own numbers. The ticket count is the verdict's number, never recomputed here.</p>
+          </div>
+          <div id="diagramFallback">
+            <div class="diagram-row">
+              <div class="diagram-cell">
+                <span class="diagram-dim"><span class="diagram-dim-label">guarantee</span></span>
+                <span class="diagram-value num">$250,000</span>
+              </div>
+              <span class="diagram-op" aria-hidden="true">÷</span>
+              <div class="diagram-cell">
+                <span class="diagram-dim"><span class="diagram-dim-label">net per ticket</span></span>
+                <span class="diagram-value num">$120</span>
+                <span class="diagram-build">$120 per ticket — no variable cost entered, net is before variable costs</span>
+              </div>
+              <span class="diagram-op" aria-hidden="true">=</span>
+              <div class="diagram-cell">
+                <span class="diagram-dim"><span class="diagram-dim-label">exact quotient — not a ticket count</span></span>
+                <span class="diagram-value num">2,083.33</span>
+              </div>
+            </div>
+            <div class="diagram-ceil" aria-label="Ceil step">
+              <span class="diagram-ceil-line" aria-hidden="true"></span>
+              <span class="diagram-ceil-label">ceil → next whole ticket</span>
+              <span class="diagram-result num">2,084 tickets</span>
+            </div>
+            <p class="label diagram-note">Recorded example — from the recorded trials, not this run. Run a verdict to replace it with live numbers.</p>
+          </div>
+        </div>
+
+        <p id="workedExample" class="num">Run a verdict to see its worked example here.</p>
+        <p id="formulaSourceTag" class="source-tag-line"></p>
+        <p>When capacity is known and break-even tickets exceed it, the verdict is: “Cannot break even in this room at this guarantee.” When capacity is unknown, no sellout percentage is shown at all.</p>
+
+        <!-- Arithmetic checker: pure arithmetic on typed inputs. No Qloo
+             call, no verdict, no evidence claim. Inline script at the end
+             of this file; no app.js change required for the checker. -->
+        <div class="checker" aria-label="Arithmetic checker">
+          <h3>Check the arithmetic yourself</h3>
+          <p class="label">Arithmetic only — not a verdict, no Qloo call</p>
+          <div class="checker-grid">
+            <label class="checker-field">Guarantee (USD)
+              <input id="checkGuarantee" type="number" min="0" step="1" value="250000" inputmode="numeric">
+            </label>
+            <label class="checker-field">Ticket price (USD)
+              <input id="checkPrice" type="number" min="0" step="0.01" value="120" inputmode="decimal">
+            </label>
+            <label class="checker-field">Variable cost per ticket (USD, optional)
+              <input id="checkCost" type="number" min="0" step="0.01" inputmode="decimal">
+            </label>
+          </div>
+          <p class="checker-out">Break-even: <strong id="checkResult" class="num">2,084 tickets</strong></p>
+          <p class="label">This checker divides and rounds up only. It knows nothing about the artist, the city, or the audience.</p>
+        </div>
+          </div>
+</section>
+    </div>
+
+    <div class="rail rail-right">
+      <!-- Evidence card: the four long verdict <details> blocks, moved
+           here from inside #verdict so the hero stays a hero. All ids
+           unchanged; app.js renders into them exactly as before.
+           Closed by default: one click opens the full text. -->
+      <section class="sheet crop" aria-label="Evidence">
+        <p class="specimen">No. 04 — The evidence</p>
+        <h2>Evidence behind the number</h2>
+        <p class="label">Full verdict detail, one click away. Nothing here is a second verdict — every line traces to the same run.</p>
+        <details>
+          <summary>Audience evidence</summary>
+          <p id="audienceNote"></p>
+          <ul id="audienceAreas"></ul>
+          <p id="audienceSourceTag" class="source-tag-line"></p>
+        </details>
+        <details>
+          <summary>Opener shortlist, ranked for this city audience</summary>
+          <ol id="openerList"></ol>
+          <p id="topPick"></p>
+          <p id="openerSourceTag" class="source-tag-line"></p>
+        </details>
+        <details>
+          <summary>Evidence details: who the audience is, whether the artist is rising, shared tags, how the fan bases overlap</summary>
+          <div id="demoBlock"></div>
+          <div id="trendBlock"></div>
+          <div id="tagsBlock"></div>
+          <div id="overlapBlock"></div>
+          <p id="evidenceSourceTag" class="source-tag-line"></p>
+        </details>
+        <details>
+          <summary>Sources checked</summary>
+          <p id="legSummary" class="leg-summary"></p>
+          <div id="legsBlock"></div>
+          <p id="legsSourceTag" class="source-tag-line"></p>
+        </details>
+        <!-- Miss taxonomy (E): rendered by app.js into #missTaxonomy on a
+             successful verdict; the original verdict above is untouched. -->
+        <div id="missTaxonomy" class="miss-taxonomy" aria-label="Miss taxonomy"></div>
+      </section>
+
+      <!-- Receipt drawer -->
+      <section id="receiptSection" class="sheet crop disc disc--closed" hidden aria-label="Receipts">
+    <div class="disc-head-row"><div>
+        <div class="sheet-head">
+          <img src="assets/icon-contract.webp" alt="" width="56" height="56">
+          <div>
+            <h2>Proof for every number (click to re-check)</h2>
+            <p class="label">Every claim, with the exact call behind it. Replay re-runs that call live.</p>
+            <p class="label">Keys never appear here — receipts carry hashes and request IDs, never keys.</p>
+          </div>
+        </div>
+        
+    </div><button class="btn disc-toggle" type="button" aria-expanded="false" aria-controls="disc-receiptSection-body">Show receipts</button></div>
+    <div class="disc-body" id="disc-receiptSection-body"><div id="receiptList" class="set"></div>
+        <p id="receiptSourceTag" class="source-tag-line"></p>
+        <div id="replayOut" class="replay-out"></div>
+          </div>
+</section>
+
+      <!-- Verdict sheet: printable/shareable, generated from the SAME verdict data. -->
+      <section id="verdictSheet" class="sheet crop verdict-sheet disc disc--closed" hidden aria-label="Verdict sheet">
+    <div class="disc-head-row"><div>
+        <div class="sheet-head">
+          <img src="assets/icon-contract.webp" alt="" width="56" height="56">
+          <div>
+            <h2>Verdict sheet — print or copy</h2>
+            <p class="label">Generated from this verdict's own data — never a diverging copy. Print it, or copy the promoter brief.</p>
+          </div>
+        </div>
+        
+    </div><button class="btn disc-toggle" type="button" aria-expanded="false" aria-controls="disc-verdictSheet-body">Show sheet</button></div>
+    <div class="disc-body" id="disc-verdictSheet-body"><div id="sheetBody"></div>
+        <p id="sheetSourceTag" class="source-tag-line"></p>
+        <div id="refusedBlock"></div>
+        <div class="sheet-actions">
+          <button class="btn" type="button" id="printSheetBtn">Print sheet</button>
+          <button class="btn" type="button" id="copyBriefBtn">Copy promoter brief</button>
+        </div>
+        <p id="copyNote" class="label"></p>
+          </div>
+</section>
+
+      <!-- The race is a secondary toggle BELOW the verdict, never a competing primary. -->
+      <div id="raceToggleWrap" class="race-toggle-wrap" hidden>
+        <button class="link-btn" type="button" id="raceToggleBtn">run the live Gut-vs-Graph race</button>
       </div>
-    </div>
-    <div id="signChecklist" class="sign-checklist" aria-label="Before you sign checklist"></div>
-    <div><span id="beTickets" class="verdict-number num">—</span> <span class="verdict-unit">tickets to break even</span></div>
-    <p id="arithmeticSourceTag" class="source-tag-line"></p>
-    <div id="confidenceBox" class="confidence-box" aria-label="Evidence strength"></div>
-    <div id="thinBadge" class="thin-badge" hidden></div>
-    <p class="aggregate-note">Aggregate taste signals only — they show how much two audiences share, never a prediction about any individual, and never a promise this show will sell out.</p>
-    <p id="beVerdict" class="verdict-line"></p>
-    <div id="citeChips" class="cite-chips" aria-label="Citations for this verdict"></div>
-    <ul id="proofSummary" class="proof-summary"></ul>
-    <div id="cannotBox" class="cannot-box" hidden><p>Cannot break even in this room at this guarantee</p></div>
-    <div id="capacityBadge" class="capacity-badge"></div>
-    <div id="unknownBox" class="unknown-box" hidden>
-      <p id="unknownText"></p>
-    </div>
-    <div id="selloutBox" hidden style="margin-top:12px">
-      <p style="margin:0">Break-even share of seats in this room (not a sellout prediction): <strong id="selloutPct" class="num"></strong></p>
-    </div>
-    <dl class="facts">
-      <div><dt>Ticket price</dt><dd id="bePrice"></dd></div>
-      <div><dt>Net per ticket</dt><dd id="beNet"></dd></div>
-      <div><dt>Capacity</dt><dd id="beCapacity"></dd></div>
-    </dl>
 
-    <details open>
-      <summary>Audience evidence</summary>
-      <p id="audienceNote"></p>
-      <ul id="audienceAreas"></ul>
-      <p id="audienceSourceTag" class="source-tag-line"></p>
-    </details>
-    <details open>
-      <summary>Opener shortlist, ranked for this city audience</summary>
-      <ol id="openerList"></ol>
-      <p id="topPick"></p>
-      <p id="openerSourceTag" class="source-tag-line"></p>
-    </details>
-    <details open>
-      <summary>Evidence details: who the audience is, whether the artist is rising, shared tags, how the fan bases overlap</summary>
-      <div id="demoBlock"></div>
-      <div id="trendBlock"></div>
-      <div id="tagsBlock"></div>
-      <div id="overlapBlock"></div>
-      <p id="evidenceSourceTag" class="source-tag-line"></p>
-    </details>
-    <details open>
-      <summary>Sources checked</summary>
-      <p id="legSummary" class="leg-summary"></p>
-      <div id="legsBlock"></div>
-      <p id="legsSourceTag" class="source-tag-line"></p>
-    </details>
-    <!-- Phase 3 Wave 2: miss taxonomy (E), re-rank without the top pick
-      (I, separate section — the original verdict above is never
-      overwritten), and proof-pack / CSV exports (B, L). All three render
-      only on a successful verdict; withheld, price-unknown, and
-      needs-input verdicts never reach this card. -->
-    <div id="missTaxonomy" class="miss-taxonomy" aria-label="Miss taxonomy"></div>
-    <div id="rerankSection" class="rerank-section" hidden aria-label="Re-rank without the top pick">
-      <h3>Re-rank without the top pick</h3>
-      <p class="label">Re-runs only the ranking step with the same candidate set minus the current top pick. The original verdict above stays untouched.</p>
-      <button class="btn" type="button" id="rerankBtn">Re-rank without the top pick</button>
-      <div id="rerankOut" class="rerank-out" aria-live="polite"></div>
-    </div>
-    <div id="proofPackWrap" class="proof-pack-wrap" hidden aria-label="Proof pack exports">
-      <h3>Proof pack</h3>
-      <p class="label">Downloads serialize this same verdict object — no new server call. The JSON pack carries its own SHA-256; the CSV is the same object, second rendering.</p>
-      <button class="btn" type="button" id="proofPackBtn">Download proof pack</button>
-      <button class="btn" type="button" id="verdictCsvBtn">Download verdict CSV</button>
-      <p id="proofPackNote" class="label"></p>
-    </div>
-  </section>
+      <!-- Gut-vs-Graph race: secondary to the verdict, collapsed when hollow. -->
+      <section id="raceSection" class="sheet crop disc disc--closed" hidden aria-label="Gut versus Graph race">
+    <div class="disc-head-row"><div>
+        <p class="specimen">No. 05 — The race</p>
+        <div class="sheet-head">
+          <img src="assets/icon-venue.webp" alt="" width="56" height="56">
+          <div>
+            <h2>My gut pick vs the taste-data pick</h2>
+            <p class="label">Gut vs Graph, live. An arm with no provider is shown as unavailable, never given a pick.</p>
+          </div>
+        </div>
+        
+    </div><button class="btn disc-toggle" type="button" aria-expanded="false" aria-controls="disc-raceSection-body">Show race</button></div>
+    <div class="disc-body" id="disc-raceSection-body"><figure class="fig crop" data-plx="-0.03">
+          <img src="assets/race-ticket-stack.webp" alt="Ticket stack, close-up: fanned perforated tickets on studio-white proof paper" width="1920" height="1280" data-fallback="stackFallback">
+          <figcaption>Ticket stack, close-up — fanned perforated tickets on proof paper. No numbers are baked into the drawing.</figcaption>
+          <div id="stackFallback" class="fig-fallback" role="note">
+            <p><strong>Ticket stack, close-up.</strong> Fanned perforated tickets on studio-white proof paper, dot grid and crop marks. No numbers are baked into the drawing.</p>
+          </div>
+        </figure>
+        <figure class="fig crop" style="--rd:120ms" data-plx="-0.03">
+          <img id="raceImg" src="assets/proof-race.webp" alt="Two parallel race lanes with a finish flag on studio-white proof paper" width="2736" height="912" data-fallback="raceFallback">
+          <figcaption>Figure 4 — two lanes, one finish line. 3 : 1.</figcaption>
+          <div id="raceFallback" class="fig-fallback" role="note">
+            <p><strong>Two lanes, one finish line.</strong> Two parallel race lanes with a finish flag on studio-white proof paper.</p>
+          </div>
+        </figure>
+        <div id="raceTimer" class="race-timer"></div>
+        <div id="raceNote" class="race-note" hidden>
+          <p>Comparison arms require an LLM provider — verdict unaffected.</p>
+          <details id="raceExpandDetails">
+            <summary>Show the comparison arms anyway</summary>
+            <p class="label">The arms below ran without an LLM provider, so their lanes are unavailable — the verdict above does not depend on them.</p>
+          </details>
+        </div>
+        <div id="raceBody">
+          <div id="armsBlock"></div>
+          <p id="armsSourceTag" class="source-tag-line"></p>
+          <div id="raceBlock"></div>
+          <div id="missBlock"></div>
+        </div>
+          </div>
+</section>
 
-  <!-- Partial evidence (G43): shown only on price_unknown, never with a verdict number. -->
+      <!-- Deal workspace: client-held (localStorage + JSON export/import). Seeds ONLY from a verdict response; withheld, price-unknown, and needs-input responses are rejected and seed nothing. No verdict auto-runs here. -->
+      <section id="workspace" class="sheet crop disc disc--closed" aria-label="Deal workspace">
+    <div class="disc-head-row"><div>
+        <p class="specimen">No. 08 — The workspace</p>
+        <h2>Deal workspace</h2>
+        <p class="label">One offer, followed through every commercial move: replacement, renegotiation, routing, budget envelope, comparison, and a settlement check. The workspace lives on this device only — export the JSON to keep it.</p>
+        
+    </div><button class="btn disc-toggle" type="button" aria-expanded="false" aria-controls="disc-workspace-body">Show workspace</button></div>
+    <div class="disc-body" id="disc-workspace-body"><div id="wsSeedNote" aria-live="polite"></div>
+        <div id="wsHeader"></div>
+        <div id="wsBase"></div>
+        <div id="wsActions"></div>
+        <div class="ws-grid">
+          <div class="ws-panel" aria-label="Base offer">
+            <h3>Base offer</h3>
+            <p class="label">Editing a term creates a new workspace; prior steps are dropped, never silently re-based.</p>
+            <div id="wsEditBase"></div>
+          </div>
+          <div class="ws-panel" aria-label="Replacement">
+            <h3>Replacement</h3>
+            <p class="label">The headliner drops. Re-price a replacement act inside the original terms.</p>
+            <div id="wsReplacement"></div>
+          </div>
+          <div class="ws-panel" aria-label="Renegotiation">
+            <h3>Renegotiation</h3>
+            <p class="label">What must change to reach break-even, holding the other terms fixed.</p>
+            <div id="wsRenegotiation"></div>
+          </div>
+          <div class="ws-panel" aria-label="Routing">
+            <h3>Routing — where next</h3>
+            <p class="label">Candidate cities you type, ranked by matched-area counts.</p>
+            <div id="wsRouting"></div>
+          </div>
+          <div class="ws-panel" aria-label="Budget envelope">
+            <h3>Budget envelope</h3>
+            <p class="label">The most you will pay, or the most tickets you can credibly put in the room — exactly one input.</p>
+            <div id="wsEnvelope"></div>
+          </div>
+          <div class="ws-panel" aria-label="Comparison">
+            <h3>Comparison — up to 5 offers</h3>
+            <p class="label">Row 0 is always the verified base, never re-run.</p>
+            <div id="wsComparison"></div>
+          </div>
+          <div class="ws-panel" aria-label="Settlement">
+            <h3>Settlement check</h3>
+            <p class="label">After the show: promoter-reported attendance against the recorded threshold.</p>
+            <div id="wsSettlement"></div>
+          </div>
+        </div>
+          </div>
+</section>
+    </div>
+  </div>
+
+  <!-- Partial evidence: shown only on price_unknown, never with a verdict number. -->
   <section id="partialSection" class="sheet crop" hidden aria-label="Partial evidence">
     <h2>Partial evidence — not a verdict</h2>
     <p class="label">No break-even number is shown without a price. What follows is partial Qloo evidence, not a verdict.</p>
@@ -187,153 +486,52 @@
     <div id="partialLegs"></div>
   </section>
 
-  <!-- G21: the race is a secondary toggle BELOW the verdict, never a competing primary. -->
-  <div id="raceToggleWrap" class="race-toggle-wrap" hidden>
-    <button class="link-btn" type="button" id="raceToggleBtn">run the live Gut-vs-Graph race</button>
+  <!-- Lower grid: recorded tally + benchmark ledger, side by side. -->
+  <div class="lower-grid">
+    <!-- Gut-vs-Graph recorded tally: bench-driven, recorded not live. -->
+    <section id="trialTally" class="sheet crop disc disc--closed" aria-label="Gut versus Graph — recorded trials">
+    <div class="disc-head-row"><div>
+      <p class="label">Recorded trials — from the committed benchmark ledger. Recorded, not live.</p>
+      <h2>Gut vs Graph — recorded trials</h2>
+      
+    </div><button class="btn disc-toggle" type="button" aria-expanded="false" aria-controls="disc-trialTally-body">Show trials</button></div>
+    <div class="disc-body" id="disc-trialTally-body"><div id="tallyTable"></div>
+      <p id="tallyLine" class="tally-line"></p>
+      <div id="tallyTaxonomy" class="miss-taxonomy" aria-label="Recorded miss taxonomy"></div>
+        </div>
+</section>
+
+    <!-- Benchmark ledger -->
+    <section class="sheet crop ledger-card disc disc--closed" id="ledger" aria-label="Benchmark ledger">
+    <div class="disc-head-row"><div>
+      <p class="specimen">No. 07 — The ledger</p>
+      <h2>Benchmark ledger</h2>
+      <p class="label">Committed, rerunnable Qloo-vs-Gut-vs-Web trials. Runs appear here only after real runs.</p>
+      
+    </div><button class="btn disc-toggle" type="button" aria-expanded="false" aria-controls="disc-ledger-body">Show ledger</button></div>
+    <div class="disc-body" id="disc-ledger-body"><div id="benchBlock">Loading…</div>
+      <p><a href="trial-pack.json" download>Download offline replay pack (recorded, not live)</a> — the 3 dated trials, frozen with checksums. Re-verify the arithmetic and the recorded picks without a fresh Qloo call.</p>
+        </div>
+</section>
   </div>
 
-  <!-- Gut-vs-Graph race: secondary to the verdict (G21), collapsed when hollow (G44). -->
-  <section id="raceSection" class="sheet crop" hidden aria-label="Gut versus Graph race">
-    <p class="specimen">No. 05 — The race</p>
-    <div class="sheet-head">
-      <img src="assets/icon-venue.webp" alt="" width="56" height="56">
-      <div>
-        <h2>My gut pick vs the taste-data pick</h2>
-        <p class="label">Gut vs Graph, live. An arm with no provider is shown as unavailable, never given a pick.</p>
-      </div>
-    </div>
-    <figure class="fig crop" data-plx="-0.03">
-      <img src="assets/race-ticket-stack.webp" alt="Ticket stack, close-up: fanned perforated tickets on studio-white proof paper" width="1920" height="1280" data-fallback="stackFallback">
-      <figcaption>Ticket stack, close-up — fanned perforated tickets on proof paper. No numbers are baked into the drawing.</figcaption>
-      <div id="stackFallback" class="fig-fallback" role="note">
-        <p><strong>Ticket stack, close-up.</strong> Fanned perforated tickets on studio-white proof paper, dot grid and crop marks. No numbers are baked into the drawing.</p>
-      </div>
-    </figure>
-    <figure class="fig crop reveal" style="--rd:120ms" data-plx="-0.03">
-      <img id="raceImg" src="assets/proof-race.webp" alt="Two parallel race lanes with a finish flag on studio-white proof paper" width="2736" height="912" data-fallback="raceFallback">
-      <figcaption>Figure 4 — two lanes, one finish line. 3 : 1.</figcaption>
-      <div id="raceFallback" class="fig-fallback" role="note">
-        <p><strong>Two lanes, one finish line.</strong> Two parallel race lanes with a finish flag on studio-white proof paper.</p>
-      </div>
-    </figure>
-    <div id="raceTimer" class="race-timer"></div>
-    <div id="raceNote" class="race-note" hidden>
-      <p>Comparison arms require an LLM provider — verdict unaffected.</p>
-      <details id="raceExpandDetails">
-        <summary>Show the comparison arms anyway</summary>
-        <p class="label">The arms below ran without an LLM provider, so their lanes are unavailable — the verdict above does not depend on them.</p>
-      </details>
-    </div>
-    <div id="raceBody">
-      <div id="armsBlock"></div>
-      <p id="armsSourceTag" class="source-tag-line"></p>
-      <div id="raceBlock"></div>
-      <div id="missBlock"></div>
-    </div>
-  </section>
-
-  <!-- Deal workspace: client-held (localStorage + JSON export/import). Seeds ONLY from a verdict response; withheld, price-unknown, and needs-input responses are rejected and seed nothing. No verdict auto-runs here. -->
-  <section id="workspace" class="sheet crop" aria-label="Deal workspace">
-    <p class="specimen">No. 08 — The workspace</p>
-    <h2>Deal workspace</h2>
-    <p class="label">One offer, followed through every commercial move: replacement, renegotiation, routing, budget envelope, comparison, and a settlement check. The workspace lives on this device only — export the JSON to keep it.</p>
-    <div id="wsSeedNote" aria-live="polite"></div>
-    <div id="wsHeader"></div>
-    <div id="wsBase"></div>
-    <div id="wsActions"></div>
-    <div class="ws-panel" aria-label="Base offer">
-      <h3>Base offer</h3>
-      <p class="label">Editing a term creates a new workspace; prior steps are dropped, never silently re-based.</p>
-      <div id="wsEditBase"></div>
-    </div>
-    <div class="ws-panel" aria-label="Replacement">
-      <h3>Replacement</h3>
-      <p class="label">The headliner drops. Re-price a replacement act inside the original terms.</p>
-      <div id="wsReplacement"></div>
-    </div>
-    <div class="ws-panel" aria-label="Renegotiation">
-      <h3>Renegotiation</h3>
-      <p class="label">What must change to reach break-even, holding the other terms fixed.</p>
-      <div id="wsRenegotiation"></div>
-    </div>
-    <div class="ws-panel" aria-label="Routing">
-      <h3>Routing — where next</h3>
-      <p class="label">Candidate cities you type, ranked by matched-area counts.</p>
-      <div id="wsRouting"></div>
-    </div>
-    <div class="ws-panel" aria-label="Budget envelope">
-      <h3>Budget envelope</h3>
-      <p class="label">The most you will pay, or the most tickets you can credibly put in the room — exactly one input.</p>
-      <div id="wsEnvelope"></div>
-    </div>
-    <div class="ws-panel" aria-label="Comparison">
-      <h3>Comparison — up to 5 offers</h3>
-      <p class="label">Row 0 is always the verified base, never re-run.</p>
-      <div id="wsComparison"></div>
-    </div>
-    <div class="ws-panel" aria-label="Settlement">
-      <h3>Settlement check</h3>
-      <p class="label">After the show: promoter-reported attendance against the recorded threshold.</p>
-      <div id="wsSettlement"></div>
-    </div>
-  </section>
-
-  <!-- Gut-vs-Graph recorded tally: bench-driven, recorded not live. -->
-  <section id="trialTally" class="sheet crop" aria-label="Gut versus Graph — recorded trials">
-    <p class="label">Recorded trials — from the committed benchmark ledger. Recorded, not live.</p>
-    <h2>Gut vs Graph — recorded trials</h2>
-    <div id="tallyTable"></div>
-    <p id="tallyLine" class="tally-line"></p>
-    <div id="tallyTaxonomy" class="miss-taxonomy" aria-label="Recorded miss taxonomy"></div>
-  </section>
-
-  <!-- Receipt drawer -->
-  <section id="receiptSection" class="sheet crop" hidden aria-label="Receipts">
-    <div class="sheet-head">
-      <img src="assets/icon-contract.webp" alt="" width="56" height="56">
-      <div>
-        <h2>Proof for every number (click to re-check)</h2>
-        <p class="label">Every claim, with the exact call behind it. Replay re-runs that call live.</p>
-        <p class="label">Keys never appear here — receipts carry hashes and request IDs, never keys.</p>
-      </div>
-    </div>
-    <div id="receiptList" class="set"></div>
-    <p id="receiptSourceTag" class="source-tag-line"></p>
-    <div id="replayOut" class="replay-out"></div>
-  </section>
-
-  <!-- Verdict sheet: printable/shareable, generated from the SAME verdict data. -->
-  <section id="verdictSheet" class="sheet crop verdict-sheet" hidden aria-label="Verdict sheet">
-    <div class="sheet-head">
-      <img src="assets/icon-contract.webp" alt="" width="56" height="56">
-      <div>
-        <h2>Verdict sheet — print or copy</h2>
-        <p class="label">Generated from this verdict's own data — never a diverging copy. Print it, or copy the promoter brief.</p>
-      </div>
-    </div>
-    <div id="sheetBody"></div>
-    <p id="sheetSourceTag" class="source-tag-line"></p>
-    <div id="refusedBlock"></div>
-    <div class="sheet-actions">
-      <button class="btn" type="button" id="printSheetBtn">Print sheet</button>
-      <button class="btn" type="button" id="copyBriefBtn">Copy promoter brief</button>
-    </div>
-    <p id="copyNote" class="label"></p>
-  </section>
-
-  <!-- Qloo integration depth: final copy from the integration-depth audit, 2026-10-29. -->
-  <section class="sheet crop depth-card reveal" id="depth" aria-label="Qloo integration depth">
+  <!-- Qloo integration depth: final copy from the integration-depth audit, 2026-10-29.
+       The long proof notes are one click away in <details>; every word kept. -->
+  <section class="sheet crop depth-card disc disc--closed" id="depth" aria-label="Qloo integration depth">
+    <div class="disc-head-row"><div>
     <p class="specimen">No. 03 — The proof</p>
     <h2>How deep does OfferSheet's Qloo integration go?</h2>
     <p><strong>10 of 10 official Qloo tools, wired into the verdict — 8 of them receipted live.</strong></p>
-    <figure class="fig crop reveal" style="--rd:60ms" data-plx="0.03">
+    
+    </div><button class="btn disc-toggle" type="button" aria-expanded="false" aria-controls="disc-depth-body">Show depth</button></div>
+    <div class="disc-body" id="disc-depth-body"><figure class="fig crop" data-plx="0.03">
       <img src="assets/depth-bowl-detail.webp" alt="Seating bowl, detail: amphitheater seating rows drawn on studio-white proof paper" width="1920" height="1280" data-fallback="bowlFallback">
       <figcaption>Seating bowl, detail — amphitheater rows on proof paper. No numbers are baked into the drawing.</figcaption>
       <div id="bowlFallback" class="fig-fallback" role="note">
         <p><strong>Seating bowl, detail.</strong> Amphitheater seating rows on studio-white proof paper, dot grid and crop marks. No numbers are baked into the drawing.</p>
       </div>
     </figure>
-    <figure class="fig crop reveal" style="--rd:120ms" data-plx="-0.03">
+    <figure class="fig crop" style="--rd:120ms" data-plx="-0.03">
       <img id="depthImg" src="assets/proof-receipts.webp" alt="Proof slips, checked: six plain receipt slips with check marks on studio-white proof paper" width="2352" height="1008" data-fallback="depthFallback">
       <figcaption>Figure 2 — proof slips, checked. 7 : 3. No numbers are baked into the drawing.</figcaption>
       <div id="depthFallback" class="fig-fallback" role="note">
@@ -345,44 +543,38 @@
       <thead><tr><th>Tool</th><th>What it does</th><th>Live status</th></tr></thead>
       <tbody id="depthToolsBody"><tr class="row-live"><td>qloo_<wbr>capabilities</td><td>Readiness gate — runs first on every verdict; the "Qloo live" badge turns green only after a live call succeeds, never from config alone</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>find_<wbr>tags</td><td>Tag-first path — the headliner is resolved to Qloo tags before any audience call; unresolved input shows as unmeasured, never guessed</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>describe</td><td>Headliner + opener cards; an ambiguous name returns candidates to pick from — the verdict never guesses</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>recommend</td><td>Opener candidates from fans of the headliner</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>rank</td><td>The opener shortlist ranked for the city audience</td><td><span class="stamp">Live, receipted (second live run)</span></td></tr><tr class="row-live"><td>qloo_<wbr>where_<wbr>popular</td><td>Where the headliner is popular — the city-audience areas behind the verdict</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>audience_<wbr>demographics</td><td>Full age/gender bands for the headliner audience — not a single top band</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>entity_<wbr>tags</td><td>Top shared tags between headliner and opener</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-wired"><td>qloo_<wbr>trends</td><td>90-day momentum leg</td><td><span class="stamp">Wired; returned empty on live runs so far — shown as no data, never faked</span></td></tr><tr class="row-wired"><td>qloo_<wbr>compare_<wbr>audiences</td><td>Headliner-vs-opener audience overlap</td><td><span class="stamp">Wired; returned empty on live runs so far — shown as no data, never faked</span></td></tr></tbody>
     </table></div>
-    <div class="proof-note" id="depthEndpoints">
+    <details class="proof-note-details" id="depthEndpoints">
+      <summary>REST cross-check layer</summary>
       <p><strong>REST cross-check layer.</strong> Four endpoints wired — /search, /v2/insights (with explainability), /v2/analysis/compare, /entities — so the REST legs cross-check the MCP legs on the same question.</p>
       <p>Status, stated plainly: REST restSearch and restEntities receipted live in the 29 Oct 2026 trials; back-to-back runs returned REST 429s, shown as exact failure labels; trends/compare remain wired and empty on live runs so far.</p>
-    </div>
-    <p class="proof-note" id="depthReceiptNote"><strong>Every claim carries a receipt — and every receipt re-runs.</strong> Each verdict row shows its SHA-256 request hash, its response requestId (REST legs; MCP legs carry an argument hash and no upstream requestId, labeled as such), its result count, and its ordered entity IDs. Click any receipt to re-run the exact call: a match stamps "same IDs in the same order" (proven live: a find_tags replay returned the same 10 tags in the same order); a mismatch surfaces as "count matches but order/IDs differ" — never hidden, never counts-only.</p>
-    <p class="proof-note"><strong>The verdict depends on Qloo — it cannot render without it.</strong> If Qloo is unconfigured or any required evidence leg fails, the page shows "Verdict withheld: evidence incomplete" with no numbers at all. No mock data, no demo numbers, no silent fallback — ever. Live runs observed 2026-10-29: Billie Eilish in New York → break-even 2,084 tickets, Qloo pick Olivia Rodrigo; Taylor Swift in New York → break-even 2,084 tickets, Qloo pick Carly Rae Jepsen; both in ~16–18 seconds, both with capacity honestly unknown (Ticketmaster returned no capacity for the room — shown as tickets needed, never as a sellout percentage).</p>
-    <p class="proof-note" id="depthGutLine"><strong>Gut vs Graph — the honest state.</strong> OfferSheet runs three arms on the same question: Gut (LLM alone), Graph (Qloo-grounded — the verdict), and Web (LLM + Wikidata facts, no Qloo), with every miss named in a ledger. The ledger and all three arms are live in code; <strong>3 live trials ran 29 Oct 2026 (Qwen primary, Groq fallback proven live) and are recorded in the public benchmark ledger in this repo</strong> — counted from ledger rows, never asserted in advance.</p>
-    <p class="proof-note"><strong>What this integration does not claim.</strong> No headcount is ever shown (Qloo returns matched areas and entities, not a population number). No sellout prediction is ever shown. Past winners are pattern context only — their technical depth was never independently verified, so nothing here claims to have beaten them.</p>
-  </section>
-
-  <!-- Formula panel -->
-  <section id="formula" class="sheet crop" aria-label="Formula">
-    <p class="specimen">No. 06 — The formula</p>
-    <div class="sheet-head">
-      <img src="assets/icon-chart.webp" alt="" width="56" height="56">
-      <div>
-        <h2>How the number is computed</h2>
-        <p class="label">Recompute it yourself from the live verdict numbers.</p>
+    </details>
+    <details class="proof-note-details" id="depthReceiptNote">
+      <summary>Every claim carries a receipt — and every receipt re-runs</summary>
+      <p><strong>Every claim carries a receipt — and every receipt re-runs.</strong> Each verdict row shows its SHA-256 request hash, its response requestId (REST legs; MCP legs carry an argument hash and no upstream requestId, labeled as such), its result count, and its ordered entity IDs. Click any receipt to re-run the exact call: a match stamps "same IDs in the same order" (proven live: a find_tags replay returned the same 10 tags in the same order); a mismatch surfaces as "count matches but order/IDs differ" — never hidden, never counts-only.</p>
+    </details>
+    <details class="proof-note-details">
+      <summary>The verdict depends on Qloo — it cannot render without it</summary>
+      <p><strong>The verdict depends on Qloo — it cannot render without it.</strong> If Qloo is unconfigured or any required evidence leg fails, the page shows "Verdict withheld: evidence incomplete" with no numbers at all. No mock data, no demo numbers, no silent fallback — ever. Live runs observed 2026-10-29: Billie Eilish in New York → break-even 2,084 tickets, Qloo pick Olivia Rodrigo; Taylor Swift in New York → break-even 2,084 tickets, Qloo pick Carly Rae Jepsen; both in ~26–35 seconds, both with capacity honestly unknown (Ticketmaster returned no capacity for the room — shown as tickets needed, never as a sellout percentage).</p>
+    </details>
+    <details class="proof-note-details" id="depthGutLine">
+      <summary>Gut vs Graph — the honest state</summary>
+      <p><strong>Gut vs Graph — the honest state.</strong> OfferSheet runs three arms on the same question: Gut (LLM alone), Graph (Qloo-grounded — the verdict), and Web (LLM + Wikidata facts, no Qloo), with every miss named in a ledger. The ledger and all three arms are live in code; <strong>3 live trials ran 29 Oct 2026 (Qwen primary, Groq fallback proven live) and are recorded in the public benchmark ledger in this repo</strong> — counted from ledger rows, never asserted in advance.</p>
+    </details>
+    <details class="proof-note-details">
+      <summary>What this integration does not claim</summary>
+      <p><strong>What this integration does not claim.</strong> No headcount is ever shown (Qloo returns matched areas and entities, not a population number). No sellout prediction is ever shown. Past winners are pattern context only — their technical depth was never independently verified, so nothing here claims to have beaten them.</p>
+    </details>
       </div>
-    </div>
-    <figure class="fig crop reveal" style="--rd:120ms" data-plx="0.03">
-      <img id="formulaImg" src="assets/proof-formula.webp" alt="A dimension line, a ticket strip, and a segmented bar drawn on studio-white proof paper" width="1920" height="1280" data-fallback="formulaFallback">
-      <figcaption>Figure 5 — the count, drawn as a dimension. 3 : 2. No numbers are baked into the drawing.</figcaption>
-      <div id="formulaFallback" class="fig-fallback" role="note">
-        <p><strong>The count, drawn as a dimension.</strong> A dimension line, a ticket strip, and a segmented bar on studio-white proof paper. No numbers are baked into the drawing.</p>
-      </div>
-    </figure>
-    <p>Break-even tickets = ceil(guarantee ÷ (ticket price − variable cost per ticket))</p>
-    <p id="workedExample" class="num">Run a verdict to see its worked example here.</p>
-    <p id="formulaSourceTag" class="source-tag-line"></p>
-    <p>When capacity is known and break-even tickets exceed it, the verdict is: “Cannot break even in this room at this guarantee.” When capacity is unknown, no sellout percentage is shown at all.</p>
-  </section>
+</section>
 
   <!-- What Qloo doesn't decide: limits + failure cases, copy only. -->
-  <section id="limits" class="sheet crop" aria-label="What Qloo doesn't decide">
+  <section id="limits" class="sheet crop disc disc--closed" aria-label="What Qloo doesn't decide">
+    <div class="disc-head-row"><div>
     <h2>What Qloo doesn't decide</h2>
     <p>Qloo affinities are aggregate taste-overlap signals. They do not decide any of the following — and this page never presents them as if they did:</p>
-    <ul>
+    
+    </div><button class="btn disc-toggle" type="button" aria-expanded="false" aria-controls="disc-limits-body">Show limits</button></div>
+    <div class="disc-body" id="disc-limits-body"><ul>
       <li><strong>No headcount.</strong> Qloo returns matched areas and entities, not a population number.</li>
       <li><strong>No sellout prediction.</strong> A break-even count is not a promise the room fills.</li>
       <li><strong>No prediction about any individual.</strong> Audiences are aggregates, never a person.</li>
@@ -405,26 +597,18 @@
       </tbody>
     </table></div>
     <p class="proof-note"><strong>Cite-or-omit rule.</strong> Every Qloo-backed sentence on a verdict traces to a receipt below; LLM-arm picks are labelled LLM-only. A sentence with no backing receipt is dropped or labelled LLM-only — never presented as Qloo-backed.</p>
-  </section>
-
-  <!-- Benchmark ledger -->
-  <section class="sheet crop reveal ledger-card" id="ledger" aria-label="Benchmark ledger">
-    <p class="specimen">No. 07 — The ledger</p>
-    <h2>Benchmark ledger</h2>
-    <p class="label">Committed, rerunnable Qloo-vs-Gut-vs-Web trials. Runs appear here only after real runs.</p>
-    <div id="benchBlock">Loading…</div>
-    <p><a href="trial-pack.json" download>Download offline replay pack (recorded, not live)</a> — the 3 dated trials, frozen with checksums. Re-verify the arithmetic and the recorded picks without a fresh Qloo call.</p>
-  </section>
+      </div>
+</section>
 
   <!-- Safety strip -->
-  <section class="safety reveal band band--inkwash10" aria-label="Safety">
+  <section class="safety band band--inkwash10" aria-label="Safety">
     <p><strong>No personal data is sent to Qloo.</strong> Aggregate audiences only. If Qloo is not configured, the page fails closed with a visible 503 — never mock data. Qloo affinities are aggregate taste-overlap signals — how much two audiences share — never predictions about any individual, and never a causal claim that a show will sell out.</p>
   </section>
 
   <!-- Footer -->
-  <footer class="footer band band--deep reveal">
+  <footer class="footer band band--deep">
     <p>What results do NOT establish: Qloo affinities are aggregate taste-overlap signals — how much two audiences share — not individual behavior, and not a causal claim that a show will sell out. No sellout percentage is ever shown when capacity is unknown. Quota guards are this product’s own design settings, not Qloo-stated quotas — no numeric Qloo quota is documented.</p>
-    <p><a href="docs.html">How the verdict is proven</a> · <a href="tools.html">Qloo tool catalogue</a> · <a href="index.html">Landing</a></p>
+    <p><a href="docs.html" target="_top">How the verdict is proven</a> · <a href="tools.html" target="_top">Qloo tool catalogue</a> · <a href="index.html" target="_top">Landing</a></p>
     <p><a href="oracle.html">Oracle — history, comparison, and verification</a></p>
     <p class="label">OfferSheet — one money decision, before you sign.</p>
     <p class="colophon">Colophon — Set in Hedvig Letters Serif and Geist. Printed on studio-white proof paper.</p>
@@ -433,6 +617,103 @@
 <script src="app.js"></script>
 <script src="workspace.js"></script>
 <script src="oracle.js"></script>
+<script>
+  // Arithmetic checker (proposal-2 only): pure client-side ceil math on
+  // typed inputs. No fetch, no verdict, no Qloo call, no stored state.
+  // The label in markup says exactly: "Arithmetic only — not a verdict,
+  // no Qloo call". Safe to ship without any app.js change.
+  (function () {
+    var g = document.getElementById('checkGuarantee');
+    var p = document.getElementById('checkPrice');
+    var c = document.getElementById('checkCost');
+    var out = document.getElementById('checkResult');
+    if (!g || !p || !c || !out) return;
+    function fmt(n) { return n.toLocaleString('en-US'); }
+    function update() {
+      var guarantee = Number(g.value);
+      var price = Number(p.value);
+      var costBlank = c.value === '';
+      var cost = costBlank ? 0 : Number(c.value);
+      if (!isFinite(guarantee) || !isFinite(price) || !isFinite(cost) || guarantee < 0 || price < 0 || cost < 0) {
+        out.textContent = 'Enter valid non-negative numbers.';
+        return;
+      }
+      var net = price - cost;
+      if (net <= 0) {
+        out.textContent = 'No break-even: net per ticket must be above zero.';
+        return;
+      }
+      out.textContent = fmt(Math.ceil(guarantee / net)) + ' tickets' + (costBlank ? ' — before variable costs' : '');
+    }
+    [g, p, c].forEach(function (el) { el.addEventListener('input', update); });
+    update();
+  })();
+</script>
+<script>
+  // MERGE: P3 disclosure-card glue on the P2 base (no app.js dependency).
+  // Opens a collapsed card before scrolling to it, so jump links,
+  // proof-index entries, nav anchors, and the receipts link always land
+  // on open content. Never invents a verdict: the verdict hero is never
+  // a disc, and the toggle only shows/hides already-rendered content.
+  (function () {
+    function openDisc(section) {
+      if (!section || !section.classList || !section.classList.contains('disc')) return;
+      section.classList.remove('disc--closed');
+      var btn = section.querySelector('.disc-toggle');
+      if (btn) {
+        btn.setAttribute('aria-expanded', 'true');
+        btn.textContent = btn.textContent.replace(/^Show /, 'Hide ');
+      }
+    }
+    function openAncestors(target) {
+      if (!target) return;
+      var node = target;
+      while (node && node !== document.body) {
+        if (node.classList && node.classList.contains('disc')) openDisc(node);
+        if (node.tagName === 'DETAILS' && !node.open) node.open = true;
+        node = node.parentNode;
+      }
+    }
+    document.querySelectorAll('.disc-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var section = btn.closest('.disc');
+        if (!section) return;
+        if (section.classList.contains('disc--closed')) {
+          openDisc(section);
+        } else {
+          section.classList.add('disc--closed');
+          btn.setAttribute('aria-expanded', 'false');
+          btn.textContent = btn.textContent.replace(/^Hide /, 'Show ');
+        }
+      });
+    });
+    // Any in-page anchor: open the target's collapsed ancestors first,
+    // then let the browser's default scroll happen on open content.
+    document.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('a[href^="#"]') : null;
+      if (!a) return;
+      var id = a.getAttribute('href').slice(1);
+      if (!id) return;
+      openAncestors(document.getElementById(id));
+    });
+    // Citation chips scroll via app.js (not anchors): open the receipts
+    // card first so the scroll lands on open content.
+    document.addEventListener('click', function (e) {
+      var chip = e.target && e.target.closest ? e.target.closest('.cite-chip,.source-tag-chip') : null;
+      if (!chip) return;
+      openDisc(document.getElementById('receiptSection'));
+    }, true);
+    function openFromHash() {
+      if (!location.hash) return;
+      var target = document.getElementById(location.hash.slice(1));
+      if (!target) return;
+      openAncestors(target);
+      if (target.scrollIntoView) target.scrollIntoView();
+    }
+    window.addEventListener('hashchange', openFromHash);
+    if (location.hash) openFromHash();
+  })();
+</script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

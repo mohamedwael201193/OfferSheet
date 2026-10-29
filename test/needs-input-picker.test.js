@@ -163,10 +163,15 @@ test('candidate names are escaped in the picker', () => {
 });
 
 test('formula section exists unhidden with an honest pre-verdict worked-example note', () => {
-  assert.ok(indexHtml.includes('<section id="formula" class="sheet crop" aria-label="Formula">'));
+  // MERGE (P3-collapse-onto-P2): the section legitimately gained the
+  // disc classes; it still carries no hidden attribute, and the honest
+  // pre-verdict note is untouched.
+  assert.ok(indexHtml.includes('<section id="formula" class="sheet crop disc disc--closed" aria-label="Formula">'));
   assert.ok(!indexHtml.includes('id="formulaSection"'), 'old id must be gone');
   assert.ok(indexHtml.includes('<p id="workedExample" class="num">Run a verdict to see its worked example here.</p>'));
-  assert.equal((indexHtml.match(/href="#formula"/g) || []).length, 2, 'nav + tool links must both resolve');
+  // MERGE (P3-collapse): the proof index adds a third #formula link
+  // (nav + proof index + tool card); all three resolve to the section.
+  assert.equal((indexHtml.match(/href="#formula"/g) || []).length, 3, 'nav + proof-index + tool links must all resolve');
 });
 
 test('formula visibility is no longer verdict-gated, but verdicts still populate the worked example', () => {

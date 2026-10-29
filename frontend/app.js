@@ -8,6 +8,22 @@ function esc(s) {
 }
 const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('en-US') : esc(n));
 const money = (n) => (typeof n === 'number' ? `$${n.toLocaleString('en-US')}` : esc(n));
+// MERGE (P2 checklist): reduced-motion guard for programmatic scrolls.
+// CSS cannot override a JS behavior:'smooth' — every scrollIntoView site
+// reads this helper. G5's own site already guards inline and is untouched.
+function smoothBehavior() {
+  try {
+    return (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? 'auto' : 'smooth';
+  } catch (e) { return 'smooth'; }
+}
+// MERGE (P3-collapse): open a collapsed disclosure card from JS scroll
+// paths (receipt chips scroll via scrollToReceipt, not anchors).
+function openDiscSection(section) {
+  if (!section || !section.classList || !section.classList.contains('disc')) return;
+  section.classList.remove('disc--closed');
+  const btn = section.querySelector('.disc-toggle');
+  if (btn) { btn.setAttribute('aria-expanded', 'true'); btn.textContent = btn.textContent.replace(/^Show /, 'Hide '); }
+}
 
 // The last full verdict object, held in memory for replay comparison (G7).
 // Replay compares IDs + order against this object — never counts alone.
@@ -81,6 +97,14 @@ function hideVerdict() {
   const pp = $('proofPackWrap'); if (pp) pp.hidden = true;
   const sheet = $('verdictSheet');
   if (sheet) sheet.hidden = true;
+  // MERGE (P2 checklist): diagram reset — never leave live figures
+  // visible after a later withheld/price-unknown/needs-input run. The
+  // labelled recorded fallback returns; stale live numbers never linger.
+  const diagramLive = $('diagramLive'); if (diagramLive) diagramLive.hidden = true;
+  const diagramFallback = $('diagramFallback'); if (diagramFallback) diagramFallback.hidden = false;
+  ['diagramGuarantee', 'diagramNet', 'diagramNetBuild', 'diagramQuotient', 'diagramCeil'].forEach((id) => {
+    const el = $(id); if (el) el.textContent = '—';
+  });
 }
 function setRunning(on) {
   document.querySelectorAll('#offerForm button').forEach((b) => { b.disabled = on; });
@@ -819,8 +843,11 @@ function scrollToReceipt(idx) {
   const section = $('receiptSection');
   const el = document.getElementById(`receipt-${idx}`);
   if (section) section.hidden = false;
+  // MERGE (P3-collapse): the receipts card may be a closed disc — open
+  // it so the scroll lands on open content, not a closed header.
+  openDiscSection(section);
   if (el && el.scrollIntoView) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.scrollIntoView({ behavior: smoothBehavior(), block: 'center' });
     el.classList.add('receipt--flash');
     setTimeout(() => el.classList.remove('receipt--flash'), 2500);
   }
@@ -1084,7 +1111,7 @@ function prefillForm(input) {
   set('capacity', '');
   set('entityHint', '');
   const form = $('offerForm');
-  if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (form && form.scrollIntoView) form.scrollIntoView({ behavior: smoothBehavior(), block: 'start' });
 }
 
 // Item 13: "four cards" — the recorded trials as tappable cards plus one
@@ -1177,6 +1204,38 @@ function renderTrialTally(runs) {
   renderTallyTaxonomy(runs);
 }
 
+// MERGE (P2 checklist): data-bound formula diagram. Fills the diagram
+// spans from the live verdict object only — it never recomputes the
+// verdict, and the ticket count is the verdict's own number. Until this
+// runs, the diagram shows dashes plus the labelled recorded fallback.
+// Callers: renderVerdict (after the worked-example block); hideVerdict
+// resets it (see above).
+function renderDiagram(v) {
+  const live = $('diagramLive'); if (!live) return;
+  const be = v && v.breakEven ? v.breakEven : null;
+  if (!be || typeof be.tickets !== 'number') return;
+  if (typeof v.guarantee !== 'number' || typeof be.net !== 'number') return;
+  const price = be.price && typeof be.price.value === 'number' ? be.price.value : null;
+  const vc = be.variableCost;
+  let netBuild;
+  if (vc && typeof vc.provided === 'boolean') {
+    netBuild = vc.provided && typeof vc.value === 'number' && price !== null
+      ? `${money(price)} − ${money(vc.value)} per ticket`
+      : (price !== null ? `${money(price)} per ticket — no variable cost entered, net is before variable costs` : null);
+  } else if (price !== null) {
+    netBuild = `${money(price)} − ${money(price - be.net)} per ticket`;
+  }
+  const set = (id, text) => { const el = $(id); if (el && text !== null) el.textContent = text; };
+  set('diagramGuarantee', money(v.guarantee));
+  set('diagramNet', money(be.net));
+  if (netBuild) set('diagramNetBuild', netBuild);
+  set('diagramQuotient', be.net > 0
+    ? (v.guarantee / be.net).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : '—');
+  set('diagramCeil', `${fmt(be.tickets)} tickets`);
+  live.hidden = false;
+  const fallback = $('diagramFallback'); if (fallback) fallback.hidden = true;
+}
 function renderVerdict(v, race) {
   hideStatus();
   lastVerdict = v;
@@ -1261,6 +1320,8 @@ function renderVerdict(v, race) {
     const variableCost = be.price.value - be.net;
     $('workedExample').textContent = `ceil(${fmt(v.guarantee)} ÷ (${fmt(be.price.value)} − ${fmt(variableCost)})) = ${fmt(be.tickets)} tickets`;
   }
+  // MERGE (P2 checklist): live diagram from this verdict's numbers.
+  renderDiagram(v);
 
   $('audienceNote').textContent = v.audience.note;
   $('audienceAreas').innerHTML = (v.audience.areas || []).map((a) => `<li>${esc(a.name || a.id || '')}</li>`).join('') || '<li>No areas returned this run. <span class="next-action">Next action:</span> run the verdict again.</li>';
@@ -1487,7 +1548,7 @@ function renderNeedsInput(v) {
   const tryAgain = $('needsTryAgainBtn');
   if (tryAgain) tryAgain.addEventListener('click', () => {
     const f = $('artist');
-    f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    f.scrollIntoView({ behavior: smoothBehavior(), block: 'center' });
     f.focus();
   });
 }
@@ -1678,7 +1739,7 @@ async function submitVerdict(race, entityHint) {
       setBadge('Qloo configured — price needed for a verdict', 'amber');
       $('priceFocusBtn').addEventListener('click', () => {
         const f = $('ticketPrice');
-        f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        f.scrollIntoView({ behavior: smoothBehavior(), block: 'center' });
         f.focus();
       });
       // G43: partial Qloo evidence below the status, never a verdict number.

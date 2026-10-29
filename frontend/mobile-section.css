@@ -1,0 +1,375 @@
+/* Proposal 3 — mobile section. Complete stylesheet for section.html.
+   It defines every class section.html uses. Load it in index.html AFTER
+   landing-mobile.css so this section's rules win over the old get-app
+   rules; the old .mockup-* rules then have no elements left and are
+   deleted at merge (see checklist.md).
+   Studio identity, tokens copied verbatim from the brief. No mono face
+   anywhere (figures use Geist tabular numerals). Cadmium orange appears
+   only as 1px guides plus the one primary fill (.ms-apk). Radii are the
+   3px / 2px tokens, except the device shell: its corner radius is a
+   hardware silhouette, not a UI card, and is documented as such below.
+   No invented data, no drawn screen, no verdict number anywhere here. */
+
+.ms-section {
+  --color-paper: oklch(97.2% 0.006 215);
+  --color-paper-hi: oklch(99% 0.004 215);
+  --color-ink: oklch(16% 0.032 250);
+  --color-ink-2: oklch(34% 0.022 245);
+  --color-muted: oklch(49% 0.018 240);
+  --color-rule: oklch(84% 0.010 225);
+  --color-accent: oklch(68% 0.172 50);
+  --color-focus: oklch(52% 0.15 48);
+  --color-mark: color-mix(in oklab, var(--color-ink) 72%, transparent);
+  --font-display: "Hedvig Letters Serif", ui-serif, Georgia, serif;
+  --font-body: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 3px;
+  --radius-pill: 2px;
+  --shadow-sheet: 1px 2px 0 color-mix(in oklab, var(--color-ink) 7%, transparent),
+    10px 18px 36px -14px color-mix(in oklab, var(--color-ink) 32%, transparent);
+  --dur-short: 180ms;
+  --ease-out: ease-out;
+
+  box-sizing: border-box;
+  overflow-x: clip;
+  background: var(--color-paper);
+  color: var(--color-ink-2);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  /* Safe areas: content never sits under a notch, and no fixed bar in
+     this section can collide with a home indicator. */
+  padding: 48px max(16px, env(safe-area-inset-right)) 48px max(16px, env(safe-area-inset-left));
+  margin: 48px 0;
+}
+.ms-section *, .ms-section *::before, .ms-section *::after { box-sizing: border-box; }
+
+/* Crop marks: eight 1px ticks, one pair at each corner of the section.
+   overflow-x: clip on the section keeps them from ever scrolling the
+   page sideways. */
+.ms-section.crop { position: relative; }
+.ms-section.crop::before {
+  content: ""; position: absolute; inset: 8px; pointer-events: none; --l: 10px; --o: 12px;
+  background:
+    linear-gradient(var(--color-mark), var(--color-mark)) 0 var(--o) / var(--l) 1px no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) var(--o) 0 / 1px var(--l) no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - 0px) var(--o) / var(--l) 1px no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - var(--o)) 0 / 1px var(--l) no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) 0 calc(100% - var(--o)) / var(--l) 1px no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) var(--o) 100% / 1px var(--l) no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - 0px) calc(100% - var(--o)) / var(--l) 1px no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - var(--o)) 100% / 1px var(--l) no-repeat;
+}
+
+.ms-kicker {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  color: var(--color-ink);
+  margin: 0 0 10px;
+}
+.ms-kicker::before {
+  content: ""; display: inline-block; width: 22px; height: 1px;
+  background: var(--color-accent); vertical-align: middle; margin-right: 10px;
+}
+.ms-section h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.022em;
+  color: var(--color-ink);
+  line-height: 1.0;
+  font-size: clamp(1.6rem, 4vw, 2.25rem);
+  margin: 0 0 8px;
+}
+.ms-section p { margin: 0 0 12px; }
+.ms-section .get-app-subline {
+  font-size: 17px;
+  line-height: 24px;
+  margin: 0 0 24px;
+  max-width: 64ch;
+}
+
+/* Composition: editorial column + device figure. A composition, not a
+   stack of text under a phone drawing. */
+.ms-layout {
+  display: grid;
+  gap: 32px;
+  align-items: start;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+.ms-copy { min-width: 0; }
+.ms-lede { font-size: 17px; line-height: 24px; max-width: 64ch; }
+.ms-lede em { font-style: normal; font-weight: 500; color: var(--color-ink); }
+
+/* Honesty box: 1px ink rule, 1px accent guide on the left — the only
+   accent in the copy column. No fill, no badge, no verdict claim. */
+.ms-frame-note {
+  border: 1px solid var(--color-ink);
+  border-left: 1px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  background: var(--color-paper-hi);
+  box-shadow: var(--shadow-sheet);
+  padding: 16px;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--color-ink);
+  max-width: 64ch;
+}
+
+.ms-actions { display: grid; gap: 10px; margin: 20px 0 0; max-width: 64ch; }
+/* The APK button keeps its baseline class (landing.js finds it by that
+   class + data-apk-url) and gains .ms-apk for Studio styling. Baseline
+   set it cursor: not-allowed with a 16px radius; both are overridden
+   here: the button works, and it obeys the 2px token. */
+.ms-section .apk-button.ms-apk {
+  min-height: 48px;
+  padding: 12px 22px;
+  font: inherit;
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--color-ink);
+  background: var(--color-accent);
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: translate var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
+}
+.ms-section .apk-button.ms-apk:hover {
+  translate: 0 -1px;
+  box-shadow: 0 8px 20px -10px color-mix(in oklab, var(--color-ink) 45%, transparent);
+}
+.ms-section .apk-button.ms-apk:focus-visible,
+.ms-fullapp:focus-visible,
+.ms-details summary:focus-visible,
+.ms-frame:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.ms-fullapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 22px;
+  font: inherit;
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--color-ink);
+  background: var(--color-paper-hi);
+  border: 1px solid var(--color-ink);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: translate var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
+}
+.ms-fullapp:hover {
+  translate: 0 -1px;
+  box-shadow: 0 8px 20px -10px color-mix(in oklab, var(--color-ink) 45%, transparent);
+}
+.ms-section .apk-note {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--color-muted);
+  margin: 8px 0 24px;
+  max-width: 64ch;
+}
+
+/* Feature list: hairline rules only, in the sibling proposal's
+   progressive-disclosure language — a short title row, one line of
+   proof text, nothing hidden behind a tap except the "why" note. */
+.ms-features {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  border-top: 1px solid var(--color-ink);
+  max-width: 64ch;
+}
+.ms-feature {
+  display: grid;
+  gap: 2px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-rule);
+}
+.ms-feature-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1.15;
+  color: var(--color-ink);
+}
+.ms-feature-text { font-size: 15px; line-height: 22px; color: var(--color-ink-2); }
+
+.ms-details {
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-card);
+  background: var(--color-paper-hi);
+  padding: 0 16px;
+  max-width: 64ch;
+}
+.ms-details summary {
+  cursor: pointer;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  color: var(--color-ink);
+}
+.ms-details summary:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--color-accent);
+  text-decoration-thickness: 2px;
+}
+.ms-details p { font-size: 15px; line-height: 22px; padding-bottom: 4px; }
+
+/* Device figure: a hairline technical drawing around a real screen.
+   The shell is deliberately NOT the old thick black blob (2px border,
+   40px radius, 8px black padding). It is a 1px ink rule with a 1px
+   accent dimension line above it, side keys as 1px ticks, a punch-hole
+   camera, and a home bar in the bottom bezel. The shell's corner radius
+   is the one documented exception to the 3px/2px card tokens: it is a
+   hardware silhouette, not a UI card, and a 3px corner would read as a
+   framed rectangle rather than a device. Everything inside the shell
+   that is UI (buttons, boxes, the caption card) keeps the tokens.
+   The keys and camera are decorative (aria-hidden, not buttons) — the
+   48px rule applies to interactive targets, and these are not targets. */
+.ms-device-fig { margin: 0; min-width: 0; }
+.ms-dim {
+  height: 1px;
+  background: var(--color-ink);
+  position: relative;
+  margin: 8px 0 20px;
+}
+.ms-dim::before, .ms-dim::after {
+  content: ""; position: absolute; top: -5px; width: 1px; height: 11px; background: var(--color-ink);
+}
+.ms-dim::before { left: 0; }
+.ms-dim::after { right: 0; }
+.ms-dim-label {
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  transform: translateX(-50%);
+  background: var(--color-paper);
+  padding: 0 10px;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ms-device {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  background: var(--color-paper-hi);
+  border: 1px solid var(--color-ink);
+  border-radius: 28px;
+  box-shadow: var(--shadow-sheet);
+  padding: 12px 10px 14px;
+}
+.ms-key {
+  position: absolute;
+  right: -3px;
+  width: 3px;
+  background: var(--color-ink);
+  border-radius: 2px;
+}
+.ms-key--power { top: 150px; height: 44px; }
+.ms-key--volume { right: auto; left: -3px; top: 120px; height: 64px; }
+.ms-camera {
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  box-shadow: 0 0 0 2px var(--color-paper-hi), 0 0 0 3px var(--color-rule);
+}
+/* The screen is a fixed phone viewport, not a content-sized box: the
+   app scrolls inside it (see approach.md). No drawn content lives
+   here — the iframe paints the app, and nothing else is layered over
+   it, so there is no overlay that could fake a screen. */
+.ms-screen {
+  position: relative;
+  aspect-ratio: 9 / 18.5;
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ms-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: var(--color-paper);
+}
+.ms-homebar {
+  display: block;
+  width: 96px;
+  height: 3px;
+  margin: 12px auto 0;
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--color-ink) 32%, transparent);
+}
+.ms-figcaption {
+  font-weight: 500;
+  font-size: 0.8125rem;
+  line-height: 20px;
+  color: var(--color-muted);
+  margin: 16px auto 0;
+  max-width: 380px;
+}
+.ms-scroll-hint {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-muted);
+  margin: 8px auto 0;
+  max-width: 380px;
+}
+.ms-fullapp--under { width: 100%; max-width: 380px; margin: 12px auto 0; }
+
+/* Desktop composition. */
+@media (min-width: 900px) {
+  .ms-layout { grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); gap: 40px; }
+  .ms-actions { grid-template-columns: 1fr 1fr; }
+  .ms-device-fig { position: sticky; top: 16px; }
+}
+
+/* 390px behavior: single column, device full width, no horizontal
+   scroll. The dimension label truncates rather than overflowing, the
+   action buttons stack, and the frame keeps its phone proportion at
+   whatever width the viewport allows. */
+@media (max-width: 480px) {
+  .ms-section { padding-top: 32px; padding-bottom: 32px; }
+  .ms-layout { gap: 28px; }
+  .ms-actions { grid-template-columns: 1fr; }
+  .ms-device { max-width: none; }
+  .ms-dim-label { font-size: 0.75rem; }
+  .ms-section.crop::before { inset: 4px; }
+}
+
+/* Reduced motion: this section adds no animation and no transition
+   survives the kill. The app inside the iframe governs its own motion
+   under its own stylesheet; nothing in this section re-enables it, and
+   no content here is ever hidden by motion. */
+@media (prefers-reduced-motion: reduce) {
+  .ms-section *, .ms-section *::before, .ms-section *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .ms-section .apk-button.ms-apk:hover, .ms-fullapp:hover { translate: 0 0; box-shadow: none; }
+}
+
+/* Print: an iframe prints as a blank box, so it is hidden and the
+   caption + full-app link carry the section instead. */
+@media print {
+  .ms-device, .ms-dim { display: none !important; }
+}

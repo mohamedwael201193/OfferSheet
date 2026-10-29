@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&family=Geist:wght@400;500&family=Sofia+Sans+Extra+Condensed:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="landing-mobile.css">
+<link rel="stylesheet" href="mobile-section.css">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#030e1a">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -333,173 +334,65 @@
     </div>
   </section>
 
-  <!-- Get the app: display-only showcase + recorded-trial phone mockup. -->
-  <section class="get-app-section" id="get-the-app" aria-label="Get the app">
-    <h2>Get the app</h2>
-    <p class="get-app-subline">The break-even verdict, in your pocket — same receipts, same fail-closed rule, on your phone.</p>
-    <!-- APK live: GitHub Release android-app-v1.0.0, asset offersheet-release.apk
-         (295,972 bytes; download URL verified live 2026-10-29 — HEAD returns 302, not 404). -->
-    <button class="apk-button" type="button" data-apk-url="https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk">Download the Android app (APK)</button>
-    <p class="apk-note">Android APK via GitHub Release. Live verdicts run in the app — this landing page never runs a verdict.</p>
+<section class="ms-section crop" id="get-the-app" aria-label="Get the app">
+  <p class="ms-kicker">Get the app — the phone</p>
+  <h2>Get the app</h2>
+  <p class="get-app-subline">The break-even verdict, in your pocket — same receipts, same fail-closed rule, on your phone.</p>
 
-    <p class="mockup-framing">See how the verdict screen looks — a recorded run, step by step.</p>
-    <p class="mockup-frame-label">Simulated mobile experience — recorded trial, not a live verdict</p>
-    <div class="mockup-wrap">
-      <div class="mockup-frame" id="mockupFrame">
-        <div class="mockup-screen-area" aria-live="polite">
-          <div class="mockup-statusbar" aria-hidden="true"><span>9:41</span></div>
+  <div class="ms-layout">
+    <div class="ms-copy">
+      <p class="ms-lede">The frame on this page is not a picture of the app. It <em>is</em> the app, running live at phone width. Tap inside it and you are using the real form, the real verdict flow, and the real fail-closed refusal — not a walkthrough drawn for this page.</p>
 
-          <!-- Screen 0 -->
-          <div class="mockup-screen is-active" data-screen="0">
-            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
-            <h3>OfferSheet</h3>
-            <p>Replay a recorded trial. Nothing here is live.</p>
-            <div class="mockup-nav">
-              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="1">Choose a recorded trial <span aria-hidden="true">→</span></button>
-            </div>
-          </div>
+      <p class="ms-frame-note">This landing section itself runs no verdict and makes no verdict call. Anything you run inside the frame is the app running on its own, exactly as it runs on its own page. If live data is unavailable, the app inside the frame refuses the same way it refuses outside it: no verdict, no sample plan.</p>
 
-          <!-- Screen 1 -->
-          <div class="mockup-screen" data-screen="1">
-            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
-            <h3>Choose a recorded trial</h3>
-            <div class="mockup-nav">
-              <button class="mockup-btn" type="button" data-goto="2" data-trial="billie">Billie Eilish — New York — $250,000 / $120 — recorded 29 Oct 2026</button>
-              <button class="mockup-btn" type="button" data-goto="2" data-trial="taylor">Taylor Swift — New York — $250,000 / $120 — recorded 29 Oct 2026</button>
-              <button class="mockup-btn" type="button" data-goto="2" data-trial="olivia">Olivia Rodrigo — Los Angeles — $180,000 / $95 — recorded 29 Oct 2026</button>
-              <button class="mockup-btn mockup-btn--secondary" type="button" data-goto="0">← Back</button>
-            </div>
-          </div>
-
-          <!-- Screen 2: Billie -->
-          <div class="mockup-screen" data-screen="2" data-trial="billie">
-            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
-            <h3>Recorded inputs</h3>
-            <div class="mockup-card">
-              <p>Artist: Billie Eilish</p>
-              <p>City: New York</p>
-              <p>Guarantee: $250,000</p>
-              <p>Ticket: $120</p>
-            </div>
-            <p class="mockup-caption">Recorded inputs — 29 Oct 2026. Shown as recorded; not editable here.</p>
-            <div class="mockup-nav">
-              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="3">See the recorded verdict <span aria-hidden="true">→</span></button>
-              <button class="mockup-btn" type="button" data-goto="1">← Back to trials</button>
-            </div>
-          </div>
-
-          <!-- Screen 2: Taylor -->
-          <div class="mockup-screen" data-screen="2" data-trial="taylor">
-            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
-            <h3>Recorded inputs</h3>
-            <div class="mockup-card">
-              <p>Artist: Taylor Swift</p>
-              <p>City: New York</p>
-              <p>Guarantee: $250,000</p>
-              <p>Ticket: $120</p>
-            </div>
-            <p class="mockup-caption">Recorded inputs — 29 Oct 2026. Shown as recorded; not editable here.</p>
-            <div class="mockup-nav">
-              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="3">See the recorded verdict <span aria-hidden="true">→</span></button>
-              <button class="mockup-btn" type="button" data-goto="1">← Back to trials</button>
-            </div>
-          </div>
-
-          <!-- Screen 2: Olivia -->
-          <div class="mockup-screen" data-screen="2" data-trial="olivia">
-            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
-            <h3>Recorded inputs</h3>
-            <div class="mockup-card">
-              <p>Artist: Olivia Rodrigo</p>
-              <p>City: Los Angeles</p>
-              <p>Guarantee: $180,000</p>
-              <p>Ticket: $95</p>
-            </div>
-            <p class="mockup-caption">Recorded inputs — 29 Oct 2026. Shown as recorded; not editable here.</p>
-            <div class="mockup-nav">
-              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="3">See the recorded verdict <span aria-hidden="true">→</span></button>
-              <button class="mockup-btn" type="button" data-goto="1">← Back to trials</button>
-            </div>
-          </div>
-
-          <!-- Screen 3: Billie -->
-          <div class="mockup-screen" data-screen="3" data-trial="billie">
-            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
-            <h3>Recorded verdict</h3>
-            <div class="mockup-verdict-card">
-              <div class="verdict-guide" aria-hidden="true"></div>
-              <p class="verdict-number">2,084 tickets</p>
-              <p>break-even = guarantee ÷ net per-ticket contribution, rounded up.</p>
-            </div>
-            <p class="mockup-caption">Recorded verdict, 29 Oct 2026 — not a live verdict.</p>
-            <div class="mockup-nav">
-              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="4">See the receipt <span aria-hidden="true">→</span></button>
-              <button class="mockup-btn" type="button" data-goto="2">← Back to inputs</button>
-            </div>
-          </div>
-
-          <!-- Screen 3: Taylor -->
-          <div class="mockup-screen" data-screen="3" data-trial="taylor">
-            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
-            <h3>Recorded verdict</h3>
-            <div class="mockup-verdict-card">
-              <div class="verdict-guide" aria-hidden="true"></div>
-              <p class="verdict-number">2,084 tickets</p>
-              <p>break-even = guarantee ÷ net per-ticket contribution, rounded up.</p>
-            </div>
-            <p class="mockup-caption">Recorded verdict, 29 Oct 2026 — not a live verdict.</p>
-            <div class="mockup-nav">
-              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="4">See the receipt <span aria-hidden="true">→</span></button>
-              <button class="mockup-btn" type="button" data-goto="2">← Back to inputs</button>
-            </div>
-          </div>
-
-          <!-- Screen 3: Olivia -->
-          <div class="mockup-screen" data-screen="3" data-trial="olivia">
-            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
-            <h3>Recorded verdict</h3>
-            <div class="mockup-verdict-card">
-              <div class="verdict-guide" aria-hidden="true"></div>
-              <p class="verdict-number">1,895 tickets</p>
-              <p>break-even = guarantee ÷ net per-ticket contribution, rounded up.</p>
-            </div>
-            <p class="mockup-caption">Recorded verdict, 29 Oct 2026 — not a live verdict.</p>
-            <div class="mockup-nav">
-              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="4">See the receipt <span aria-hidden="true">→</span></button>
-              <button class="mockup-btn" type="button" data-goto="2">← Back to inputs</button>
-            </div>
-          </div>
-
-          <!-- Screen 4 -->
-          <div class="mockup-screen" data-screen="4">
-            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
-            <h3>Receipt</h3>
-            <p>This verdict was receipted with SHA-256 and a clickable re-run in the app dashboard.</p>
-            <p>If live data is unavailable, the app refuses with a fail-closed 503 — no verdict, no sample plan.</p>
-            <p>What you just tapped through is a recording. A live verdict runs only in the app.</p>
-            <div class="mockup-nav">
-              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="5">See the end card <span aria-hidden="true">→</span></button>
-              <button class="mockup-btn" type="button" data-goto="1">← Replay another trial</button>
-              <a class="mockup-btn" href="app.html">Open the live app dashboard</a>
-            </div>
-          </div>
-
-          <!-- Screen 5 -->
-          <div class="mockup-screen" data-screen="5">
-            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
-            <h3>The money-staked line</h3>
-            <p>A wrong page costs nothing. A wrong verdict costs real money. That is why the receipt matters — and why a missing answer is a refusal, not a guess.</p>
-            <div class="mockup-nav">
-              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="1">← Back to trials</button>
-            </div>
-          </div>
-
-          <div class="mockup-homebar" aria-hidden="true"><span></span></div>
-        </div>
+      <div class="ms-actions">
+        <button class="apk-button ms-apk" type="button" data-apk-url="https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk">Download the Android app (APK)</button>
+        <a class="ms-fullapp" href="app.html">Open the full app</a>
       </div>
+      <p class="apk-note">Android APK via GitHub Release. Live verdicts run in the app — this landing page never runs a verdict.</p>
+
+      <ul class="ms-features" aria-label="On your phone">
+        <li class="ms-feature">
+          <span class="ms-feature-title">Run it in the frame</span>
+          <span class="ms-feature-text">The form, the verdict, and the receipts are the app's own, at phone width. Nothing on this page re-draws them.</span>
+        </li>
+        <li class="ms-feature">
+          <span class="ms-feature-title">Or take it with you</span>
+          <span class="ms-feature-text">Download the Android app, or open the full app in this browser. The frame is a way in, never the only way in.</span>
+        </li>
+        <li class="ms-feature">
+          <span class="ms-feature-title">Installable, still honest about connection</span>
+          <span class="ms-feature-text">OfferSheet is installable as an app (PWA) — installing adds it to your home screen. A verdict still needs a connection: offline, the app shows its needs-a-connection screen with no number and no stale result.</span>
+        </li>
+        <li class="ms-feature">
+          <span class="ms-feature-title">Built for thumbs and for stillness</span>
+          <span class="ms-feature-text">Every button and link in this section is at least 48px tall, the section respects safe-area insets, and reduced-motion settings stop all motion in this section.</span>
+        </li>
+      </ul>
+
+      <details class="ms-details">
+        <summary>Why there is no picture of a verdict here</summary>
+        <p>The previous section showed drawn screens with pre-written numbers. A drawing of a verdict looks like a verdict, and this page refuses to show one that nobody ran. So the drawn screens are gone. What remains is either the app itself, running in the frame, or — if you prefer — the full app one tap away. There is no third, drawn option.</p>
+      </details>
     </div>
-    <noscript><style>.mockup-screen{display:flex !important;}</style></noscript>
-  </section>
+
+    <figure class="ms-device-fig" aria-label="The real OfferSheet app, running live inside a phone frame">
+      <div class="ms-dim" aria-hidden="true"><span class="ms-dim-label">The app, at phone width — live, not drawn</span></div>
+      <div class="ms-device">
+        <span class="ms-key ms-key--volume" aria-hidden="true"></span>
+        <span class="ms-key ms-key--power" aria-hidden="true"></span>
+        <span class="ms-camera" aria-hidden="true"></span>
+        <div class="ms-screen">
+          <iframe class="ms-frame" id="msAppFrame" src="app.html" title="OfferSheet app — live, inside the phone frame" loading="lazy" fetchpriority="low" allow="clipboard-write" referrerpolicy="same-origin"></iframe>
+        </div>
+        <span class="ms-homebar" aria-hidden="true"></span>
+      </div>
+      <figcaption class="ms-figcaption">This is the real app, running live inside the frame — the same page as “Open the full app”, unmodified. Whatever you run inside the frame is your own run. This landing section shows no verdict of its own and fakes none.</figcaption>
+      <p class="ms-scroll-hint">Scroll inside the frame to move through the app; scroll outside it to move down this page. Prefer the full page? Use “Open the full app” above, or below.</p>
+      <a class="ms-fullapp ms-fullapp--under" href="app.html">Open the full app</a>
+    </figure>
+  </div>
+</section>
 
   <!-- Footer -->
   <footer class="footer band band--deep reveal">
@@ -510,7 +403,6 @@
   </footer>
 </main>
 <script src="landing.js"></script>
-<script src="mockup.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

@@ -14,6 +14,10 @@ test('G6: landing-mobile.css carries no non-spec radii', () => {
   for (const r of ['16px', '32px', '40px']) {
     assert.doesNotMatch(CSS, new RegExp(`border-radius: ${r};`), `${r} must not remain in the story/mockup layer`);
   }
-  assert.equal((CSS.match(/border-radius: 3px;/g) || []).length, 12);
-  assert.equal((CSS.match(/border-radius: 2px;/g) || []).length, 1);
+  // MERGE (design winners): the mockup + Get-the-app rules were deleted
+  // with their elements (live iframe replaces the mockup), so the counts
+  // fall from 12×3px/1×2px to the story section's own 3×3px/0×2px. The
+  // spec — no non-spec radii — is unchanged and still enforced above.
+  assert.equal((CSS.match(/border-radius: 3px;/g) || []).length, 3);
+  assert.equal((CSS.match(/border-radius: 2px;/g) || []).length, 0);
 });
