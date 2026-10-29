@@ -56,9 +56,10 @@
     setTimeout(finish, 2500);
   })();
 
-  /* Letter-by-letter headline reveals + clip-mask statement + scroll-
-     drawn formula line: all observed, all one-shot, all transform /
-     opacity / stroke only. */
+  /* Letter-by-letter headline reveals + clip-mask statement: all
+     observed, all one-shot, all transform / opacity only. (The
+     formula section no longer has a scroll-drawn diagram: its labeled
+     breakdown renders statically, so there is nothing to observe.) */
   if ('IntersectionObserver' in window) {
     document.querySelectorAll('[data-reveal]').forEach(function (el) {
       var text = el.textContent;
@@ -108,15 +109,6 @@
       }, { threshold: 0.15 });
       ioHero.observe(heroFigure);
     }
-    var ioDraw = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (e.isIntersecting) { e.target.classList.add('drawn'); ioDraw.unobserve(e.target); }
-      });
-    }, { threshold: 0.4 });
-    document.querySelectorAll('.draw-svg').forEach(function (el) {
-      el.classList.add('js-draw');
-      ioDraw.observe(el);
-    });
   }
 
   /* One rAF scroll loop: parallax fan + footer wordmark velocity-stretch.

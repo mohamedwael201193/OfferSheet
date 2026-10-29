@@ -186,12 +186,18 @@ section > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
 .recorded-label { border: 1px solid var(--hair); border-left: 4px solid var(--text); padding: 16px 20px; color: var(--body); background: var(--bg-2); max-width: 72ch; }
 .how-made { max-width: 72ch; }
 
-/* Formula strip: scroll-drawn SVG + static worked text. */
-.formula-strip { border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); }
-.draw-svg { width: 100%; max-width: 600px; height: 120px; margin: 24px 0; }
-.draw-path { fill: none; stroke: #FFFFFF; stroke-width: 2; }
-.draw-svg.js-draw .draw-path { stroke-dasharray: 100; stroke-dashoffset: 100; }
-.draw-svg.js-draw.drawn .draw-path { stroke-dashoffset: 0; transition: stroke-dashoffset 1.2s ease-out; }
+/* Formula strip: static labeled breakdown + worked text. No JS, no
+   animation: the previous scroll-drawn SVG was invisible until its
+   observer fired (dashoffset 100, then a 1.2s draw) and, once drawn,
+   was an unlabeled step line that explained nothing — so the section
+   read as an empty near-black slab. The breakdown below renders at
+   first paint, in plain labeled parts, and needs no motion at all. */
+.formula-strip { border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); padding-top: 64px; padding-bottom: 64px; }
+.formula-breakdown { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 20px; margin: 8px 0 20px; }
+.formula-part { display: flex; flex-direction: column; gap: 2px; }
+.formula-role { font-size: 13px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.formula-value { font-family: var(--display); font-size: clamp(32px, 5vw, 56px); font-weight: 800; color: var(--text); line-height: 1.05; overflow-wrap: anywhere; }
+.formula-op { font-family: var(--display); font-size: clamp(28px, 4vw, 44px); font-weight: 800; color: var(--muted); padding-bottom: 4px; }
 .formula-text { font-size: 22px; color: var(--text); }
 
 /* Stats band: recorded trials only. */
@@ -360,7 +366,6 @@ body.landing-page .story-section .persona-label { border-color: rgba(255, 255, 2
   [data-reveal] .rl { opacity: 1; transform: none; }
   .hero-figure.js-hero { opacity: 1; transform: none; }
   [data-clip].js-clip { clip-path: none; }
-  .draw-svg.js-draw .draw-path { stroke-dashoffset: 0; }
   .btn--glow, .btn--glow:hover { box-shadow: 0 0 0 1px rgba(255, 255, 255, .25); }
 }
 
