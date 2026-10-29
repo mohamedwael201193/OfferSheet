@@ -690,6 +690,7 @@ function renderTrialTally(runs) {
 function renderVerdict(v, race) {
   hideStatus();
   lastVerdict = v;
+  if (window.OfferSheetOracle) window.OfferSheetOracle.record(v);
   const be = v.breakEven;
   const cap = v.capacity || {};
   const known = cap.state === 'known' && typeof cap.value === 'number';
@@ -808,6 +809,67 @@ function renderNeedsInput(v) {
   });
 }
 
+function appendLegProgress(leg) {
+  let ul = $('legProgress');
+  if (!ul) {
+    ul = document.createElement('ul');
+    ul.id = 'legProgress';
+    ul.className = 'leg-progress';
+    ul.setAttribute('aria-label', 'Live verdict progress');
+    $('status').appendChild(ul);
+  }
+  const li = document.createElement('li');
+  li.textContent = `${leg.call || 'leg'} — ${leg.status} (${leg.elapsedMs ?? '?'}ms)`;
+  ul.appendChild(li);
+}
+
+// Streamed verdict legs (LEGENDARY): GET /api/verdict/stream emits one
+// 'leg' event per REAL completed backend call (tool/path + status + ms),
+// then a 'verdict' event with the full verdict object, or an 'error'
+// event. Returns the verdict object, or null when the stream ends without
+// one (caller falls back to POST /api/verdict — never a partial verdict).
+async function submitVerdictStreamed(body) {
+  const qs = new URLSearchParams();
+  for (const [k, val] of Object.entries(body)) {
+    if (val !== undefined && val !== null && val !== '') qs.set(k, String(val));
+  }
+  const res = await fetch('/api/verdict/stream?' + qs.toString());
+  if (!res.ok || !res.body) return null;
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let idx;
+      while ((idx = buf.indexOf('\n\n')) !== -1) {
+        const raw = buf.slice(0, idx);
+        buf = buf.slice(idx + 2);
+        let ev = 'message';
+        let data = '';
+        for (const line of raw.split('\n')) {
+          if (line.startsWith('event:')) ev = line.slice(6).trim();
+          else if (line.startsWith('data:')) data += line.slice(5).trim();
+        }
+        if (ev === 'leg' && data) {
+          try { appendLegProgress(JSON.parse(data)); } catch { /* skip malformed leg line */ }
+        } else if (ev === 'verdict' && data) {
+          try { await reader.cancel(); } catch { /* already closed */ }
+          return JSON.parse(data);
+        } else if (ev === 'error') {
+          try { await reader.cancel(); } catch { /* already closed */ }
+          return null;
+        }
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 async function submitVerdict(race, entityHint) {
   hideVerdict();
   setRunning(true);
@@ -831,18 +893,33 @@ async function submitVerdict(race, entityHint) {
   if (cap !== '') body.capacity = Number(cap);
   if (entityHint) body.entityHint = entityHint;
   try {
-    const res = await fetch(race ? '/api/race' : '/api/verdict', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const v = await res.json();
+    // Streamed legs first (non-race only): real per-call progress events.
+    // Any stream failure before a verdict event falls back to the POST
+    // path below — never a partial verdict, never a second live run
+    // after a delivered verdict.
+    let v = null;
+    let resOk = false;
+    let resStatus = 200;
+    if (!race) {
+      try { v = await submitVerdictStreamed(body); } catch { v = null; }
+      if (v) { resOk = true; resStatus = 200; }
+    }
+    if (!v) {
+      const res = await fetch(race ? '/api/race' : '/api/verdict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      v = await res.json();
+      resOk = res.ok;
+      resStatus = res.status;
+    }
     clearInterval(timer);
     $('raceTimer').textContent = '';
     setRunning(false);
-    if (!res.ok) {
+    if (!resOk) {
       hideVerdict();
-      if (v.error?.code === 'NOT_CONFIGURED' || res.status === 503) {
+      if (v.error?.code === 'NOT_CONFIGURED' || resStatus === 503) {
         showStatus('<p class="big">Qloo is not configured for this demo. No verdict can be computed without live Qloo data.</p><p>No card, no numbers. Nothing is mocked or invented.</p>', 'red');
         $('configBanner').hidden = false;
         $('formDisabledNote').hidden = false;
@@ -855,6 +932,7 @@ async function submitVerdict(race, entityHint) {
     }
     if (v.status === 'verdict') {
       renderVerdict(v, race);
+      if (window.OfferSheetWorkspace) window.OfferSheetWorkspace.seed(v);
       if (race && v.race) {
         $('raceBlock').innerHTML = `<p class="race-timer">Race timing — total ${v.race.totalMs}ms · Gut ${v.race.gutMs ?? '—'}ms · Web ${v.race.webMs ?? '—'}ms. Both arms ran live against the same question.</p>`;
       } else {

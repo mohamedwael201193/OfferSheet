@@ -6,6 +6,13 @@
 <title>OfferSheet — check a live-show offer before you sign it</title>
 <link href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&family=Geist:wght@400;500&family=Sofia+Sans+Extra+Condensed:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="workspace.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#030e1a">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body class="app-page">
 <div id="scrollProgress" class="scroll-progress" aria-hidden="true"></div>
@@ -17,6 +24,8 @@
       <a href="#depth">Proof</a>
       <a href="#formula">Formula</a>
       <a href="#ledger">Ledger</a>
+      <a href="#workspace">Workspace</a>
+      <a href="oracle.html">Oracle</a>
       <a href="index.html">Landing</a>
     </nav>
     <div id="qlooBadge" class="badge">Qloo status: checking…</div>
@@ -40,7 +49,7 @@
         <p class="label">Start here — edit any field. This starting example is not a real deal.</p>
       </div>
     </div>
-    <p class="wedge">Undercard ranks openers for a show. OfferSheet answers whether to sign the guarantee at all — a ticket count, not a ranking.</p>
+    <p class="wedge">Other tools rank openers for a show. OfferSheet answers whether to sign the guarantee at all — a ticket count, not a ranking.</p>
     <p id="formDisabledNote" class="form-disabled-note" hidden>The form is disabled because Qloo is not configured for this demo — no verdict can be computed without live Qloo data.</p>
     <form id="offerForm">
       <div class="field">
@@ -198,6 +207,52 @@
     </div>
   </section>
 
+  <!-- Deal workspace: client-held (localStorage + JSON export/import). Seeds ONLY from a verdict response; withheld, price-unknown, and needs-input responses are rejected and seed nothing. No verdict auto-runs here. -->
+  <section id="workspace" class="sheet crop" aria-label="Deal workspace">
+    <p class="specimen">No. 08 — The workspace</p>
+    <h2>Deal workspace</h2>
+    <p class="label">One offer, followed through every commercial move: replacement, renegotiation, routing, budget envelope, comparison, and a settlement check. The workspace lives on this device only — export the JSON to keep it.</p>
+    <div id="wsSeedNote" aria-live="polite"></div>
+    <div id="wsHeader"></div>
+    <div id="wsBase"></div>
+    <div id="wsActions"></div>
+    <div class="ws-panel" aria-label="Base offer">
+      <h3>Base offer</h3>
+      <p class="label">Editing a term creates a new workspace; prior steps are dropped, never silently re-based.</p>
+      <div id="wsEditBase"></div>
+    </div>
+    <div class="ws-panel" aria-label="Replacement">
+      <h3>Replacement</h3>
+      <p class="label">The headliner drops. Re-price a replacement act inside the original terms.</p>
+      <div id="wsReplacement"></div>
+    </div>
+    <div class="ws-panel" aria-label="Renegotiation">
+      <h3>Renegotiation</h3>
+      <p class="label">What must change to reach break-even, holding the other terms fixed.</p>
+      <div id="wsRenegotiation"></div>
+    </div>
+    <div class="ws-panel" aria-label="Routing">
+      <h3>Routing — where next</h3>
+      <p class="label">Candidate cities you type, ranked by matched-area counts.</p>
+      <div id="wsRouting"></div>
+    </div>
+    <div class="ws-panel" aria-label="Budget envelope">
+      <h3>Budget envelope</h3>
+      <p class="label">The most you will pay, or the most tickets you can credibly put in the room — exactly one input.</p>
+      <div id="wsEnvelope"></div>
+    </div>
+    <div class="ws-panel" aria-label="Comparison">
+      <h3>Comparison — up to 5 offers</h3>
+      <p class="label">Row 0 is always the verified base, never re-run.</p>
+      <div id="wsComparison"></div>
+    </div>
+    <div class="ws-panel" aria-label="Settlement">
+      <h3>Settlement check</h3>
+      <p class="label">After the show: promoter-reported attendance against the recorded threshold.</p>
+      <div id="wsSettlement"></div>
+    </div>
+  </section>
+
   <!-- Gut-vs-Graph recorded tally: bench-driven, recorded not live. -->
   <section id="trialTally" class="sheet crop" aria-label="Gut versus Graph — recorded trials">
     <p class="label">Recorded trials — from the committed benchmark ledger. Recorded, not live.</p>
@@ -341,10 +396,22 @@
   <footer class="footer band band--deep reveal">
     <p>What results do NOT establish: Qloo affinities are aggregate taste-overlap signals — how much two audiences share — not individual behavior, and not a causal claim that a show will sell out. No sellout percentage is ever shown when capacity is unknown. Quota guards are this product’s own design settings, not Qloo-stated quotas — no numeric Qloo quota is documented.</p>
     <p><a href="docs.html">How the verdict is proven</a> · <a href="tools.html">Qloo tool catalogue</a> · <a href="index.html">Landing</a></p>
+    <p><a href="oracle.html">Oracle — history, comparison, and verification</a></p>
     <p class="label">OfferSheet — one money decision, before you sign.</p>
     <p class="colophon">Colophon — Set in Hedvig Letters Serif and Geist. Printed on studio-white proof paper.</p>
   </footer>
 </main>
 <script src="app.js"></script>
+<script src="workspace.js"></script>
+<script src="oracle.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function (e) {
+        console.warn('OfferSheet service worker did not register:', e);
+      });
+    });
+  }
+</script>
 </body>
 </html>

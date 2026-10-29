@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OfferSheet — Oracle</title>
+<link href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="oracle.css">
+</head>
+<body>
+<header class="site-head">
+  <div class="wrap site-head-inner">
+    <div class="wordmark">OfferSheet <span class="app-kicker">Oracle</span></div>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="index.html">Landing</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro" aria-label="About this page">
+    <h1>Oracle</h1>
+    <p>History, comparison, and verification for recorded verdicts. Every number on this page is either computed live in this browser from fetched or uploaded data, or is one of the recorded trials below. No model grades itself.</p>
+  </section>
+
+  <!-- Panel 1: Evaluation -->
+  <section class="card" id="evaluation" aria-label="Evaluation">
+    <h2>Evaluation</h2>
+    <p class="source-label">Computed in your browser from trial-pack.json / bench data — no model grades itself.</p>
+    <p>Three code-scored checks. Nothing here is asserted by prose: each metric is recomputed by this page's code from the fetched data.</p>
+    <div class="actions">
+      <button class="btn btn--primary" type="button" id="runEvalBtn">Run evaluation checks</button>
+    </div>
+    <p id="evalStatus" class="status-line">Checks have not run yet — press Run evaluation checks.</p>
+
+    <h3>Trial-pack verification</h3>
+    <p class="label">Each trial hash is recomputed over the canonical core, and the pack hash is recomputed over the joined trial hashes.</p>
+    <div id="evalPack" class="results"></div>
+
+    <h3>Tally recomputation</h3>
+    <p class="label">Recomputed from the miss data, then compared with the tally recomputed from the bench data.</p>
+    <div id="evalTally" class="results"></div>
+
+    <h3>Coverage</h3>
+    <p class="label">For each recorded trial, which evidence fields are present and which are absent, as counts only.</p>
+    <div id="evalCoverage" class="results"></div>
+  </section>
+
+  <!-- Panel 2: Verdict history -->
+  <section class="card" id="history" aria-label="Verdict history">
+    <h2>Verdict history</h2>
+    <p class="source-label">Computed in your browser from trial-pack.json / bench data — no model grades itself.</p>
+    <p>Verdicts run in this browser are recorded here, on this device only. Nothing is prefilled: the only pre-existing rows are the recorded trials below.</p>
+    <div id="historyEmpty" class="empty-state">
+      <p>No verdicts recorded in this browser yet — run a verdict in the app, or view the recorded trials below.</p>
+      <p><a class="btn btn--primary" href="app.html">Open the app</a></p>
+    </div>
+    <ul id="historyList" class="history-list"></ul>
+    <div class="actions">
+      <button class="btn" type="button" id="clearHistoryBtn" hidden>Clear all history</button>
+    </div>
+
+    <h3>Recorded trials, 29 Oct 2026</h3>
+    <p class="label">Recorded, not live. These rows are the trial-pack trials, shown separately from browser history.</p>
+    <div id="recordedTrials" class="results"></div>
+  </section>
+
+  <!-- Panel 3: Before / after comparison -->
+  <section class="card" id="compare" aria-label="Before and after comparison">
+    <h2>Before and after comparison</h2>
+    <p class="source-label">Computed in your browser from trial-pack.json / bench data — no model grades itself.</p>
+    <p>Pick any two entries — recorded trials, history entries, or one of each — and see them side by side. Differences are arithmetic display only.</p>
+    <div class="compare-pickers">
+      <div class="field">
+        <label for="compareA">First entry</label>
+        <select id="compareA"></select>
+      </div>
+      <div class="field">
+        <label for="compareB">Second entry</label>
+        <select id="compareB"></select>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn--primary" type="button" id="compareBtn">Compare</button>
+    </div>
+    <p id="compareStatus" class="status-line">Comparison has not run yet — press Compare.</p>
+    <div class="table-wrap" id="compareTableWrap"></div>
+    <p id="compareDelta" class="delta-line"></p>
+  </section>
+
+  <!-- Panel 4: Upload and verify -->
+  <section class="card" id="upload" aria-label="Upload and verify">
+    <h2>Upload and verify</h2>
+    <p class="source-label">Computed in your browser from trial-pack.json / bench data — no model grades itself.</p>
+    <p>Upload a JSON file holding a verdict object, a workspace object, or a single receipt. Uploaded data never leaves this browser — no network call is made for uploads.</p>
+    <div class="field">
+      <label for="uploadFile">JSON file to verify</label>
+      <input id="uploadFile" type="file" accept=".json,application/json">
+    </div>
+    <p id="uploadStatus" class="status-line">No file uploaded yet.</p>
+    <div id="uploadResults" class="results"></div>
+  </section>
+
+  <footer class="footer">
+    <p>Oracle — history, comparison, and verification, computed in this browser. A failed fetch shows its failure here and computes nothing from stale data.</p>
+  </footer>
+</main>
+<script src="oracle.js"></script>
+</body>
+</html>

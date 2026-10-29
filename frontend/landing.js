@@ -95,3 +95,14 @@ try {
     });
   }
 } catch { /* motion is enhancement-only; the page works without it */ }
+
+// Get-the-app button: navigates to the release APK URL in data-apk-url.
+// The button carries the verified live URL (not a placeholder); without
+// this handler an enabled button would be a dead control.
+(function () {
+  var btn = document.querySelector('.apk-button[data-apk-url]');
+  if (btn) btn.addEventListener('click', function () {
+    var url = btn.getAttribute('data-apk-url');
+    if (url) window.location.href = url;
+  });
+})();

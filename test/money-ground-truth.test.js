@@ -184,10 +184,10 @@ test('G12: breakeven echoes the cost actually subtracted', () => {
 });
 
 test('G12/G11: form fields exist in order and are queried by app.js', async () => {
-  const html = await readFile(new URL('../frontend/index.html', import.meta.url), 'utf8');
+  const html = await readFile(new URL('../frontend/app.html', import.meta.url), 'utf8');
   const app = await readFile(new URL('../frontend/app.js', import.meta.url), 'utf8');
-  assert.ok(html.includes('id="venue"'), 'venue field must exist in index.html');
-  assert.ok(html.includes('id="variableCost"'), 'variableCost field must exist in index.html');
+  assert.ok(html.includes('id="venue"'), 'venue field must exist in app.html');
+  assert.ok(html.includes('id="variableCost"'), 'variableCost field must exist in app.html');
   assert.ok(html.indexOf('id="city"') < html.indexOf('id="venue"'), 'venue field follows city');
   assert.ok(html.indexOf('id="ticketPrice"') < html.indexOf('id="variableCost"'), 'variableCost field follows ticket price');
   assert.ok(app.includes(`$('venue')`), 'app.js must query the venue field');
@@ -204,12 +204,12 @@ test('G12/G11: form fields exist in order and are queried by app.js', async () =
 test('G9: Web arm is labeled "LLM + Wikidata facts" and no generic-web claim remains', async () => {
   const app = await readFile(new URL('../frontend/app.js', import.meta.url), 'utf8');
   const arms = await readFile(new URL('../backend/src/arms.js', import.meta.url), 'utf8');
-  const html = await readFile(new URL('../frontend/index.html', import.meta.url), 'utf8');
+  const html = await readFile(new URL('../frontend/app.html', import.meta.url), 'utf8');
   const pipeline = await readFile(new URL('../backend/src/pipeline.js', import.meta.url), 'utf8');
   assert.ok(app.includes('Web (LLM + Wikidata facts)'), 'race lane must use the honest label');
   assert.ok(arms.includes('LLM + Wikidata facts'), 'arms.js must use the honest label');
   assert.ok(arms.includes('Wikidata facts below'), 'Web arm prompt must name Wikidata facts');
-  for (const [name, src] of [['app.js', app], ['arms.js', arms], ['index.html', html], ['pipeline.js', pipeline]]) {
+  for (const [name, src] of [['app.js', app], ['arms.js', arms], ['app.html', html], ['pipeline.js', pipeline]]) {
     assert.ok(!src.includes('generic web'), `${name} must not contain a generic-web claim`);
   }
 });

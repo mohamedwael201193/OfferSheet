@@ -174,7 +174,7 @@ export async function restCompare({ aIds, bIds, key, baseUrl, fetchImpl, logFn }
 }
 
 export async function restEntities({ ids, key, baseUrl, fetchImpl, logFn }) {
-  // Max 15 per call (adopted from TasteCase's BoundedQlooClient).
+  // Max 15 per call (bounded client cap).
   const slice = ids.slice(0, 15);
   return qlooRest({
     path: '/entities',

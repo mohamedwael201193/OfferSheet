@@ -6,6 +6,13 @@
 <title>OfferSheet — check a live-show offer before you sign it</title>
 <link href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&family=Geist:wght@400;500&family=Sofia+Sans+Extra+Condensed:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="landing-mobile.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#030e1a">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
 <div id="scrollProgress" class="scroll-progress" aria-hidden="true"></div>
@@ -210,6 +217,237 @@
     <p><strong>No personal data is sent to Qloo.</strong> Aggregate audiences only. If Qloo is not configured, the page fails closed with a visible 503 — never mock data. Qloo affinities are aggregate taste-overlap signals — how much two audiences share — never predictions about any individual, and never a causal claim that a show will sell out.</p>
   </section>
 
+  <!-- Maya story walkthrough: illustrative persona, real recorded trials only. -->
+  <section class="story-section" id="maya-story" aria-label="A promoter walkthrough">
+    <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
+    <h2>Maya, and the offer on the table</h2>
+    <p class="story-intro">Maya is an independent promoter weighing a guarantee offer. Her walkthrough replays a recorded trial, step by step.</p>
+
+    <article class="beat">
+      <p class="beat-num">Beat 1 — The doubt</p>
+      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
+      <h3>Should I sign this guarantee?</h3>
+      <p>Maya has an offer on the table and a number in her head. One of them is wrong, and signing will tell her which — after the money is gone.</p>
+    </article>
+
+    <article class="beat">
+      <p class="beat-num">Beat 2 — The inputs</p>
+      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
+      <h3>The offer, written down before anyone guesses.</h3>
+      <p>Artist: Billie Eilish. City: New York. Guarantee: $250,000. Ticket: $120. No vibes, no 'feels like a sellout' — four inputs, on the record, before the verdict.</p>
+    </article>
+
+    <article class="beat">
+      <p class="beat-num">Beat 3 — The verdict</p>
+      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
+      <h3>2,084 tickets. That is the break-even.</h3>
+      <p>Break-even = guarantee ÷ net per-ticket contribution, rounded up. At these inputs, Maya must sell 2,084 tickets before the guarantee is covered. Below that, she loses money on the deal.</p>
+    </article>
+
+    <div class="same-method-strip">
+      <h3>Same method, different recorded offer</h3>
+      <p>Taylor Swift — New York — $250,000 / $120 → 2,084 tickets (29 Oct 2026).</p>
+      <p>Olivia Rodrigo — Los Angeles — $180,000 / $95 → 1,895 tickets (29 Oct 2026).</p>
+      <p class="strip-label">Recorded trials, 29 Oct 2026.</p>
+    </div>
+
+    <article class="beat">
+      <p class="beat-num">Beat 4 — The receipts</p>
+      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
+      <h3>Don't take the number. Take the receipt.</h3>
+      <p>Every verdict ships with a SHA-256 receipt and a clickable re-run. Same inputs in, same verdict out — or the receipt says otherwise, and you don't sign.</p>
+    </article>
+
+    <article class="beat">
+      <p class="beat-num">Beat 5 — The gut-check</p>
+      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
+      <h3>Your gut gets a score, too.</h3>
+      <p>Before the graph, write your gut number down. OfferSheet keeps a miss ledger: where gut and graph disagreed, and which one was right. The ledger is the point — a gut feeling with no record is just a story you tell after the show.</p>
+    </article>
+
+    <article class="beat">
+      <p class="beat-num">Beat 6 — The checklist</p>
+      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
+      <h3>Sign only if every box is ticked.</h3>
+      <p>Inputs on the record. Verdict receipted. Re-run clicked. Gut written down before the graph. If live data is unavailable, there is no verdict at all — a fail-closed 503, not a sample plan dressed as an answer.</p>
+    </article>
+
+    <article class="beat">
+      <p class="beat-num">Beat 7 — The signature</p>
+      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
+      <h3>A wrong page costs nothing. A wrong verdict costs real money.</h3>
+      <p>That is why the receipts exist, and why a missing answer is a refusal, not a guess. Maya signs — or walks away — with a number she can re-run, a receipt she can show, and a ledger that remembers when gut beat graph. A demo can afford to be wrong. A promoter cannot.</p>
+    </article>
+  </section>
+
+  <!-- Get the app: display-only showcase + recorded-trial phone mockup. -->
+  <section class="get-app-section" id="get-the-app" aria-label="Get the app">
+    <h2>Get the app</h2>
+    <p class="get-app-subline">The break-even verdict, in your pocket — same receipts, same fail-closed rule, on your phone.</p>
+    <!-- APK live: GitHub Release android-app-v1.0.0, asset offersheet-release.apk
+         (295,972 bytes; download URL verified live 2026-10-29 — HEAD returns 302, not 404). -->
+    <button class="apk-button" type="button" data-apk-url="https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk">Download the Android app (APK)</button>
+    <p class="apk-note">Android APK via GitHub Release. Live verdicts run in the app — this landing page never runs a verdict.</p>
+
+    <p class="mockup-framing">See how the verdict screen looks — a recorded run, step by step.</p>
+    <p class="mockup-frame-label">Simulated mobile experience — recorded trial, not a live verdict</p>
+    <div class="mockup-wrap">
+      <div class="mockup-frame" id="mockupFrame">
+        <div class="mockup-screen-area" aria-live="polite">
+          <div class="mockup-statusbar" aria-hidden="true"><span>9:41</span></div>
+
+          <!-- Screen 0 -->
+          <div class="mockup-screen is-active" data-screen="0">
+            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
+            <h3>OfferSheet</h3>
+            <p>Replay a recorded trial. Nothing here is live.</p>
+            <div class="mockup-nav">
+              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="1">Choose a recorded trial <span aria-hidden="true">→</span></button>
+            </div>
+          </div>
+
+          <!-- Screen 1 -->
+          <div class="mockup-screen" data-screen="1">
+            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
+            <h3>Choose a recorded trial</h3>
+            <div class="mockup-nav">
+              <button class="mockup-btn" type="button" data-goto="2" data-trial="billie">Billie Eilish — New York — $250,000 / $120 — recorded 29 Oct 2026</button>
+              <button class="mockup-btn" type="button" data-goto="2" data-trial="taylor">Taylor Swift — New York — $250,000 / $120 — recorded 29 Oct 2026</button>
+              <button class="mockup-btn" type="button" data-goto="2" data-trial="olivia">Olivia Rodrigo — Los Angeles — $180,000 / $95 — recorded 29 Oct 2026</button>
+              <button class="mockup-btn mockup-btn--secondary" type="button" data-goto="0">← Back</button>
+            </div>
+          </div>
+
+          <!-- Screen 2: Billie -->
+          <div class="mockup-screen" data-screen="2" data-trial="billie">
+            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
+            <h3>Recorded inputs</h3>
+            <div class="mockup-card">
+              <p>Artist: Billie Eilish</p>
+              <p>City: New York</p>
+              <p>Guarantee: $250,000</p>
+              <p>Ticket: $120</p>
+            </div>
+            <p class="mockup-caption">Recorded inputs — 29 Oct 2026. Shown as recorded; not editable here.</p>
+            <div class="mockup-nav">
+              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="3">See the recorded verdict <span aria-hidden="true">→</span></button>
+              <button class="mockup-btn" type="button" data-goto="1">← Back to trials</button>
+            </div>
+          </div>
+
+          <!-- Screen 2: Taylor -->
+          <div class="mockup-screen" data-screen="2" data-trial="taylor">
+            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
+            <h3>Recorded inputs</h3>
+            <div class="mockup-card">
+              <p>Artist: Taylor Swift</p>
+              <p>City: New York</p>
+              <p>Guarantee: $250,000</p>
+              <p>Ticket: $120</p>
+            </div>
+            <p class="mockup-caption">Recorded inputs — 29 Oct 2026. Shown as recorded; not editable here.</p>
+            <div class="mockup-nav">
+              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="3">See the recorded verdict <span aria-hidden="true">→</span></button>
+              <button class="mockup-btn" type="button" data-goto="1">← Back to trials</button>
+            </div>
+          </div>
+
+          <!-- Screen 2: Olivia -->
+          <div class="mockup-screen" data-screen="2" data-trial="olivia">
+            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
+            <h3>Recorded inputs</h3>
+            <div class="mockup-card">
+              <p>Artist: Olivia Rodrigo</p>
+              <p>City: Los Angeles</p>
+              <p>Guarantee: $180,000</p>
+              <p>Ticket: $95</p>
+            </div>
+            <p class="mockup-caption">Recorded inputs — 29 Oct 2026. Shown as recorded; not editable here.</p>
+            <div class="mockup-nav">
+              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="3">See the recorded verdict <span aria-hidden="true">→</span></button>
+              <button class="mockup-btn" type="button" data-goto="1">← Back to trials</button>
+            </div>
+          </div>
+
+          <!-- Screen 3: Billie -->
+          <div class="mockup-screen" data-screen="3" data-trial="billie">
+            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
+            <h3>Recorded verdict</h3>
+            <div class="mockup-verdict-card">
+              <div class="verdict-guide" aria-hidden="true"></div>
+              <p class="verdict-number">2,084 tickets</p>
+              <p>break-even = guarantee ÷ net per-ticket contribution, rounded up.</p>
+            </div>
+            <p class="mockup-caption">Recorded verdict, 29 Oct 2026 — not a live verdict.</p>
+            <div class="mockup-nav">
+              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="4">See the receipt <span aria-hidden="true">→</span></button>
+              <button class="mockup-btn" type="button" data-goto="2">← Back to inputs</button>
+            </div>
+          </div>
+
+          <!-- Screen 3: Taylor -->
+          <div class="mockup-screen" data-screen="3" data-trial="taylor">
+            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
+            <h3>Recorded verdict</h3>
+            <div class="mockup-verdict-card">
+              <div class="verdict-guide" aria-hidden="true"></div>
+              <p class="verdict-number">2,084 tickets</p>
+              <p>break-even = guarantee ÷ net per-ticket contribution, rounded up.</p>
+            </div>
+            <p class="mockup-caption">Recorded verdict, 29 Oct 2026 — not a live verdict.</p>
+            <div class="mockup-nav">
+              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="4">See the receipt <span aria-hidden="true">→</span></button>
+              <button class="mockup-btn" type="button" data-goto="2">← Back to inputs</button>
+            </div>
+          </div>
+
+          <!-- Screen 3: Olivia -->
+          <div class="mockup-screen" data-screen="3" data-trial="olivia">
+            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
+            <h3>Recorded verdict</h3>
+            <div class="mockup-verdict-card">
+              <div class="verdict-guide" aria-hidden="true"></div>
+              <p class="verdict-number">1,895 tickets</p>
+              <p>break-even = guarantee ÷ net per-ticket contribution, rounded up.</p>
+            </div>
+            <p class="mockup-caption">Recorded verdict, 29 Oct 2026 — not a live verdict.</p>
+            <div class="mockup-nav">
+              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="4">See the receipt <span aria-hidden="true">→</span></button>
+              <button class="mockup-btn" type="button" data-goto="2">← Back to inputs</button>
+            </div>
+          </div>
+
+          <!-- Screen 4 -->
+          <div class="mockup-screen" data-screen="4">
+            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
+            <h3>Receipt</h3>
+            <p>This verdict was receipted with SHA-256 and a clickable re-run in the app dashboard.</p>
+            <p>If live data is unavailable, the app refuses with a fail-closed 503 — no verdict, no sample plan.</p>
+            <p>What you just tapped through is a recording. A live verdict runs only in the app.</p>
+            <div class="mockup-nav">
+              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="5">See the end card <span aria-hidden="true">→</span></button>
+              <button class="mockup-btn" type="button" data-goto="1">← Replay another trial</button>
+              <a class="mockup-btn" href="app.html">Open the live app dashboard</a>
+            </div>
+          </div>
+
+          <!-- Screen 5 -->
+          <div class="mockup-screen" data-screen="5">
+            <p class="mockup-label">Simulated mobile experience — recorded trial, not a live verdict</p>
+            <h3>The money-staked line</h3>
+            <p>A wrong page costs nothing. A wrong verdict costs real money. That is why the receipt matters — and why a missing answer is a refusal, not a guess.</p>
+            <div class="mockup-nav">
+              <button class="mockup-btn mockup-btn--primary" type="button" data-goto="1">← Back to trials</button>
+            </div>
+          </div>
+
+          <div class="mockup-homebar" aria-hidden="true"><span></span></div>
+        </div>
+      </div>
+    </div>
+    <noscript><style>.mockup-screen{display:flex !important;}</style></noscript>
+  </section>
+
   <!-- Footer -->
   <footer class="footer band band--deep reveal">
     <p>What results do NOT establish: Qloo affinities are aggregate taste-overlap signals — how much two audiences share — not individual behavior, and not a causal claim that a show will sell out. No sellout percentage is ever shown when capacity is unknown. Quota guards are this product’s own design settings, not Qloo-stated quotas — no numeric Qloo quota is documented.</p>
@@ -218,5 +456,15 @@
   </footer>
 </main>
 <script src="landing.js"></script>
+<script src="mockup.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function (e) {
+        console.warn('OfferSheet service worker did not register:', e);
+      });
+    });
+  }
+</script>
 </body>
 </html>

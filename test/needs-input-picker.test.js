@@ -17,7 +17,7 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 const appJs = readFileSync(fileURLToPath(new URL('../frontend/app.js', import.meta.url)), 'utf8');
-const indexHtml = readFileSync(fileURLToPath(new URL('../frontend/index.html', import.meta.url)), 'utf8');
+const indexHtml = readFileSync(fileURLToPath(new URL('../frontend/app.html', import.meta.url)), 'utf8');
 
 function makeButton(attrs) {
   const handlers = {};
@@ -166,7 +166,7 @@ test('formula section exists unhidden with an honest pre-verdict worked-example 
   assert.ok(indexHtml.includes('<section id="formula" class="sheet crop" aria-label="Formula">'));
   assert.ok(!indexHtml.includes('id="formulaSection"'), 'old id must be gone');
   assert.ok(indexHtml.includes('<p id="workedExample" class="num">Run a verdict to see its worked example here.</p>'));
-  assert.equal((indexHtml.match(/href="#formula"/g) || []).length, 2, 'nav + hero links must both resolve');
+  assert.equal((indexHtml.match(/href="#formula"/g) || []).length, 2, 'nav + tool links must both resolve');
 });
 
 test('formula visibility is no longer verdict-gated, but verdicts still populate the worked example', () => {

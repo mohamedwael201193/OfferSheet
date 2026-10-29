@@ -19,6 +19,16 @@ import { searchEntities } from './src/wikidata.js';
 import { runGutArm, runWebArm, llmConfigured } from './src/arms.js';
 import { runVerdict } from './src/pipeline.js';
 import { OfferError, notConfigured } from './src/errors.js';
+import {
+  verifyWorkspace,
+  computeRenegotiation,
+  computeEnvelope,
+  computeSettlement,
+  runReplacement,
+  runRouting,
+  runComparison,
+  stepRefusal,
+} from './src/workspace.js';
 
 const FRONTEND_DIR = fileURLToPath(new URL('../frontend/', import.meta.url));
 const BENCH_FILE = fileURLToPath(new URL('../bench/results.json', import.meta.url));
@@ -40,6 +50,7 @@ const CONTENT_TYPES = {
   '.jpeg': 'image/jpeg',
   '.avif': 'image/avif',
   '.ico': 'image/x-icon',
+  '.webmanifest': 'application/manifest+json',
 };
 
 function send(res, status, body, contentType = 'application/json; charset=utf-8') {
@@ -272,6 +283,208 @@ async function handleReplay(req, res) {
   throw new OfferError('INVALID_INPUT', 400, 'Replay requires kind mcp (tool + args) or kind rest (path + params)');
 }
 
+// ---- Deal-workspace endpoints (LEGENDARY Phase 2) ----
+// Stateless: every step handler takes the client-held workspace, verifies
+// it via workspace.js, and returns a step result. Nothing is stored, and a
+// refused step writes nothing. Logs stay method/path/status only (router).
+function sendStepRefused(res, step, err, detail) {
+  const status = err instanceof OfferError ? err.status : 502;
+  const code = err instanceof OfferError ? err.code : 'QLOO_ERROR';
+  send(res, status, stepRefusal(step, code, err.message || 'Step failed', detail || `step ${step} refused`));
+}
+
+function workspaceAndInput(body) {
+  if (!body.workspace || typeof body.workspace !== 'object' || Array.isArray(body.workspace)) {
+    throw new OfferError('INVALID_INPUT', 400, 'workspace must be a JSON object');
+  }
+  return { workspace: body.workspace, stepInput: body.stepInput ?? {} };
+}
+
+async function handleWorkspaceVerify(req, res) {
+  const body = await readJsonBody(req);
+  if (!body.workspace || typeof body.workspace !== 'object' || Array.isArray(body.workspace)) {
+    throw new OfferError('INVALID_INPUT', 400, 'workspace must be a JSON object');
+  }
+  send(res, 200, verifyWorkspace(body.workspace, { baseUrl: config.qlooBaseUrl }));
+}
+
+async function handlePureWorkspaceStep(req, res, step, fn) {
+  try {
+    const body = await readJsonBody(req);
+    const { workspace, stepInput } = workspaceAndInput(body);
+    send(res, 200, fn(workspace, stepInput, { baseUrl: config.qlooBaseUrl }));
+  } catch (e) {
+    if (e instanceof OfferError) { sendStepRefused(res, step, e, e.message); return; }
+    throw e;
+  }
+}
+
+async function handleReplacement(req, res) {
+  const step = 'replacement';
+  let close = () => {};
+  try {
+    const body = await readJsonBody(req);
+    const { workspace, stepInput } = workspaceAndInput(body);
+    const visitorIp = req.socket?.remoteAddress || 'unknown';
+    const built = await buildDeps({ isCancelled: () => req.socket?.destroyed === true });
+    close = built.close;
+    const out = await runReplacement(workspace, stepInput, built.deps, { visitorIp });
+    send(res, 200, out);
+  } catch (e) {
+    if (e instanceof OfferError) { sendStepRefused(res, step, e, e.message); return; }
+    sendStepRefused(res, step, e, `replacement live call failed: ${e.message}`);
+  } finally {
+    close();
+  }
+}
+
+async function handleRouting(req, res) {
+  const step = 'routing';
+  let close = () => {};
+  try {
+    const body = await readJsonBody(req);
+    const { workspace, stepInput } = workspaceAndInput(body);
+    // Routing calls qloo_where_popular directly (no runVerdict key gate),
+    // so the key gate is explicit here: unconfigured Qloo refuses closed
+    // instead of surfacing a transport spawn error.
+    if (!config.qlooKeyConfigured) throw notConfigured();
+    const visitorIp = req.socket?.remoteAddress || 'unknown';
+    const built = await buildDeps({ isCancelled: () => req.socket?.destroyed === true });
+    close = built.close;
+    const out = await runRouting(workspace, stepInput, built.deps, { visitorIp });
+    send(res, 200, out);
+  } catch (e) {
+    if (e.cancelled) return;
+    if (e instanceof OfferError) { sendStepRefused(res, step, e, e.message); return; }
+    sendStepRefused(res, step, e, `routing live call failed: ${e.message}`);
+  } finally {
+    close();
+  }
+}
+
+async function handleComparison(req, res) {
+  const step = 'comparison';
+  let closeAll = () => {};
+  try {
+    const body = await readJsonBody(req);
+    const { workspace, stepInput } = workspaceAndInput(body);
+    const visitorIp = req.socket?.remoteAddress || 'unknown';
+    const sessions = [];
+    closeAll = () => { for (const c of sessions) { try { c(); } catch { /* already closed */ } } };
+    const makeDeps = async () => {
+      const built = await buildDeps({ isCancelled: () => req.socket?.destroyed === true });
+      sessions.push(built.close);
+      return built;
+    };
+    const out = await runComparison(workspace, stepInput, makeDeps, {
+      checkVisitor: (ip) => guards.checkVisitor(ip),
+      visitorIp,
+      isCancelled: () => req.socket?.destroyed === true,
+    });
+    send(res, 200, out);
+  } catch (e) {
+    if (e.cancelled) return;
+    if (e instanceof OfferError) { sendStepRefused(res, step, e, e.message); return; }
+    sendStepRefused(res, step, e, `comparison live call failed: ${e.message}`);
+  } finally {
+    closeAll();
+  }
+}
+
+// GET /api/verdict/stream (SSE): same inputs as POST /api/verdict via
+// query params. Each emitted `leg` event corresponds to one real completed
+// dependency call (tool/path + status + elapsed ms) — never a staged label.
+// The final `verdict` event is the full verdict object; an OfferError
+// becomes an `error` event, then the stream ends. A client disconnect
+// sets the cancelled flag, so the run ends withheld, never partial.
+async function handleVerdictStream(req, res, url) {
+  const q = url.searchParams;
+  const num = (v) => (v === null || v === '' ? undefined : Number(v));
+  const input = {
+    artist: q.get('artist') ?? '',
+    city: q.get('city') ?? '',
+    guarantee: num(q.get('guarantee')),
+    ticketPrice: num(q.get('ticketPrice')),
+    variableCost: num(q.get('variableCost')),
+    capacity: num(q.get('capacity')),
+    venue: q.get('venue') ?? undefined,
+    entityHint: q.get('entityHint') ?? undefined,
+    visitorIp: req.socket?.remoteAddress || 'unknown',
+  };
+  // Socket-destroyed, NOT req 'close': the request stream's 'close'
+  // fires as soon as the body is consumed (proven in testing), which
+  // would cancel every run before its first leg. A destroyed socket is
+  // the real disconnect signal.
+  const cancelled = () => req.socket?.destroyed === true;
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+  const emit = (event, data) => {
+    try {
+      if (!res.writableEnded && !cancelled()) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    } catch { /* client gone */ }
+  };
+  const timed = (callName, fn, statusOf) => async (...args) => {
+    const t0 = Date.now();
+    try {
+      const out = await fn(...args);
+      emit('leg', { call: callName, status: statusOf(out), elapsedMs: Date.now() - t0 });
+      return out;
+    } catch (e) {
+      emit('leg', { call: callName, status: 'error', elapsedMs: Date.now() - t0 });
+      throw e;
+    }
+  };
+  let close = () => {};
+  try {
+    const gutArm = timed('gutArm', ({ question }) => runGutArm({ question }), (o) => o?.status ?? 'error');
+    const webArm = timed('webArm', ({ question, webFacts }) => runWebArm({ question, webFacts }), (o) => o?.status ?? 'error');
+    const built = await buildDeps({ gutArm, webArm, isCancelled: cancelled });
+    close = built.close;
+    const deps = built.deps;
+    const mcpCall = async (tool, args) => {
+      const t0 = Date.now();
+      try {
+        const env = await deps.mcpCall(tool, args);
+        emit('leg', { call: tool, tool, status: env?.status ?? 'error', elapsedMs: Date.now() - t0 });
+        return env;
+      } catch (e) {
+        emit('leg', { call: tool, tool, status: 'error', elapsedMs: Date.now() - t0 });
+        throw e;
+      }
+    };
+    const restCall = async ({ path, params }) => {
+      const t0 = Date.now();
+      try {
+        const out = await deps.restCall({ path, params });
+        emit('leg', { call: `rest:${path}`, path, status: out?.ok ? 'ok' : 'error', elapsedMs: Date.now() - t0 });
+        return out;
+      } catch (e) {
+        emit('leg', { call: `rest:${path}`, path, status: 'error', elapsedMs: Date.now() - t0 });
+        throw e;
+      }
+    };
+    const streamDeps = {
+      ...deps,
+      mcpCall,
+      restCall,
+      tmEvents: timed('tmEvents', deps.tmEvents, (o) => (o?.ok ? 'ok' : 'error')),
+      tmVenues: timed('tmVenues', deps.tmVenues, (o) => (o?.ok ? 'ok' : 'error')),
+      geocodeFn: timed('geocode', deps.geocodeFn, (o) => (o?.ok ? 'ok' : 'error')),
+      wikidataFn: timed('wikidata', deps.wikidataFn, (o) => (o?.ok ? 'ok' : 'error')),
+    };
+    const verdict = await runVerdict(input, streamDeps);
+    if (!cancelled()) emit('verdict', verdict);
+  } catch (e) {
+    if (!cancelled()) {
+      emit('error', e instanceof OfferError
+        ? { code: e.code, message: e.message }
+        : { code: 'INTERNAL', message: 'Internal error' });
+    }
+  } finally {
+    close();
+    try { res.end(); } catch { /* already closed */ }
+  }
+}
+
 async function handleBench(res) {
   try {
     const text = await readFile(BENCH_FILE, 'utf8');
@@ -332,6 +545,22 @@ const server = http.createServer(async (req, res) => {
       await handleVerdict(req, res, { race: true });
     } else if (req.method === 'POST' && path === '/api/replay') {
       await handleReplay(req, res);
+    } else if (req.method === 'POST' && path === '/api/workspace/verify') {
+      await handleWorkspaceVerify(req, res);
+    } else if (req.method === 'POST' && path === '/api/workspace/replacement') {
+      await handleReplacement(req, res);
+    } else if (req.method === 'POST' && path === '/api/workspace/renegotiate') {
+      await handlePureWorkspaceStep(req, res, 'renegotiation', computeRenegotiation);
+    } else if (req.method === 'POST' && path === '/api/workspace/route') {
+      await handleRouting(req, res);
+    } else if (req.method === 'POST' && path === '/api/workspace/envelope') {
+      await handlePureWorkspaceStep(req, res, 'envelope', computeEnvelope);
+    } else if (req.method === 'POST' && path === '/api/workspace/compare') {
+      await handleComparison(req, res);
+    } else if (req.method === 'POST' && path === '/api/workspace/settle') {
+      await handlePureWorkspaceStep(req, res, 'settlement', computeSettlement);
+    } else if (req.method === 'GET' && path === '/api/verdict/stream') {
+      await handleVerdictStream(req, res, url);
     } else if (req.method === 'GET' && path === '/api/bench') {
       await handleBench(res);
     } else if (req.method === 'GET') {

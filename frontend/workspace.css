@@ -1,0 +1,116 @@
+/* OfferSheet deal workspace — Studio tokens only.
+   Paper #f1f7f8, ink #030e1a, cadmium orange #e97219.
+   Body/UI: Geist. Display: Hedvig Letters Serif. No fixed-width face anywhere.
+   8pt grid; every interactive target is at least 48px tall. */
+#workspace {
+  background: #f1f7f8;
+  color: #030e1a;
+  border: 1px solid rgba(3, 14, 26, 0.12);
+  border-radius: 16px;
+  padding: 24px 16px;
+  margin: 16px 0;
+}
+#workspace h2, #workspace h3, #workspace h4 {
+  font-family: "Hedvig Letters Serif", ui-serif, Georgia, serif;
+  color: #030e1a;
+  line-height: 1.15;
+}
+#workspace h2 { font-size: 24px; margin: 0 0 8px; }
+#workspace h3 { font-size: 20px; margin: 24px 0 8px; }
+#workspace h4 { font-size: 17px; margin: 16px 0 8px; }
+#workspace p, #workspace li, #workspace td, #workspace th, #workspace label, #workspace legend {
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 24px;
+  color: #030e1a;
+}
+#workspace .ws-label, #workspace .ws-out, #workspace .ws-replay-out {
+  font-size: 14px;
+  line-height: 20px;
+  color: #030e1a;
+}
+#workspace .ws-panel {
+  border: 1px solid rgba(3, 14, 26, 0.12);
+  border-radius: 16px;
+  padding: 16px;
+  margin: 16px 0;
+  background: #f1f7f8;
+}
+#workspace .ws-settle-line { font-weight: 500; }
+#workspace .ws-big {
+  font-family: "Hedvig Letters Serif", ui-serif, Georgia, serif;
+  font-size: 34px;
+  line-height: 40px;
+}
+#workspace .ws-g { font-weight: 500; white-space: nowrap; }
+#workspace .ws-form { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 16px 0; }
+#workspace .ws-form > * { grid-column: 1 / -1; min-width: 0; }
+#workspace .ws-form label { display: grid; gap: 8px; font-weight: 500; }
+#workspace .ws-form input[type="text"],
+#workspace .ws-form input:not([type]),
+#workspace .ws-form input[type="number"],
+#workspace .ws-form textarea {
+  min-height: 48px;
+  padding: 8px 16px;
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 24px;
+  color: #030e1a;
+  background: #f1f7f8;
+  border: 1px solid rgba(3, 14, 26, 0.4);
+  border-radius: 8px;
+  box-sizing: border-box;
+  width: 100%;
+}
+#workspace .ws-form fieldset { border: 1px solid rgba(3, 14, 26, 0.12); border-radius: 16px; padding: 16px; margin: 0; display: grid; gap: 16px; }
+#workspace .ws-form fieldset legend { font-weight: 500; padding: 0 8px; }
+#workspace .ws-form input[type="radio"] { min-width: 48px; min-height: 48px; width: 48px; height: 48px; accent-color: #030e1a; vertical-align: middle; }
+#workspace .ws-btn {
+  min-height: 48px;
+  padding: 8px 16px;
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #030e1a;
+  background: #f1f7f8;
+  border: 1px solid #030e1a;
+  border-radius: 8px;
+  cursor: pointer;
+}
+#workspace .ws-btn--primary { background: #e97219; color: #030e1a; border-color: #030e1a; }
+#workspace .ws-btn--sm { min-height: 48px; }
+#workspace .ws-btn:disabled { opacity: 0.5; cursor: default; }
+#workspace .ws-file-label { display: inline-block; line-height: 32px; }
+#workspace .ws-msg { border-top: 2px solid #e97219; padding-top: 8px; }
+#workspace .ws-msg--ok { font-weight: 500; }
+#workspace .ws-msg--refused { font-weight: 500; }
+#workspace .ws-refusal {
+  border: 1px solid #030e1a;
+  border-radius: 16px;
+  padding: 16px;
+  margin: 16px 0;
+}
+#workspace .ws-row {
+  border-top: 1px solid rgba(3, 14, 26, 0.12);
+  padding: 16px 0;
+}
+#workspace .ws-row--refused { opacity: 1; }
+#workspace .ws-row--mismatch, #workspace .ws-receipt.ws-row--mismatch { color: rgba(3, 14, 26, 0.55); }
+#workspace .ws-mismatch { font-weight: 500; }
+#workspace .ws-receipts { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 8px; }
+#workspace .ws-receipt { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+#workspace .ws-table-wrap { overflow-x: auto; margin: 16px 0; }
+#workspace .ws-table { border-collapse: collapse; min-width: 640px; width: 100%; }
+#workspace .ws-table th, #workspace .ws-table td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid rgba(3, 14, 26, 0.12);
+  vertical-align: top;
+  font-size: 14px;
+  line-height: 20px;
+}
+#workspace .ws-offer { margin-bottom: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  #workspace * { scroll-behavior: auto; }
+}
