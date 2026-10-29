@@ -20,7 +20,7 @@
   --color-paper-hi: #FFFFFF;
 }
 * { box-sizing: border-box; }
-html { background: var(--bg); overflow-x: clip; scroll-behavior: smooth; }
+html { background: var(--bg); overflow-x: clip; scroll-behavior: smooth; scroll-padding-bottom: 110px; }
 body { margin: 0; background: var(--bg); color: var(--body); font-family: var(--sans); font-size: 18px; line-height: 1.65; -webkit-font-smoothing: antialiased; overflow-x: clip; padding-bottom: 110px; }
 h1, h2, h3 { color: var(--text); line-height: 1.05; margin: 0; }
 p { margin: 0 0 16px; max-width: 68ch; }
@@ -37,7 +37,7 @@ section > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
 .skip-link:focus { position: fixed; left: 16px; top: 16px; }
 
 /* Top appbar (wordmark row, not a nav) + display type. */
-.appbar { border-bottom: 1px solid var(--hair); }
+.appbar { border-bottom: 1px solid var(--hair); padding-top: env(safe-area-inset-top); }
 .appbar-inner { max-width: 1200px; margin: 0 auto; padding: 20px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 .wordmark { font-family: var(--display); font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -0.01em; }
 .app-kicker { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .14em; text-transform: uppercase; }
@@ -75,8 +75,23 @@ section > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
 .hero-beam { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(46, 143, 158, .18), transparent 70%); }
 .hero-sub { font-size: 20px; color: var(--body); max-width: 60ch; }
 .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin: 28px 0 48px; }
+/* Short viewports: shrink the hero stack so the CTA row's bottom edge
+   sits at least 100px above the viewport bottom at first paint,
+   clearing the fixed bottom-center pill nav (~84px band). The pill
+   itself is not moved or hidden. Tall viewports keep the giant type. */
+@media (max-height: 950px) {
+  .hero { padding-top: 24px; }
+  .hero h1.display { font-size: clamp(52px, 11vw, 110px); }
+}
+/* Narrow + short: the 52px clamp floor above does not shrink the
+   headline, so shrink the stack from the other ends instead. */
+@media (max-width: 820px) and (max-height: 950px) {
+  .hero { padding-top: 16px; }
+  .hero h1.display { font-size: clamp(44px, 11vw, 110px); }
+  .hero-ctas { margin-top: 20px; }
+}
 .hero-figure img { border-radius: 0; width: 100%; }
-.hero-figure figcaption { color: var(--faint); font-size: 15px; margin-top: 12px; max-width: 64ch; }
+.hero-figure figcaption { color: #AAAAAA; font-size: 15px; margin-top: 12px; max-width: 64ch; }
 .rotating-badge { position: absolute; right: 48px; top: 64px; width: 120px; height: 120px; opacity: .85; }
 .rotating-badge svg { width: 100%; height: 100%; animation: spin 24s linear infinite; }
 .rotating-badge text { fill: var(--muted); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; font-family: var(--sans); }
@@ -97,7 +112,7 @@ section > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
 .fan-card:nth-child(2) { --rot: 2deg; margin-top: 40px; }
 .fan-card:nth-child(3) { --rot: -2deg; margin-top: 16px; }
 .fan-card img { border-radius: 0; width: 100%; }
-.fan-card figcaption { color: var(--faint); font-size: 15px; margin-top: 12px; }
+.fan-card figcaption { color: #AAAAAA; font-size: 15px; margin-top: 12px; }
 
 /* Statement: theatrical void around one giant line. */
 .statement { padding-top: 140px; padding-bottom: 140px; }
@@ -150,6 +165,9 @@ td { color: var(--body); }
 /* Letter reveals + clip-mask reveals: JS-gated (see dark-motion.js).
    No-JS renders full text; reduced-motion CSS (below) forces visible. */
 [data-reveal] .rl { display: inline-block; opacity: 0; transform: translateY(.35em); transition: opacity 500ms ease-out, transform 500ms ease-out; transition-delay: var(--d, 0ms); }
+/* Word wrapper for the letter-reveal splitter: keeps each word intact
+   so the headline never breaks mid-word at narrow widths. */
+[data-reveal] .rl-word { display: inline-block; white-space: nowrap; }
 [data-reveal].revealed .rl { opacity: 1; transform: none; }
 [data-clip].js-clip { clip-path: inset(0 100% 0 0); }
 [data-clip].js-clip.revealed { clip-path: inset(0 0 0 0); transition: clip-path 900ms ease-out; }
@@ -170,7 +188,7 @@ td { color: var(--body); }
 .footer-meta { display: grid; gap: 0; border-top: 1px solid rgba(255, 255, 255, .18); padding-top: 20px; }
 .footer-meta p { margin: 0; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, .12); overflow-wrap: anywhere; }
 .footer-wordmark { font-family: var(--display); font-size: clamp(64px, 18vw, 220px); font-weight: 800; color: #FFFFFF; line-height: .9; margin: 48px 0 8px; max-width: none; will-change: transform; }
-.footer-bottom { color: var(--faint); font-size: 14px; }
+.footer-bottom { color: #AAAAAA; font-size: 14px; }
 
 /* Shared aid styles (defined here per suite pins; used by the app's
    injected aids and by landing notes alike). */
@@ -179,7 +197,7 @@ td { color: var(--body); }
 .export-rail { display: flex; gap: 12px; flex-wrap: wrap; }
 .share-note { color: var(--muted); font-size: 15px; }
 .headliner-image { max-width: 420px; border-radius: 0; }
-.headliner-image figcaption { color: var(--faint); font-size: 14px; }
+.headliner-image figcaption { color: #AAAAAA; font-size: 14px; }
 .leg-progress { list-style: none; padding: 0; }
 .leg-progress li { padding: 10px 0; border-bottom: 1px solid var(--hair); font-size: 15px; }
 

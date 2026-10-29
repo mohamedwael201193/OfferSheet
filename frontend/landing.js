@@ -62,13 +62,25 @@
     document.querySelectorAll('[data-reveal]').forEach(function (el) {
       var text = el.textContent;
       el.textContent = '';
-      Array.prototype.forEach.call(text, function (ch, i) {
-        if (ch === ' ') { el.appendChild(document.createTextNode(' ')); return; }
-        var sp = document.createElement('span');
-        sp.className = 'rl';
-        sp.style.setProperty('--d', Math.min(i * 28, 840) + 'ms');
-        sp.textContent = ch;
-        el.appendChild(sp);
+      var idx = 0;
+      /* Split into WORDS first: each word is a white-space:nowrap
+         wrapper holding its character spans, and spaces stay as text
+         nodes between word wrappers — so lines break only between
+         words, never mid-word, at any width. */
+      text.split(' ').forEach(function (word, wi) {
+        if (wi > 0) el.appendChild(document.createTextNode(' '));
+        if (word === '') return;
+        var wrap = document.createElement('span');
+        wrap.className = 'rl-word';
+        Array.prototype.forEach.call(word, function (ch) {
+          var sp = document.createElement('span');
+          sp.className = 'rl';
+          sp.style.setProperty('--d', Math.min(idx * 28, 840) + 'ms');
+          idx += 1;
+          sp.textContent = ch;
+          wrap.appendChild(sp);
+        });
+        el.appendChild(wrap);
       });
     });
     var io = new IntersectionObserver(function (entries) {

@@ -136,7 +136,10 @@ test('manifest is valid, matches the theme, and carries installable icons', () =
   assert.equal(manifest.short_name, 'OfferSheet');
   assert.equal(manifest.display, 'standalone');
   assert.equal(manifest.start_url, '/');
-  assert.equal(manifest.theme_color, '#030e1a');
+  // Pin moved with the dark-theme alignment fix (was '#030e1a'): the
+  // manifest theme now matches the pages' dark theme-color #0A0A0A.
+  // Same requirement, new value — not a weakening.
+  assert.equal(manifest.theme_color, '#0A0A0A');
   const sizes = manifest.icons.map((i) => i.sizes);
   assert.ok(sizes.includes('192x192') && sizes.includes('512x512'), 'manifest must carry 192 and 512 icons');
   assert.ok(manifest.icons.some((i) => i.purpose === 'maskable'), 'manifest must carry a maskable icon');

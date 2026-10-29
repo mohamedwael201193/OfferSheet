@@ -12,6 +12,20 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  /* M1 (second round): nav/toolbar links to verdict sections are
+     aria-disabled until their section is visible (see app.js
+     setVerdictNavState). Dimmed + not-allowed cursor so a pending
+     link never looks live; the explanatory title/aria-label on the
+     link itself carries the reason. No dashboard.css change: this
+     rule is scoped to the two link containers on this page only. */
+  #appNav a[aria-disabled="true"], .glass-toolbar a[aria-disabled="true"] {
+    opacity: .55; cursor: not-allowed;
+  }
+  #appNav a[aria-disabled="true"]:hover, .glass-toolbar a[aria-disabled="true"]:hover {
+    background: transparent; color: inherit;
+  }
+</style>
 </head>
 <body class="app-page">
 <header class="nav proof appbar">
@@ -31,7 +45,7 @@
       <button class="btn nav-close" type="button" aria-label="Close navigation">Close</button>
       <div class="nav-group nav-group--main">
         <a href="#tool">Tool</a>
-        <a href="#verdict">Verdict</a>
+        <a href="#verdict" aria-disabled="true" title="Appears after a verdict runs" aria-label="Verdict — appears after a verdict runs">Verdict</a>
         <a href="#evidence">Evidence</a>
         <a href="#formula">Formula</a>
         <a href="#depth">Proof</a>
@@ -40,9 +54,9 @@
       </div>
       <div class="nav-group nav-group--proof">
         <span class="nav-group-label">Proof index</span>
-        <a href="#receiptSection">Receipts</a>
-        <a href="#verdictSheet">Sheet</a>
-        <a href="#raceSection">Race</a>
+        <a href="#receiptSection" aria-disabled="true" title="Appears after a verdict runs" aria-label="Receipts — appears after a verdict runs">Receipts</a>
+        <a href="#verdictSheet" aria-disabled="true" title="Appears after a verdict runs" aria-label="Sheet — appears after a verdict runs">Sheet</a>
+        <a href="#raceSection" aria-disabled="true" title="Appears after a verdict runs" aria-label="Race — appears after a verdict runs">Race</a>
         <a href="#trialTally">Trials</a>
         <a href="#limits">Limits</a>
       </div>
@@ -57,8 +71,8 @@
 <div class="nav-scrim" aria-hidden="true"></div>
 <div class="glass-toolbar" aria-label="Quick actions">
   <button type="submit" form="offerForm" class="btn btn--primary">Run the verdict</button>
-  <a href="#receiptSection">Receipts</a>
-  <a href="#verdictSheet">Sheet</a>
+  <a href="#receiptSection" aria-disabled="true" title="Appears after a verdict runs" aria-label="Receipts — appears after a verdict runs">Receipts</a>
+  <a href="#verdictSheet" aria-disabled="true" title="Appears after a verdict runs" aria-label="Sheet — appears after a verdict runs">Sheet</a>
   <a href="#workspace">Workspace</a>
 </div>
 
@@ -748,6 +762,22 @@
         }
       });
     });
+    // M1 (second round): nav/toolbar links to verdict sections carry
+    // aria-disabled="true" until their section is visible (see app.js
+    // setVerdictNavState). aria-disabled alone does not stop an anchor
+    // navigating, so this listener — registered BEFORE the
+    // openAncestors listener below — cancels the jump and stops the
+    // glue from opening a still-hidden section's discs. The link stays
+    // focusable, so its explanatory title/aria-label remain perceivable
+    // (a plain HTML inert attribute would drop it from the tab order
+    // and hide the explanation from keyboard users). Registered here,
+    // not in app.js, because this glue owns all anchor-click behaviour.
+    document.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('a[aria-disabled="true"]') : null;
+      if (!a) return;
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    });
     document.addEventListener('click', function (e) {
       var a = e.target && e.target.closest ? e.target.closest('a[href^="#"]') : null;
       if (!a) return;
@@ -793,6 +823,10 @@
         if (scrim) scrim.classList.add('is-open');
         toggle.setAttribute('aria-expanded', 'true');
         document.body.style.overflow = 'hidden';
+        /* Focus moves into the drawer on open (Close button); every
+           close path below already returns focus to the toggle, so
+           no trap is introduced. */
+        if (closeBtn) closeBtn.focus();
       }
     });
     if (closeBtn) closeBtn.addEventListener('click', function () { closeDrawer(); toggle.focus(); });

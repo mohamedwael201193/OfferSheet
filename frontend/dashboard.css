@@ -23,7 +23,7 @@
   --ink: #FFFFFF;
   --body: #D4D4D4;
   --muted: #AAAAAA;
-  --crumb: #8A8A8A;
+  --crumb: #AAAAAA;
   --hair: #2A2A2A;
   --lavender: #1A1A1A;
   --blue-band: #1E1E1E;
@@ -91,10 +91,12 @@ li { margin-bottom: 6px; }
 .nav-group--proof { border-left: 1px solid var(--hair); padding-left: 12px; margin-left: 4px; }
 .nav-group-label { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); padding: 0 6px; }
 .nav-cta { margin-left: 8px; }
-.nav-toggle { display: none; margin-left: auto; }
+.nav-toggle { margin-left: auto; }
 .nav-scrim { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.4); z-index: 80; opacity: 0; pointer-events: none; transition: opacity 300ms ease-out; }
 .nav-scrim.is-open { opacity: 1; pointer-events: auto; }
-.nav-close { display: none; }
+/* Drawer controls are hidden on desktop by the .btn.nav-* rule below
+   (higher specificity than .btn, placed after it); see the ≤820px
+   media query for the matching .btn.nav-* reveal rules. */
 .skip-link { position: absolute; left: -9999px; top: 0; background: #1E1E1E; color: var(--ink); border: 2px solid var(--purple); padding: 12px 20px; z-index: 100; border-radius: var(--radius-pill); font-weight: 600; }
 .skip-link:focus { position: fixed; left: 16px; top: 16px; }
 
@@ -105,6 +107,7 @@ li { margin-bottom: 6px; }
   border: 1px solid var(--hair); background: #1E1E1E; color: var(--ink);
   font: inherit; font-size: 15px; font-weight: 600; text-decoration: none; cursor: pointer;
 }
+.btn.nav-toggle, .btn.nav-close { display: none; }
 .btn:hover { background: var(--lavender); color: var(--ink); }
 .btn--primary { background: var(--purple); border-color: var(--purple); color: #0A0A0A; }
 .btn--primary:hover { background: var(--purple-dark); border-color: var(--purple-dark); color: #0A0A0A; }
@@ -214,7 +217,7 @@ form input:focus, .checker-field input:focus { border-color: var(--purple); outl
 .diagram { background: var(--lavender); border-radius: var(--radius-panel); padding: 24px; margin: 20px 0; }
 .diagram-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
 .diagram-cell { display: grid; gap: 4px; min-width: 0; }
-.diagram-dim-label { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.diagram-dim-label { font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .diagram-value { font-size: 24px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
 .diagram-build { font-size: 14px; color: var(--body); max-width: 32ch; }
 .diagram-op { font-size: 28px; font-weight: 700; color: var(--ink); padding-bottom: 6px; }
@@ -346,7 +349,7 @@ details[open] summary { margin-bottom: 8px; }
   .wrap, .nav-inner, .footer-inner, .app-rule { padding-left: 16px; padding-right: 16px; }
   main .sheet, main section.sheet { padding-top: 64px; padding-bottom: 64px; }
   #offerForm, .checker-grid, .ws-grid, .trial-cards-row { grid-template-columns: 1fr; }
-  .nav-toggle { display: inline-flex; }
+  .btn.nav-toggle { display: inline-flex; }
   .nav-links {
     position: fixed; top: 0; right: 0; bottom: 0; z-index: 90; margin: 0;
     width: min(320px, 86vw); flex-direction: column; align-items: stretch; justify-content: flex-start;
@@ -358,7 +361,7 @@ details[open] summary { margin-bottom: 8px; }
   .nav-links a { width: 100%; }
   .nav-group { flex-direction: column; align-items: stretch; }
   .nav-group--proof { border-left: 0; padding-left: 0; margin-left: 0; border-top: 1px solid var(--hair); padding-top: 12px; margin-top: 8px; }
-  .nav-close { display: inline-flex; align-self: flex-end; }
+  .btn.nav-close { display: inline-flex; align-self: flex-end; }
   .nav-cta { margin-left: 0; }
   .footer-cols { grid-template-columns: 1fr; gap: 24px; }
   .verdict-card.sheet, .verdict-card { padding: 24px 20px; }
@@ -378,10 +381,18 @@ details[open] summary { margin-bottom: 8px; }
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .fig img { animation: none; }
   .nav-links { transition: none; transform: none; }
-  .nav-links:not(.is-open) { display: none; }
   .nav-scrim { transition: none; }
   .app-rule { animation: none; }
   .nav-links a::after { display: none; }
+}
+/* Reduced-motion closed-drawer hiding, drawer viewport ONLY. The
+   unscoped rule that used to live in the reduced-motion block above
+   hid the whole nav on desktop (the toggle that sets .is-open is
+   itself hidden above 820px). The reduced-motion block also sets
+   .nav-links transform: none, which disables the off-canvas hiding,
+   so this display rule must survive inside the drawer viewport. */
+@media (max-width: 820px) and (prefers-reduced-motion: reduce) {
+  .nav-links:not(.is-open) { display: none; }
 }
 
 /* ---------- Dark dashboard additions (coordinator, merge) ----------

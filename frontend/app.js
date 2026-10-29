@@ -86,7 +86,70 @@ function showStatus(html, cls) {
   s.innerHTML = html;
 }
 function hideStatus() { $('status').hidden = true; }
+// M1 (second round): nav/toolbar links to verdict sections are
+// inert-but-explained until their section is visible. Liveness is
+// DERIVED from each section's own hidden flag — never from a second
+// flag that could drift — so a no-race verdict keeps the Race link
+// inert (raceSection stays hidden without a race), a withheld /
+// price-unknown / needs-input run keeps all four inert (it goes
+// through hideVerdict), and a rendered verdict makes its sections'
+// links live. Scoped to #appNav + .glass-toolbar only: the
+// verdict-card jump link to #receiptSection (created inside the
+// verdict by wireVerdictAids) is NOT a nav link and keeps its own
+// text/attributes untouched. Links stay focusable while disabled so
+// the explanation stays perceivable; the app.html glue cancels the
+// jump on a disabled link (aria-disabled alone never blocks an
+// anchor). Every call site is guarded like the skip-link sites, so a
+// sync failure never breaks a verdict. The static pre-run state in
+// app.html already carries the same attributes; this function is the
+// runtime enforcer on every verdict transition.
+function setVerdictNavState() {
+  const LABELS = { verdict: 'Verdict', receiptSection: 'Receipts', verdictSheet: 'Sheet', raceSection: 'Race' };
+  const EXPLAIN = 'appears after a verdict runs';
+  const containers = [];
+  try {
+    const nav = document.querySelector('#appNav');
+    if (nav) containers.push(nav);
+    const bar = document.querySelector('.glass-toolbar');
+    if (bar) containers.push(bar);
+  } catch { return; }
+  for (const container of containers) {
+    let links = [];
+    try { links = container.querySelectorAll('a'); } catch { continue; }
+    for (const a of links) {
+      let href = '';
+      try { href = (a.getAttribute && a.getAttribute('href')) || a.href || ''; } catch { continue; }
+      if (!href || href[0] !== '#') continue;
+      const id = href.slice(1);
+      if (!Object.prototype.hasOwnProperty.call(LABELS, id)) continue;
+      let section = null;
+      try { section = $(id); } catch { section = null; }
+      const live = !!(section && !section.hidden);
+      try {
+        if (live) {
+          if (a.removeAttribute) a.removeAttribute('aria-disabled');
+          // Remove ONLY the explanatory strings this function sets, so
+          // a live link never loses an attribute it did not come from.
+          if (a.getAttribute && a.getAttribute('title') === `Appears after a verdict runs`) a.removeAttribute('title');
+          if (a.getAttribute && a.getAttribute('aria-label') === `${LABELS[id]} — ${EXPLAIN}`) a.removeAttribute('aria-label');
+        } else {
+          if (a.setAttribute) {
+            a.setAttribute('aria-disabled', 'true');
+            a.setAttribute('title', 'Appears after a verdict runs');
+            a.setAttribute('aria-label', `${LABELS[id]} — ${EXPLAIN}`);
+          }
+        }
+      } catch { /* one link's state never breaks a verdict */ }
+    }
+  }
+}
 function hideVerdict() {
+  // Skip link reverts with the verdict: #verdict is hidden again, so
+  // the link goes back to the always-visible offer tool (see G5).
+  try {
+    const skip = document.querySelector('.skip-link');
+    if (skip) { skip.href = '#tool'; skip.textContent = 'Skip to offer tool'; }
+  } catch { /* skip-link revert never breaks a verdict reset */ }
   $('verdict').hidden = true;
   $('raceSection').hidden = true;
   $('receiptSection').hidden = true;
@@ -99,6 +162,10 @@ function hideVerdict() {
   const pp = $('proofPackWrap'); if (pp) pp.hidden = true;
   const sheet = $('verdictSheet');
   if (sheet) sheet.hidden = true;
+  // M1 (second round): every section is hidden again, so every
+  // verdict-section nav/toolbar link returns to inert-but-explained.
+  // Runs after all hidden flags above, so the derived state is final.
+  try { setVerdictNavState(); } catch { /* nav sync never breaks a verdict reset */ }
   // MERGE (P2 checklist): diagram reset — never leave live figures
   // visible after a later withheld/price-unknown/needs-input run. The
   // labelled recorded fallback returns; stale live numbers never linger.
@@ -1642,6 +1709,18 @@ function wireVerdictAids(v) {
     if (typeof verdictEl.setAttribute === 'function' && !(verdictEl.hasAttribute && verdictEl.hasAttribute('tabindex'))) verdictEl.setAttribute('tabindex', '-1');
     if (typeof verdictEl.focus === 'function') verdictEl.focus({ preventScroll: true });
   } catch { /* reveal never breaks a verdict */ }
+  // G5 skip-link retarget: a verdict now exists and is visible, so the
+  // skip link moves from the offer tool to the verdict (its pre-run
+  // target). hideVerdict reverts it when the verdict is hidden again.
+  try {
+    const skip = document.querySelector('.skip-link');
+    if (skip) { skip.href = '#verdict'; skip.textContent = 'Skip to verdict'; }
+  } catch { /* skip-link retarget never breaks a verdict */ }
+  // M1 (second round): same site, same pattern — the verdict's
+  // sections are visible now (renderVerdictSheet already ran above),
+  // so their nav/toolbar links go live; the Race link goes live only
+  // when a race actually ran (raceSection.hidden = !race above).
+  try { setVerdictNavState(); } catch { /* nav sync never breaks a verdict */ }
 }
 
 // G12 (superiority): inputs-only share URL builder — form fields only,
@@ -1946,20 +2025,31 @@ if (typeof CSS !== 'undefined' && !CSS.supports('animation-timeline', 'view()') 
 // Defined and called outside the test slice (after submitVerdict), so it
 // is verified by served-file grep + live judge, not by the DOM shims.
 function wirePageAids() {
-  // G7: skip link — the first Tab stop, jumping to the verdict. Created
-  // once at load; before any verdict renders the target is hidden, and
-  // G5 focuses it on render, so the keyboard path is form → run → verdict.
+  // G7: skip link — the first Tab stop, DYNAMIC target. Created once
+  // at load pointing at the always-visible offer tool ('Skip to offer
+  // tool'), because #verdict is hidden before any verdict renders and
+  // a jump to a hidden target is a dead jump. When a verdict renders,
+  // the G5 auto-reveal site retargets it to #verdict ('Skip to
+  // verdict'); hideVerdict reverts it when the verdict hides again.
+  // The keyboard path is therefore form → run → verdict, with no
+  // silent no-op at either stage.
   try {
     if (!document.querySelector('.skip-link')) {
       const a = document.createElement('a');
       a.className = 'skip-link';
-      a.href = '#verdict';
-      a.textContent = 'Skip to verdict';
+      a.href = '#tool';
+      a.textContent = 'Skip to offer tool';
       const body = document.body;
       if (body && typeof body.insertBefore === 'function' && body.firstChild) body.insertBefore(a, body.firstChild);
       else if (body && typeof body.appendChild === 'function') body.appendChild(a);
     }
   } catch { /* skip link never breaks the page */ }
+  // M1 (second round): re-assert the nav state from the sections'
+  // hidden flags at load (the static app.html markup already carries
+  // the pre-run inert state; this makes the runtime the enforcer if
+  // the markup ever drifts, and keeps load consistent with every
+  // later verdict transition).
+  try { setVerdictNavState(); } catch { /* nav sync never breaks the page */ }
   // G12: inputs-only share prefill — fills the form from URL params,
   // NEVER submits. No verdict number is ever read from or written to
   // the URL; a shared link replays the inputs, not the verdict.
