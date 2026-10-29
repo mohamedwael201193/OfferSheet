@@ -170,45 +170,56 @@ sends raw bytes with image content types (webp/png/jpeg/avif) — a UTF-8
 decode of binary assets corrupted them; fixed and verified byte-identical
 for all five frontend assets.
 
-## 9. Deployment steps remaining (no push, no deploy yet)
+## 9. Deployment status (2026-10-29 — pushed, backend deploy BLOCKED)
 
-Settled identities (parent-verified 2026-10-29, awaiting parent confirmation
-to proceed): GitHub `mohamedwael201193` (id 72895329 — push path to
-`mohamedwael201193/OfferSheet` unblocked on identity); Vercel
-`mohamedwael201193` (frontend); Render workspace "Ffcvv's workspace"
-(user-confirmed, backend). The local repo is ready to push (see §10) but
-NOTHING has been pushed or deployed.
+Settled identities (parent-verified 2026-10-29): GitHub
+`mohamedwael201193` (id 72895329); Vercel `mohamedwael201193` (frontend);
+Render workspace "Ffcvv's workspace" (user-confirmed, backend).
 
-1. Push the local repo to `https://github.com/mohamedwael201193/OfferSheet`
-   (after the parent confirms the push step).
-2. Render: create the service from `render.yaml` in the Ffcvv workspace.
-   Set `QLOO_API_KEY` and `TICKETMASTER_API_KEY` on the Render service from
-   the user's own key copies (the vault credential that serves Muse's calls
-   does NOT transfer to Render). Optionally set `LLM_*` for the Gut/Web arms.
-3. Vercel: create the project from this repo with Root Directory `frontend`
-   (so `frontend/vercel.json` applies). Replace the
-   `REPLACE-WITH-RENDER-BACKEND-URL` placeholder in `frontend/vercel.json`
-   with the real Render backend URL, then deploy.
-4. Post-deploy live checks: `qloo setup --status` → "Qloo data: ready" from
-   the backend's environment; `qloo exec find_tags` on "jazz" (5 tags);
-   a timed verdict end-to-end (T15, target ≤30s); a receipt replay (T08);
-   a benchmark trial recorded in `bench/results.json` (S2).
+1. Push: DONE via the GitHub API (remote `main` now at the commit in §10;
+   local commit `e9f3e43` holds the same tree). Git CLI push was not used
+   because the vault-held token is never revealed to the shell.
+2. Render: BLOCKED — service creation for `offersheet-backend` in the
+   Ffcvv workspace returned HTTP 400 "free tier usage quota has been
+   exhausted, new services are not allowed" (the workspace already runs
+   four free web services). No Render service exists for OfferSheet yet.
+   UNBLOCK: suspend or delete an unused free service in the workspace,
+   or upgrade the workspace — then re-run service creation from
+   `render.yaml` (free plan, `node backend/server.js`,
+   health check `/api/health`). After the service exists, set
+   `QLOO_API_KEY` and `TICKETMASTER_API_KEY` on the service from the
+   user's own key copies (the vault credential that serves Muse's calls
+   does NOT transfer to Render). Optionally set `LLM_*` for the Gut/Web
+   arms. A paid plan was NOT chosen — spending was never authorized.
+3. Vercel: BLOCKED downstream of Render — the project (Root Directory
+   `frontend`) can only be deployed once the real Render backend URL
+   replaces the `REPLACE-WITH-RENDER-BACKEND-URL` placeholder in
+   `frontend/vercel.json`. Deploying with the placeholder would ship a
+   demo whose API calls fail, so no Vercel project was created yet.
+4. Post-deploy live checks (still to run after Render + Vercel exist):
+   `qloo setup --status` → "Qloo data: ready" from the backend's
+   environment; `qloo exec find_tags` on "jazz" (5 tags); a timed verdict
+   end-to-end (T15, target ≤30s); a receipt replay (T08); a benchmark
+   trial recorded in `bench/results.json` (S2). Connectivity pre-check
+   already green: Qloo `/search?query=jazz&take=5` → HTTP 200, 5 results
+   (re-verified 2026-10-29 via the connector).
 
 ## 10. Repo state
 
-Local git repo, remote set to `https://github.com/mohamedwael201193/OfferSheet.git`,
-single clean commit, working tree clean, no push performed. No credentials,
-keys, or tokens appear in code, repo, files, or logs (verified by T16 and by
-grep for literal key assignments). License: MIT (`LICENSE`, visible in the
-repo root, satisfying the public-repo license rule).
+Local git repo, remote set to `https://github.com/mohamedwael201193/OfferSheet.git`.
+Remote `main` is at API commit `eaf6fa1e4597a2200489656029775773ebf87b90`
+(full 43-file tree, on top of the repo's original README-only commit);
+local commit `e9f3e43` holds the same tree. No credentials, keys, or
+tokens appear in code, repo, files, or logs (verified by T16 and by grep
+for literal key assignments). License: MIT (`LICENSE`, visible in the repo
+root, satisfying the public-repo license rule).
 
 ## 11. What is blocked on each pending item
 
 | Pending item | Blocks |
 |---|---|
-| Parent confirmation of the push step | Pushing to `mohamedwael201193/OfferSheet` |
-| Parent confirmation of the deploy step | Vercel frontend + Render backend deploys |
-| `QLOO_API_KEY` value on the Render service (deploy time) | ALL live Qloo calls from the deployed app (T05, T06 remainder, T07 Qloo legs, T08 remainder, T15) |
-| `TICKETMASTER_API_KEY` value on the Render service (deploy time) | Ticketmaster capacity leg only (fallback covers its absence) |
+| Render free-tier quota in the Ffcvv workspace (4 free web services already running) | Render backend service creation, and downstream Vercel deploy (no backend URL to wire) |
+| `QLOO_API_KEY` value on the Render service (after the service exists) | ALL live Qloo calls from the deployed app (T05, T06 remainder, T07 Qloo legs, T08 remainder, T15) |
+| `TICKETMASTER_API_KEY` value on the Render service (after the service exists) | Ticketmaster capacity leg only (fallback covers its absence) |
 | LLM provider key (optional) | Gut/Web arms only (they render `unavailable`, never fabricated picks) |
 | Studio frontend implemented 2026-10-29 (no longer gated on a sketch) | — |
