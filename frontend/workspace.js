@@ -428,6 +428,7 @@
         '<p class="ws-label">One-click candidates from the base run’s where_popular areas:</p><p>' + (candBtns || '<span class="ws-label">No areas returned in the base run.</span>') + '</p>' +
         '<button type="submit" class="ws-btn ws-btn--primary">Rank candidates</button> <span class="ws-out" id="wsRouteOut"></span></form>' +
         '<div id="wsRouteRefusal"></div>' + curR;
+      loadMapStrip();
     }
     // Envelope
     var env = $('wsEnvelope');
@@ -519,9 +520,96 @@
       return '<tr><td>' + esc(c.city) + '</td><td>' + esc(c.rank != null ? c.rank : '—') + '</td><td>' + fmt(c.matchedAreasCount) + '</td><td>' + (c.areas || []).map(function (a) { return esc(a.name || a.id || ''); }).join(', ') + '</td><td>' + receiptsHtml(recs, 'route-' + esc(c.city)) + '</td><td class="ws-why-not">' + esc(whyNotHtml(c, top)) + '</td></tr>';
     }).join('');
     return '<article class="ws-row"><p><strong>' + esc(ROUTE_LABEL) + '</strong></p><p>' + esc(ROUTE_NOTE) + '</p>' +
-      '<p class="ws-label">Map strip unavailable — no geography lookup is wired to the workspace panel, so no pins are shown and no coordinates are used here. The table below is the full routing result.</p>' +
+      '<div id="wsMapStrip"><p class="ws-label">Locating routing cities…</p></div>' +
       '<div class="ws-table-wrap"><table class="ws-table"><thead><tr><th>City</th><th>Rank</th><th>Matched areas</th><th>Areas</th><th>Receipts</th><th>Why not first</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<p class="ws-label">Ranking key: count of Qloo-matched areas/entities per city, tie-broken by Qloo’s own return order. This is not a sales forecast.</p></article>';
+  }
+  // Routing map strip (retry with the correct data): pins for the base city
+  // plus routing candidate cities ONLY — city strings the user entered for
+  // routing, never artist names, never audience-area names. Coordinates
+  // come from POST /api/workspace/geocode (Nominatim, via the server).
+  // The strip is display-only: it never affects rank or break-even, and
+  // the table stays authoritative. A city that does not resolve is omitted
+  // and listed, never placed. Static SVG, no animation, so reduced-motion
+  // needs no special case.
+  var lastStripKey = null;
+  var lastStripHtml = null;
+  var stripInFlightKey = null;
+  function stripCities() {
+    if (!ws || !ws.baseOffer || !ws.steps || !ws.steps.routing) return null;
+    var res = ws.steps.routing.result || ws.steps.routing;
+    var list = [];
+    var seen = {};
+    function push(name) {
+      if (typeof name !== 'string') return;
+      var t = name.trim();
+      if (!t) return;
+      var k = t.toLowerCase();
+      if (seen[k]) return;
+      seen[k] = true;
+      list.push(t);
+    }
+    push(ws.baseOffer.city);
+    (res.candidates || []).forEach(function (c) { push(c.city); });
+    if (list.length < 1) return null;
+    return list.slice(0, 11);
+  }
+  function mapStripHtml(pins, failures, baseCity) {
+    if (!pins || pins.length === 0) {
+      return '<p class="ws-label">No city located — no pins shown. The table below is the full routing result.</p>' +
+        (failures && failures.length ? '<p class="ws-label">Not located (omitted): ' + failures.map(function (f) { return esc(f); }).join(', ') + '.</p>' : '');
+    }
+    var lons = pins.map(function (p) { return p.lon; });
+    var lats = pins.map(function (p) { return p.lat; });
+    var minLon = Math.min.apply(null, lons), maxLon = Math.max.apply(null, lons);
+    var minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
+    // A degenerate span (one pin, or pins sharing a coordinate) gets a
+    // symmetric 0.5-degree window so the pin still centers honestly.
+    if (maxLon - minLon < 0.5) { var midLon = (minLon + maxLon) / 2; minLon = midLon - 0.25; maxLon = midLon + 0.25; }
+    if (maxLat - minLat < 0.5) { var midLat = (minLat + maxLat) / 2; minLat = midLat - 0.25; maxLat = midLat + 0.25; }
+    var W = 600, H = 150, PL = 40, PR = 40, PT = 28, PB = 30;
+    function px(lon) { return PL + (lon - minLon) / (maxLon - minLon) * (W - PL - PR); }
+    function py(lat) { return PT + (1 - (lat - minLat) / (maxLat - minLat)) * (H - PT - PB); }
+    var dots = pins.map(function (p) {
+      var isBase = String(p.city).toLowerCase() === String(baseCity).toLowerCase();
+      var x = px(p.lon).toFixed(1), y = py(p.lat).toFixed(1);
+      var circle = isBase
+        ? '<circle cx="' + x + '" cy="' + y + '" r="7" class="ws-pin ws-pin--base" />'
+        : '<circle cx="' + x + '" cy="' + y + '" r="5" class="ws-pin" />';
+      return circle + '<text x="' + x + '" y="' + (Number(y) - 12).toFixed(1) + '" class="ws-pin-label' + (isBase ? ' ws-pin-label--base' : '') + '" text-anchor="middle">' + esc(p.city) + '</text>';
+    }).join('');
+    var caption = pins.map(function (p) {
+      var isBase = String(p.city).toLowerCase() === String(baseCity).toLowerCase();
+      return '<li>' + (isBase ? 'Base: ' : '') + esc(p.city) + ' — ' + esc(p.displayName || '') + ' (' + p.lat.toFixed(4) + ', ' + p.lon.toFixed(4) + ')</li>';
+    }).join('');
+    return '<svg class="ws-mapstrip-svg" viewBox="0 0 600 150" role="img" aria-label="Routing cities located on a strip">' + dots + '</svg>' +
+      '<p class="ws-label">Pins show city locations only — rank comes from the table below. Base city in orange; candidates in ink.</p>' +
+      '<ul class="ws-mapstrip-caption">' + caption + '</ul>' +
+      (failures && failures.length ? '<p class="ws-label">Not located (omitted from the strip): ' + failures.map(function (f) { return esc(f); }).join(', ') + '.</p>' : '');
+  }
+  async function loadMapStrip() {
+    var holder = $('wsMapStrip');
+    if (!holder) return;
+    var cities = stripCities();
+    if (!cities) { holder.innerHTML = '<p class="ws-label">No routing cities to locate.</p>'; return; }
+    var key = cities.join('|');
+    if (key === lastStripKey && lastStripHtml) { holder.innerHTML = lastStripHtml; return; }
+    if (key === stripInFlightKey) return;
+    stripInFlightKey = key;
+    try {
+      var res = await fetch('/api/workspace/geocode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cities: cities }) });
+      var data = await res.json().catch(function () { return null; });
+      if (!res.ok || !data || !Array.isArray(data.pins)) throw new Error('geocode failed');
+      var html = mapStripHtml(data.pins, data.failures || [], ws.baseOffer.city);
+      lastStripKey = key; lastStripHtml = html;
+      var cur = $('wsMapStrip');
+      if (cur) cur.innerHTML = html;
+    } catch (e) {
+      var cur2 = $('wsMapStrip');
+      if (cur2) cur2.innerHTML = '<p class="ws-label">Map strip unavailable — geography lookup failed. The table below is the full routing result.</p>';
+    } finally {
+      if (stripInFlightKey === key) stripInFlightKey = null;
+    }
   }
   function envelopeHtml(r) {
     if (!r) return '';

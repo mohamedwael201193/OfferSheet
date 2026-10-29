@@ -15,6 +15,7 @@ import { McpSession, MCP_TOOLS } from './src/mcp.js';
 import { qlooRest, REST_PATHS } from './src/rest.js';
 import { searchEvents, searchVenues } from './src/ticketmaster.js';
 import { geocode } from './src/osm.js';
+import { geocodeCities } from './src/geostrip.js';
 import { searchEntities } from './src/wikidata.js';
 import { runGutArm, runWebArm, llmConfigured } from './src/arms.js';
 import { runVerdict } from './src/pipeline.js';
@@ -466,6 +467,22 @@ async function handleRerank(req, res) {
   }
 }
 
+// POST /api/workspace/geocode: display-only geography for the routing map
+// strip. Takes { cities: [base city, ...routing candidate cities] } and
+// returns { pins, failures }. No workspace verification: the input is
+// public city names and the output is public coordinates — no keys, no
+// user data, nothing stored. Pins never feed ranking or break-even; the
+// routing table stays authoritative. Nominatim serialization (1 req/s)
+// bounds the batch cost; a failed lookup omits that city, never places it.
+async function handleGeocode(req, res) {
+  const body = await readJsonBody(req);
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw invalidInput('cities must be an array of 1–11 city strings');
+  }
+  const out = await geocodeCities(body.cities, { baseUrl: config.osmBaseUrl });
+  send(res, 200, out);
+}
+
 // GET /api/verdict/stream (SSE): same inputs as POST /api/verdict via
 // query params. Each emitted `leg` event corresponds to one real completed
 // dependency call (tool/path + status + elapsed ms) — never a staged label.
@@ -634,6 +651,8 @@ const server = http.createServer(async (req, res) => {
       await handlePureWorkspaceStep(req, res, 'envelope', computeEnvelope);
     } else if (req.method === 'POST' && path === '/api/workspace/compare') {
       await handleComparison(req, res);
+    } else if (req.method === 'POST' && path === '/api/workspace/geocode') {
+      await handleGeocode(req, res);
     } else if (req.method === 'POST' && path === '/api/workspace/settle') {
       await handlePureWorkspaceStep(req, res, 'settlement', computeSettlement);
     } else if (req.method === 'GET' && path === '/api/verdict/stream') {

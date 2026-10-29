@@ -48,6 +48,22 @@ function namesOf(results, limit = 10) {
   return list.slice(0, limit).map((r) => ({ id: itemId(r), name: itemName(r) })).filter((r) => r.id || r.name);
 }
 
+// Artist image (display-only): the Qloo describe envelope may carry
+// properties.image.url for the matched entity. It is wired through ONLY
+// when it is an https URL on Qloo's own image host, and ONLY from the
+// headliner result itself — never from another entity's result, never
+// guessed, never a stock or generated URL. Absent or invalid -> no image
+// key at all, so the UI omits the slot entirely.
+export function qlooImageUrl(item) {
+  const url = item?.properties?.image?.url;
+  if (typeof url !== 'string' || url === '') return null;
+  let parsed;
+  try { parsed = new URL(url); } catch { return null; }
+  if (parsed.protocol !== 'https:') return null;
+  if (!(parsed.hostname === 'qloo.com' || parsed.hostname.endsWith('.qloo.com'))) return null;
+  return url;
+}
+
 function resultNames(envelope, limit = 10) {
   return namesOf(envelope?.results, limit);
 }
@@ -281,7 +297,12 @@ export async function runVerdict(input, deps) {
   // independent (neither consumes the other's output), so they fan out.
   const [findTagsTask, describeTask] = await runTasks([
     mcpTask('findTags', 'qloo_find_tags', { query: artist, limit: 10 }, 'headliner tags', (rs) => ({ results: namesOf(rs) })),
-    mcpTask('describe', 'qloo_describe', { entity: input.entityHint || artist, type: 'artist' }, 'headliner description', (rs) => ({ headliner: rs[0] ? { id: itemId(rs[0]), name: itemName(rs[0]) } : null })),
+    mcpTask('describe', 'qloo_describe', { entity: input.entityHint || artist, type: 'artist' }, 'headliner description', (rs) => {
+      const h = rs[0] ? { id: itemId(rs[0]), name: itemName(rs[0]) } : null;
+      const img = rs[0] ? qlooImageUrl(rs[0]) : null;
+      if (h && img) h.image = img;
+      return { headliner: h };
+    }),
   ]);
   const tags = findTagsTask.env;
   const describe = describeTask.env;

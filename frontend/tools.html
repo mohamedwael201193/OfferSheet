@@ -20,7 +20,7 @@
   <section class="sheet crop">
     <p class="specimen">The catalogue</p>
     <h1>Qloo tool catalogue</h1>
-    <p class="label">The 10 Qloo tools behind every verdict, in plain verbs. OfferSheet has no MCP server of its own — the block below wires Qloo's official local server, not a new surface.</p>
+    <p class="label">The 10 Qloo tools behind every verdict, in plain verbs. OfferSheet also runs its own MCP server — 32 tools: 22 OfferSheet tools + 10 guarded Qloo tools, every call receipted. A verdict invokes the 10 Qloo tools below; the full 32-tool catalogue is served by the OfferSheet server.</p>
 
     <div class="table-wrap"><table class="depth-table">
       <thead><tr><th>Tool</th><th>What it does</th><th>Where it shows up</th></tr></thead>
@@ -37,6 +37,20 @@
         <tr><td>qloo_compare_audiences</td><td>Compares two audiences' overlap</td><td>How the fan bases overlap</td></tr>
       </tbody>
     </table></div>
+
+    <h2>Install OfferSheet's own MCP server (agent setup)</h2>
+    <p>This wires OfferSheet's own server into your agent. It is a stdio server, zero-dependency Node, started from a clone of the public repo. The 10 qloo_ tools are guarded proxies of Qloo's tools — they reuse the same allowlists, guards, and receipt store as the hosted verdict. Keys come from the host environment only, never from a tool argument.</p>
+    <pre>node backend/mcp-server.js</pre>
+    <p>Then add this block to your agent's MCP config — <code>.mcp.json</code> for Claude Code, or the MCP settings file for Cursor. Replace the path with the clone's location on your machine.</p>
+    <pre>{
+  "mcpServers": {
+    "offersheet": {
+      "command": "node",
+      "args": ["/path/to/OfferSheet/backend/mcp-server.js"]
+    }
+  }
+}</pre>
+    <p>Proven 29 Oct 2026: a fresh clone of the public repo answers tools/list with exactly 32 tools (22 offersheet_ + 10 qloo_) with no keys configured, and a live receipt replayed through the deployed backend returned the same ID list in the same order.</p>
 
     <h2>Install Qloo's official local server (agent setup)</h2>
     <p>This wires Qloo's own MCP server into your agent — it is not an OfferSheet server, and it adds no new OfferSheet surface. The verdict itself still runs in the hosted app.</p>

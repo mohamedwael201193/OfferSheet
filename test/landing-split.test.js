@@ -67,7 +67,9 @@ test('app carries every id app.js queries (minus runtime + landing-only guards)'
   // Runtime-created by design (buttons injected by app.js itself).
   // legProgress is created by appendLegProgress on first streamed leg event
   // and read only through that same function, so it never exists statically.
-  const runtime = new Set(['tryAgainBtn', 'priceFocusBtn', 'needsTryAgainBtn', 'legProgress']);
+  // headlinerImage is created by renderHeadlinerImage on a verdict that
+  // carries a Qloo image, and removed on the next render — same pattern.
+  const runtime = new Set(['tryAgainBtn', 'priceFocusBtn', 'needsTryAgainBtn', 'legProgress', 'headlinerImage']);
   // Landing-only, guarded in app.js: heroFallback is touched only when an
   // img with id heroImg errors (no such img on the app page); dealStack /
   // heroStage are null-guarded before any tilt listener attaches.

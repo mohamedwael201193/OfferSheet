@@ -1165,6 +1165,14 @@ function renderVerdict(v, race) {
   $('verdictSubject').textContent = `${v.artist} in ${v.city} · guarantee ${money(v.guarantee)}`;
   // SHIP item 10: checklist above the number.
   renderSignChecklist(v);
+  // Artist image (display-only, additive block — no app.html change: the
+  // figure is created here and inserted at the top of the verdict card).
+  // Renders ONLY when the verdict carries a Qloo-sourced image URL on the
+  // matched headliner — https + Qloo host, re-checked here so no other
+  // URL can ever render. No image -> no slot at all (no placeholder
+  // photo). A failed load removes the figure entirely. The image never
+  // affects any number.
+  renderHeadlinerImage(v);
   // Phase 3 D: the arithmetic line (number + worked example) carries its
   // input-source tags — user-supplied + venue-history-sourced when
   // Ticketmaster history fed the verdict — never a receipt tag.
@@ -1306,6 +1314,41 @@ function renderNeedsInput(v) {
     f.scrollIntoView({ behavior: 'smooth', block: 'center' });
     f.focus();
   });
+}
+
+function renderHeadlinerImage(v) {
+  // Removal tolerates minimal DOM implementations (test shims): a real
+  // browser always has .remove(); a stub without it simply has nothing
+  // attached to remove.
+  const prev = $('headlinerImage');
+  if (prev) {
+    if (typeof prev.remove === 'function') prev.remove();
+    else if (prev.parentNode && typeof prev.parentNode.removeChild === 'function') prev.parentNode.removeChild(prev);
+  }
+  const headliner = v.legs?.describe?.headliner;
+  const url = headliner?.image;
+  if (typeof url !== 'string' || url === '') return;
+  let hostOk = false;
+  try {
+    const parsed = new URL(url);
+    hostOk = parsed.protocol === 'https:' && (parsed.hostname === 'qloo.com' || parsed.hostname.endsWith('.qloo.com'));
+  } catch { hostOk = false; }
+  if (!hostOk) return;
+  const fig = document.createElement('figure');
+  fig.id = 'headlinerImage';
+  fig.className = 'headliner-image';
+  const img = document.createElement('img');
+  img.src = url;
+  img.alt = headliner?.name || v.artist || 'Headliner';
+  img.onerror = () => { if (typeof fig.remove === 'function') fig.remove(); };
+  const cap = document.createElement('figcaption');
+  cap.textContent = 'Image: Qloo';
+  fig.appendChild(img);
+  fig.appendChild(cap);
+  const verdictEl = $('verdict');
+  if (!verdictEl) return;
+  if (typeof verdictEl.insertBefore === 'function') verdictEl.insertBefore(fig, verdictEl.firstChild || null);
+  else if (typeof verdictEl.appendChild === 'function') verdictEl.appendChild(fig);
 }
 
 function appendLegProgress(leg) {

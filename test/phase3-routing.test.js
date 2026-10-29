@@ -173,15 +173,16 @@ test('phase3 S6: workspace header frames the existing steps as a season ledger (
     'routing table renders unchanged alongside the framing');
 });
 
-test('phase3 G (FAILED, documented): no geographic pins or coordinates are rendered from the workspace panel', async () => {
+test('phase3 G (SHIPPED): routing panel renders a cities-only map strip container', async () => {
   const candidates = [
     { city: 'Los Angeles', rank: 1, status: 'ok', matchedAreasCount: 3, areas: [{ name: 'A' }], receipts: [routeReceipt('Los Angeles', 3)] },
     { city: 'Chicago', rank: 2, status: 'ok', matchedAreasCount: 2, areas: [{ name: 'A' }], receipts: [routeReceipt('Chicago', 2)] },
   ];
   const html = await renderRoutingPanel(candidates);
-  assert.ok(html.includes('Map strip unavailable'), 'the panel states the map strip is unavailable instead of inventing pins');
-  assert.ok(!/latitude|longitude|ws-map-pin/.test(html), 'no coordinates or map pins are rendered');
+  assert.ok(html.includes('id="wsMapStrip"'), 'the panel renders the map strip container above the table');
+  assert.ok(!html.includes('Map strip unavailable — no geography lookup is wired'), 'the old unwired note is gone');
   const src = await readFile(new URL('../frontend/workspace.js', import.meta.url).pathname, 'utf8');
-  assert.ok(!/latitude|longitude/.test(src), 'workspace.js contains no latitude/longitude handling');
-  assert.ok(!/nominatim|openstreetmap/i.test(src), 'workspace.js has no geography lookup path of its own');
+  assert.ok(src.includes("'/api/workspace/geocode'"), 'workspace.js calls the server geocode endpoint');
+  assert.ok(src.includes('push(ws.baseOffer.city)'), 'strip cities start from the base city');
+  assert.ok(src.includes('p.lat.toFixed(4)') && src.includes('p.lon.toFixed(4)'), 'strip coordinates come from geocoded pins, never hardcoded');
 });

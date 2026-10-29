@@ -116,3 +116,15 @@
 @media (prefers-reduced-motion: reduce) {
   #workspace * { scroll-behavior: auto; }
 }
+
+/* Routing map strip (Spec G): display-only city pins from the server
+   geocode step. Static SVG, no animation. Base city in cadmium orange;
+   candidates in ink. Coordinates are listed under the strip so any pin
+   can be checked against the lookup. */
+#workspace .ws-mapstrip-svg { display: block; width: 100%; height: auto; background: #f1f7f8; border: 1px solid rgba(3, 14, 26, 0.12); border-radius: 3px; margin: 16px 0 8px; }
+#workspace .ws-pin { fill: #f1f7f8; stroke: #030e1a; stroke-width: 2; }
+#workspace .ws-pin--base { fill: #e97219; stroke: #030e1a; }
+#workspace .ws-pin-label { font-family: "Geist", ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 16px; fill: #030e1a; }
+#workspace .ws-pin-label--base { font-weight: 700; }
+#workspace .ws-mapstrip-caption { list-style: none; padding: 0; margin: 8px 0 16px; }
+#workspace .ws-mapstrip-caption li { font-size: 14px; line-height: 20px; }
