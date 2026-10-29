@@ -1,0 +1,24 @@
+# OfferSheet backend — Render service definition.
+# Deploy to the user-confirmed Render workspace ("Ffcvv's workspace").
+# Secrets are NEVER in this file: values with sync: false must be set in the
+# Render dashboard (or CLI) at deploy time. The connector credential that
+# serves Muse's calls does NOT transfer to Render — enter the key values from
+# the user's own copies at deploy time.
+services:
+  - type: web
+    name: offersheet-backend
+    env: node
+    plan: free
+    startCommand: node backend/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: QLOO_API_KEY
+        sync: false
+      - key: TICKETMASTER_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        sync: false

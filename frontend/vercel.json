@@ -1,0 +1,1 @@
+{"rewrites":[{"destination":"https://REPLACE-WITH-RENDER-BACKEND-URL/api/:path*","source":"/api/:path*"}]}

@@ -1,0 +1,133 @@
+// MCP stdio client for `qloo mcp` (official harness, JSON-RPC 2.0 over NDJSON).
+// Transport rules (official starter): spawn `qloo mcp`, pass env: process.env so
+// QLOO_API_KEY forwards to the server. One session per verdict request: start(),
+// call() for each tool in sequence, close(). No key is ever logged: args contain
+// no keys, and envelopes are returned verbatim (error codes only, no credentials).
+import { spawn } from 'node:child_process';
+import { mapEnvelopeError } from './errors.js';
+
+const PROTOCOL_VERSION = '2024-11-05';
+
+export class McpSession {
+  constructor({ command = 'qloo', args = ['mcp'], timeoutMs = 60000, spawnFn = spawn } = {}) {
+    this.command = command;
+    this.args = args;
+    this.timeoutMs = timeoutMs;
+    this.spawnFn = spawnFn;
+    this.child = null;
+    this.buf = '';
+    this.pending = new Map();
+    this.nextId = 1;
+    this.started = false;
+  }
+
+  start() {
+    if (this.started) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      this.child = this.spawnFn(this.command, this.args, {
+        env: { ...process.env },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      const timer = setTimeout(() => {
+        this.close();
+        reject(new Error('MCP start timed out'));
+      }, this.timeoutMs);
+      this.child.stderr.on('data', () => {});
+      this.child.stdout.on('data', (d) => {
+        this.buf += d.toString();
+        let idx;
+        while ((idx = this.buf.indexOf('\n')) >= 0) {
+          const line = this.buf.slice(0, idx).trim();
+          this.buf = this.buf.slice(idx + 1);
+          if (!line) continue;
+          let msg;
+          try {
+            msg = JSON.parse(line);
+          } catch {
+            continue;
+          }
+          if (msg.id !== undefined && this.pending.has(msg.id)) {
+            const { resolve: res, reject: rej, timeout } = this.pending.get(msg.id);
+            clearTimeout(timeout);
+            this.pending.delete(msg.id);
+            if (msg.error) rej(new Error(`MCP error: ${JSON.stringify(msg.error)}`));
+            else res(msg.result);
+          }
+        }
+      });
+      this.child.on('error', (e) => {
+        clearTimeout(timer);
+        reject(new Error(`MCP spawn failed: ${e.message}`));
+      });
+      this.child.on('exit', () => {
+        for (const { reject: rej, timeout } of this.pending.values()) {
+          clearTimeout(timeout);
+          rej(new Error('MCP process exited'));
+        }
+        this.pending.clear();
+      });
+      this._request('initialize', {
+        protocolVersion: PROTOCOL_VERSION,
+        capabilities: {},
+        clientInfo: { name: 'offersheet', version: '0.1.0' },
+      }).then(() => {
+        this.child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' })}\n`);
+        this.started = true;
+        clearTimeout(timer);
+        resolve();
+      }).catch((e) => {
+        clearTimeout(timer);
+        reject(e);
+      });
+    });
+  }
+
+  _request(method, params) {
+    return new Promise((resolve, reject) => {
+      const id = this.nextId;
+      this.nextId += 1;
+      const timeout = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`MCP request timed out: ${method}`));
+      }, this.timeoutMs);
+      this.pending.set(id, { resolve, reject, timeout });
+      this.child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
+    });
+  }
+
+  // Call one tool. Returns the parsed envelope: {status, summary, results,
+  // result_count, error?}. Throws OfferError on envelope error (mapped).
+  async call(tool, args) {
+    const result = await this._request('tools/call', { name: tool, arguments: args });
+    const content = result?.content?.[0];
+    let envelope = null;
+    if (content && content.type === 'text') {
+      try {
+        envelope = JSON.parse(content.text);
+      } catch {
+        envelope = null;
+      }
+    }
+    if (!envelope) {
+      // Non-JSON content or isError without an envelope: surface as an error state.
+      if (result?.isError) throw mapEnvelopeError({ error: { code: 'QLOO_ERROR' } });
+      return { status: 'empty', summary: '', results: [], result_count: 0, raw: result };
+    }
+    if (envelope.status === 'error') throw mapEnvelopeError(envelope);
+    return envelope;
+  }
+
+  async capabilities(operationIds) {
+    const args = operationIds ? { operation_ids: operationIds } : {};
+    return this.call('qloo_capabilities', args);
+  }
+
+  close() {
+    try {
+      this.child?.kill();
+    } catch {
+      // already exited
+    }
+    this.started = false;
+  }
+}

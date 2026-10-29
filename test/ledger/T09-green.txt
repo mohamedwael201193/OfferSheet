@@ -1,0 +1,16 @@
+✔ exact division needs no extra ticket (1.826289ms)
+✔ remainder rounds up (ceil) (0.332989ms)
+✔ zero guarantee -> 0 tickets with note (0.264607ms)
+✔ zero or negative net -> error, never division by zero (0.636414ms)
+✔ negative guarantee -> error (0.389294ms)
+✔ break-even exceeding known capacity -> cannot break even (0.217927ms)
+✔ break-even within capacity -> can break even (0.270336ms)
+✔ missing price -> price unknown, no invented number (0.162855ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 215.058717

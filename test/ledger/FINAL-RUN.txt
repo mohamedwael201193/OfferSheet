@@ -1,0 +1,51 @@
+
+> offersheet@0.1.0 test
+> node --test test/*.test.js
+
+✔ exact division needs no extra ticket (2.277386ms)
+✔ remainder rounds up (ceil) (0.241993ms)
+✔ zero guarantee -> 0 tickets with note (0.628092ms)
+✔ zero or negative net -> error, never division by zero (0.972219ms)
+✔ negative guarantee -> error (1.323666ms)
+✔ break-even exceeding known capacity -> cannot break even (0.421111ms)
+✔ break-even within capacity -> can break even (1.095524ms)
+✔ missing price -> price unknown, no invented number (0.297056ms)
+✔ T11: capacity extraction — missing fields yield null, never a guess (1.204386ms)
+✔ T11: price extraction — average of min/max, labeled; absent means null (0.53977ms)
+✔ T11: pipeline with no Ticketmaster capacity renders unknown state, no sellout fields (6.289525ms)
+✔ T11: user-supplied capacity renders labeled, never as Ticketmaster-verified (1.20698ms)
+✔ T11: Ticketmaster-reported capacity renders with its source (1.098858ms)
+✔ T11: no price anywhere yields price_unknown, never an invented number (1.88033ms)
+✔ T04: error taxonomy maps to the documented codes and statuses (1.199349ms)
+✔ T04: envelope errors map (auth -> 503, other -> 502, never a verdict) (0.250987ms)
+✔ T10: server with no key serves a visible 503 on the verdict path (staging) (151.215331ms)
+✔ T03: per-run cap counts calls and resets on resetRun (2.001442ms)
+✔ T12: monthly floor trips fail-closed with QUOTA_FLOOR 503 (0.300721ms)
+✔ T12: month rollover resets the monthly count (0.187642ms)
+✔ T13: per-visitor daily cap trips with VISITOR_CAP 429, per IP (0.258258ms)
+✔ T03: snapshot reports the adopted design settings (labeled, not Qloo quotas) (0.26633ms)
+✔ T16: production code never imports test fixtures (15.5131ms)
+✔ T16: no mock/fake/stub/fixture identifiers outside strings and comments (9.846239ms)
+✔ T16: fail-closed branches are present (NOT_CONFIGURED + verdict_withheld) (3.315063ms)
+✔ T16: no literal key value is assigned in production code (4.849494ms)
+✔ T02: sha256 is deterministic and input-sensitive (1.610326ms)
+✔ T02: requestHashFor and argsHashFor are deterministic (0.514923ms)
+✔ T02: manifest shape is claim -> operation -> requestHash -> requestId -> resultCount, with no replay payload (1.699379ms)
+✔ T02: missing requestId is null, never invented (0.254962ms)
+✔ T14: 429 with Retry-After then 200 succeeds after exactly 2 requests (52.721872ms)
+✔ T14: always-500 surfaces as a failed leg after exactly 2 requests (one retry) (29.841412ms)
+✔ T14: timeout aborts and retries once, then throws (2 requests total) (408.53603ms)
+✔ S1: full evidence renders a verdict with receipts and a miss trial (5.481673ms)
+✔ S1: no key throws NOT_CONFIGURED before any verdict number exists (0.817657ms)
+✔ S1: a failed required leg withholds the verdict with NO numbers (0.778328ms)
+✔ S1: a failed readiness probe fails closed (throws, no verdict object) (0.93314ms)
+✔ S1: a failed OPTIONAL leg (trends) still renders the verdict (2.895453ms)
+✔ S1: ambiguous headliner returns needs_input candidates, never a guess (1.622854ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5593.123752

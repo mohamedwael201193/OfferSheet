@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OfferSheet — check a live-show offer before you sign it</title>
+<link href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&family=Geist:wght@400;500&family=Sofia+Sans+Extra+Condensed:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="nav proof">
+  <div class="wrap nav-inner">
+    <div class="wordmark">OfferSheet</div>
+    <div id="qlooBadge" class="badge">Qloo status: checking…</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- 1. Wound hero + verdict tool on the first screen -->
+  <section class="hero proof" aria-label="The problem">
+    <h1>A promoter signs a guarantee with his own money. If the room does not fill, he eats it.</h1>
+    <div class="guide" aria-hidden="true"></div>
+    <figure class="crop" style="margin-top:20px">
+      <img id="heroImg" src="assets/hero.webp" alt="Venue plan drawn as a light proof sheet: seating bowl, stage, ticket stack and pen" width="1200" height="800">
+      <figcaption>If the room does not fill, the promoter eats the guarantee.</figcaption>
+      <div id="heroFallback" class="hero-fallback" role="note">
+        <p><strong>Venue plan, proof sheet.</strong> Blue-black line drawing on studio-white proof paper: seating bowl, stage, ticket stack and pen, with crop marks and a dot grid. No text or numbers are baked into the drawing — the break-even number on this page is real page text, computed live.</p>
+      </div>
+    </figure>
+  </section>
+
+  <!-- 2. Stats strip: counts of the shipped spec, stated as such -->
+  <section class="stats set" aria-label="What this page is built from">
+    <div class="stat"><div class="stat-value num">10 / 10</div><div class="stat-label">Tools in the shipped spec</div></div>
+    <div class="stat"><div class="stat-value num">Every claim</div><div class="stat-label">Carries a receipt</div></div>
+    <div class="stat"><div class="stat-value num">3 arms</div><div class="stat-label">Gut, Graph, Web</div></div>
+    <div class="stat"><div class="stat-value num">Ticketmaster</div><div class="stat-label">Capacity source</div></div>
+  </section>
+
+  <!-- Verdict tool: part of the first screen -->
+  <section class="sheet crop" aria-label="Check an offer">
+    <div class="sheet-head">
+      <img src="assets/icon-ticket.webp" alt="" width="56" height="56">
+      <div>
+        <h2>Check an offer</h2>
+        <p class="label">Start here — edit any field. This starting example is not a real deal.</p>
+      </div>
+    </div>
+    <form id="offerForm">
+      <div class="field">
+        <label for="artist">Artist</label>
+        <input id="artist" name="artist" value="Billie Eilish" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="city">City</label>
+        <input id="city" name="city" value="New York" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="guarantee">Guarantee (USD)</label>
+        <input id="guarantee" name="guarantee" type="number" min="0" step="1" value="250000" required inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="ticketPrice">Ticket price (USD, optional)</label>
+        <input id="ticketPrice" name="ticketPrice" type="number" min="0" step="0.01" value="120" inputmode="decimal">
+        <span class="field-hint">Leave the price blank only if Ticketmaster event history can supply it.</span>
+      </div>
+      <div class="field span-2">
+        <label for="capacity">Room capacity (optional)</label>
+        <input id="capacity" name="capacity" type="number" min="1" step="1" placeholder="Leave blank to use Ticketmaster" inputmode="numeric">
+        <span class="field-hint">A value you type here is labeled user-supplied, not Ticketmaster-verified.</span>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn--primary" type="submit">Run the verdict</button>
+        <button class="btn" type="button" id="raceBtn">Run both (Gut vs Graph, live)</button>
+      </div>
+    </form>
+    <p class="label" style="margin-top:14px">No sign-in. One page, one money decision.</p>
+  </section>
+
+  <section id="status" class="status" hidden></section>
+
+  <!-- 3. Verdict card: the hero of the page -->
+  <section id="verdict" class="sheet verdict-card crop" hidden aria-label="Verdict">
+    <div class="sheet-head">
+      <img src="assets/icon-ticket.webp" alt="" width="56" height="56">
+      <div>
+        <h2>Verdict</h2>
+        <p class="label" id="verdictSubject"></p>
+      </div>
+    </div>
+    <div><span id="beTickets" class="verdict-number num">—</span> <span class="verdict-unit">tickets to break even</span></div>
+    <p id="beVerdict" class="verdict-line"></p>
+    <div id="cannotBox" class="cannot-box" hidden><p>Cannot break even in this room at this guarantee</p></div>
+    <div id="capacityBadge" class="capacity-badge"></div>
+    <div id="unknownBox" class="unknown-box" hidden>
+      <p>Venue capacity unknown — Ticketmaster returned no capacity for this room. Break-even is shown as tickets needed, not as a sellout percentage. Verify room size before signing.</p>
+    </div>
+    <div id="selloutBox" hidden style="margin-top:12px">
+      <p style="margin:0">Break-even is <strong id="selloutPct" class="num"></strong> of this room.</p>
+    </div>
+    <dl class="facts">
+      <div><dt>Ticket price</dt><dd id="bePrice"></dd></div>
+      <div><dt>Net per ticket</dt><dd id="beNet"></dd></div>
+      <div><dt>Capacity</dt><dd id="beCapacity"></dd></div>
+    </dl>
+
+    <details open>
+      <summary>Audience evidence</summary>
+      <p id="audienceNote"></p>
+      <ul id="audienceAreas"></ul>
+    </details>
+    <details open>
+      <summary>Opener shortlist, ranked for this city audience</summary>
+      <ol id="openerList"></ol>
+      <p id="topPick"></p>
+    </details>
+    <details>
+      <summary>Evidence details: demographics, trends, shared tags, overlap</summary>
+      <div id="demoBlock"></div>
+      <div id="trendBlock"></div>
+      <div id="tagsBlock"></div>
+      <div id="overlapBlock"></div>
+    </details>
+    <details>
+      <summary>Legs and sources</summary>
+      <div id="legsBlock"></div>
+    </details>
+  </section>
+
+  <!-- 4. Gut-vs-Graph race -->
+  <section id="raceSection" class="sheet crop" hidden aria-label="Gut versus Graph race">
+    <div class="sheet-head">
+      <img src="assets/icon-venue.webp" alt="" width="56" height="56">
+      <div>
+        <h2>Gut vs Graph vs Web</h2>
+        <p class="label">Live lanes. An arm with no provider is shown as unavailable, never given a pick.</p>
+      </div>
+    </div>
+    <div id="raceTimer" class="race-timer"></div>
+    <div id="armsBlock"></div>
+    <div id="raceBlock"></div>
+    <div id="missBlock"></div>
+  </section>
+
+  <!-- 5. Receipt drawer -->
+  <section id="receiptSection" class="sheet crop" hidden aria-label="Receipts">
+    <div class="sheet-head">
+      <img src="assets/icon-contract.webp" alt="" width="56" height="56">
+      <div>
+        <h2>Receipts</h2>
+        <p class="label">Every claim, with the exact call behind it. Replay re-runs that call live.</p>
+      </div>
+    </div>
+    <div id="receiptList" class="set"></div>
+    <div id="replayOut" class="replay-out"></div>
+  </section>
+
+  <!-- 6. Formula panel -->
+  <section id="formulaSection" class="sheet crop" hidden aria-label="Formula">
+    <div class="sheet-head">
+      <img src="assets/icon-chart.webp" alt="" width="56" height="56">
+      <div>
+        <h2>How the number is computed</h2>
+        <p class="label">Recompute it yourself from the live verdict numbers.</p>
+      </div>
+    </div>
+    <p>Break-even tickets = ceil(guarantee ÷ (ticket price − variable cost per ticket))</p>
+    <p id="workedExample" class="num"></p>
+    <p>When capacity is known and break-even tickets exceed it, the verdict is: “Cannot break even in this room at this guarantee.” When capacity is unknown, no sellout percentage is shown at all.</p>
+  </section>
+
+  <!-- 7. Safety strip -->
+  <section class="safety" aria-label="Safety">
+    <p><strong>No personal data is sent to Qloo.</strong> Aggregate audiences only. If Qloo is not configured, the page fails closed with a visible 503 — never mock data. Qloo affinities are aggregate taste signals, not a promise a show will sell out.</p>
+  </section>
+
+  <!-- 8. Benchmark ledger -->
+  <section class="sheet crop" aria-label="Benchmark ledger">
+    <h2>Benchmark ledger</h2>
+    <p class="label">Committed, rerunnable Qloo-vs-Gut-vs-Web trials. Runs appear here only after real runs.</p>
+    <div id="benchBlock">Loading…</div>
+  </section>
+
+  <!-- 9. Footer -->
+  <footer class="footer proof">
+    <p>What results do NOT establish: Qloo affinities describe aggregate audience taste, not individual behavior, and not a causal claim that a show will sell out. No sellout percentage is ever shown when capacity is unknown. Quota guards are this product’s own design settings, not Qloo-stated quotas — no numeric Qloo quota is documented.</p>
+    <p class="label">OfferSheet — one page, one money decision.</p>
+  </footer>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
