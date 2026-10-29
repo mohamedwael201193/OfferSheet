@@ -1,1 +1,1 @@
-{"rewrites":[{"destination":"https://REPLACE-WITH-RENDER-BACKEND-URL/api/:path*","source":"/api/:path*"}]}
+{"rewrites":[{"destination":"https://offersheet-backend-k2zp.onrender.com/api/:path*","source":"/api/:path*"}]}
