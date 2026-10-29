@@ -501,6 +501,11 @@ document.querySelectorAll('img').forEach((img) => {
     if (img.id === 'heroImg') {
       img.classList.add('img-missing');
       $('heroFallback').classList.add('show');
+    } else if (img.dataset.fallback) {
+      // Large proof figures show their brief panel, never a 56px placeholder.
+      img.classList.add('img-missing');
+      const fb = document.getElementById(img.dataset.fallback);
+      if (fb) fb.classList.add('show');
     } else {
       const ph = document.createElement('div');
       ph.className = 'icon-placeholder';
@@ -509,6 +514,17 @@ document.querySelectorAll('img').forEach((img) => {
     }
   });
 });
+
+// Scroll-reveal fallback: ONLY when CSS view-timeline is unsupported.
+// Content stays visible if this never runs: the hiding class is added by
+// this block alone, and reduced-motion CSS forces everything visible.
+if (typeof CSS !== 'undefined' && !CSS.supports('animation-timeline', 'view()') && 'IntersectionObserver' in window) {
+  document.documentElement.classList.add('io-arm');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+}
 
 loadHealth();
 loadBench();

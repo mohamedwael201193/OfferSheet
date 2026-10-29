@@ -35,6 +35,11 @@ export async function qlooRest({
   baseUrl,
   timeoutMs = 25000,
   fetchImpl = fetch,
+  // Server-side-only diagnostics: called with { path, status, bodyKeys,
+  // resultCount } on every terminal outcome. NEVER the URL (query params),
+  // never headers, never the body — so no key, tag, or artist string can
+  // reach a log. The diagnostic object is never returned to the client.
+  logFn = null,
 }) {
   // G6 defense-in-depth: only relative paths may reach the host. An absolute
   // URL passed as `path` would override baseUrl in `new URL(path, baseUrl)`
@@ -72,15 +77,30 @@ export async function qlooRest({
         await sleep(Math.min(Number.isFinite(retryAfter) ? retryAfter * 1000 : 0, 10000));
         continue;
       }
-      const entities = Array.isArray(body?.entities) ? body.entities : [];
+      const entities = extractList(body);
+      const resultCount = entities.length || body?.result_count || body?.total_count || body?.total || null;
+      // Payload test for non-list bodies (e.g. /v2/analysis/compare returns
+      // a comparison object, not a list): a 2xx body with non-error keys is
+      // a real payload and earns a receipt; a list-shaped body earns one
+      // only from its list/count. An empty list, an empty object, or an
+      // error body never earns one.
+      const isListShaped = body !== null && typeof body === 'object' && ('entities' in body || 'results' in body);
+      const hasErrorKey = body !== null && typeof body === 'object' && !Array.isArray(body) && ('error' in body || 'errors' in body);
+      const payloadPresent = isListShaped
+        ? (entities.length > 0 || (resultCount !== null && resultCount > 0))
+        : (!hasErrorKey && body !== null && typeof body === 'object' && !Array.isArray(body) && Object.keys(body).length > 0);
+      if (typeof logFn === 'function') {
+        try { logFn({ path, status: res.status, bodyKeys: bodyKeysOf(body), resultCount }); } catch { /* logging never breaks a call */ }
+      }
       return {
         ok: res.status >= 200 && res.status < 300,
         status: res.status,
         body,
         requestHash,
         requestId: body?.requestId ?? body?.request_id ?? res.headers?.get?.('x-request-id') ?? null,
-        resultCount: entities.length || body?.result_count || null,
+        resultCount,
         entities: entities.map((e) => ({ id: extractId(e), name: extractName(e) })).filter((e) => e.id || e.name),
+        payloadPresent,
       };
     } catch (e) {
       clearTimeout(timer);
@@ -89,6 +109,9 @@ export async function qlooRest({
         // Network/timeout on first attempt: one retry, then surface the failure.
         continue;
       }
+      if (typeof logFn === 'function') {
+        try { logFn({ path, status: null, bodyKeys: [], resultCount: null }); } catch { /* logging never breaks a call */ }
+      }
       throw new Error(`Qloo REST call failed: ${e.message}`);
     }
   }
@@ -96,11 +119,32 @@ export async function qlooRest({
 }
 
 // REST legs used by the verdict pipeline (cross-checks the MCP legs).
-export async function restSearch({ query, take = 5, key, baseUrl, fetchImpl }) {
-  return qlooRest({ path: '/search', params: { query, take }, key, baseUrl, fetchImpl });
+//
+// Shape note (Gap 2, live-audit finding): the live /search envelope carries
+// its list under `results`, not `entities` — a parser that only read
+// `entities` silently emptied every REST leg even on HTTP 200. The parser
+// below accepts EITHER list key, and a 2xx object body with no list at all
+// (e.g. /v2/analysis/compare) still counts as a payload when it carries
+// non-error keys. An empty list with no count and no object payload is
+// 'empty', never 'ok' — G16 unchanged.
+function extractList(body) {
+  if (!body || typeof body !== 'object') return [];
+  if (Array.isArray(body.entities)) return body.entities;
+  if (Array.isArray(body.results)) return body.results;
+  return [];
 }
 
-export async function restInsightsByTags({ tagUrns, filterType = 'urn:entity:artist', key, baseUrl, fetchImpl }) {
+function bodyKeysOf(body) {
+  if (body === null || body === undefined) return [];
+  if (Array.isArray(body)) return ['<array>'];
+  if (typeof body === 'object') return Object.keys(body);
+  return [];
+}
+export async function restSearch({ query, take = 5, key, baseUrl, fetchImpl, logFn }) {
+  return qlooRest({ path: '/search', params: { query, take }, key, baseUrl, fetchImpl, logFn });
+}
+
+export async function restInsightsByTags({ tagUrns, filterType = 'urn:entity:artist', key, baseUrl, fetchImpl, logFn }) {
   return qlooRest({
     path: '/v2/insights',
     params: {
@@ -111,10 +155,11 @@ export async function restInsightsByTags({ tagUrns, filterType = 'urn:entity:art
     key,
     baseUrl,
     fetchImpl,
+    logFn,
   });
 }
 
-export async function restCompare({ aIds, bIds, key, baseUrl, fetchImpl }) {
+export async function restCompare({ aIds, bIds, key, baseUrl, fetchImpl, logFn }) {
   return qlooRest({
     path: '/v2/analysis/compare',
     params: {
@@ -124,10 +169,11 @@ export async function restCompare({ aIds, bIds, key, baseUrl, fetchImpl }) {
     key,
     baseUrl,
     fetchImpl,
+    logFn,
   });
 }
 
-export async function restEntities({ ids, key, baseUrl, fetchImpl }) {
+export async function restEntities({ ids, key, baseUrl, fetchImpl, logFn }) {
   // Max 15 per call (adopted from TasteCase's BoundedQlooClient).
   const slice = ids.slice(0, 15);
   return qlooRest({
@@ -136,5 +182,6 @@ export async function restEntities({ ids, key, baseUrl, fetchImpl }) {
     key,
     baseUrl,
     fetchImpl,
+    logFn,
   });
 }

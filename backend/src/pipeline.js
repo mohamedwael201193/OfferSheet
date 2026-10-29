@@ -59,26 +59,35 @@ export const EMPTY_LABEL = 'no data for this entity/region';
 // 'ok' AND its results are non-empty. A partial/degraded envelope keeps its
 // own status (its data may still be shown labeled, but it never counts as
 // complete), and an ok-but-empty envelope becomes 'empty'.
+// Gap 3 (diagnosability): every non-ok leg also carries `envelopeSummary` —
+// Qloo's own summary text when present, else null — so an empty trends or
+// compare leg can be diagnosed from the payload instead of from a generic
+// label. The summary is Qloo's text, never client data, so it is safe to
+// render; the landing agent owns rendering, not this file.
 function mcpLeg(env, build) {
-  if (!env || typeof env !== 'object') return { status: 'error', reason: 'no envelope returned' };
+  if (!env || typeof env !== 'object') return { status: 'error', reason: 'no envelope returned', envelopeSummary: null };
   const results = Array.isArray(env.results) ? env.results : [];
+  const summary = typeof env.summary === 'string' ? env.summary : null;
   if (env.status === 'ok' && results.length > 0) return { status: 'ok', ...build(results) };
-  if (env.status === 'ok') return { status: 'empty', reason: EMPTY_LABEL, ...build([]) };
+  if (env.status === 'ok') return { status: 'empty', reason: summary || EMPTY_LABEL, envelopeSummary: summary, ...build([]) };
   if (env.status === 'partial' || env.status === 'degraded') {
-    return { status: env.status, reason: env.summary || `Qloo returned status ${env.status}`, ...build(results) };
+    return { status: env.status, reason: summary || `Qloo returned status ${env.status}`, envelopeSummary: summary, ...build(results) };
   }
-  if (env.status === 'empty') return { status: 'empty', reason: env.summary || EMPTY_LABEL, ...build([]) };
-  return { status: 'error', reason: env.summary || `Qloo returned status ${env.status || 'unknown'}` };
+  if (env.status === 'empty') return { status: 'empty', reason: summary || EMPTY_LABEL, envelopeSummary: summary, ...build([]) };
+  return { status: 'error', reason: summary || `Qloo returned status ${env.status || 'unknown'}`, envelopeSummary: summary };
 }
 
 // G16: a REST 2xx with an empty entities array and no result count records
-// status 'empty' with the no-data label, never 'ok'.
+// status 'empty' with the no-data label, never 'ok'. Gap 2: a 2xx object
+// payload with no list (e.g. /v2/analysis/compare) still counts as 'ok'
+// when the transport flags payloadPresent — the call returned a real body,
+// so it earns a receipt; only a truly empty body stays 'empty'.
 function restLeg(out, build) {
   if (!out || typeof out !== 'object') return { status: 'error', reason: 'no REST result returned' };
   if (!out.ok) return { status: 'error', reason: `Qloo REST returned ${out.status}`, httpStatus: out.status };
   const entities = Array.isArray(out.entities) ? out.entities : [];
   const count = out.resultCount ?? entities.length;
-  if (entities.length === 0 && (count === null || count === 0)) {
+  if (entities.length === 0 && (count === null || count === 0) && !out.payloadPresent) {
     return { status: 'empty', reason: EMPTY_LABEL, httpStatus: out.status, resultCount: count, entities: [] };
   }
   return { status: 'ok', httpStatus: out.status, resultCount: count, ...build(out) };
@@ -88,7 +97,12 @@ function tagUrns(envelope, limit = 10) {
   const results = Array.isArray(envelope?.results) ? envelope.results : [];
   const urns = [];
   for (const r of results) {
-    const u = r?.urn ?? r?.tag_urn ?? (typeof r?.tag === 'string' ? r.tag : null);
+    // Gap 2: the live find_tags envelope carries the tag URN in the `id`
+    // field (e.g. {"id": "urn:tag:celebrity_spokesperson:qloo:billie_eilish"}),
+    // which the old key list never matched — so the insights leg always
+    // skipped. Accept an `id` that is itself a URN, after the older keys.
+    const u = r?.urn ?? r?.tag_urn ?? (typeof r?.tag === 'string' ? r.tag : null)
+      ?? (typeof r?.id === 'string' && r.id.startsWith('urn:') ? r.id : null);
     if (typeof u === 'string' && u.startsWith('urn:')) urns.push(u);
     if (urns.length >= limit) break;
   }
@@ -283,6 +297,10 @@ export async function runVerdict(input, deps) {
   { const aborted = checkAbort(); if (aborted) return aborted; }
   const headliner = legs.describe?.headliner;
   const headlinerSignal = headliner?.id || headliner?.name || artist;
+  // Gap 3 ID-threading: every evidence leg below takes the RESOLVED entity
+  // ID when one is known, never a display name. describe already resolved
+  // the headliner, so headlinerRef is ID-first by construction.
+  const headlinerRef = headliner?.id || headlinerSignal;
 
   // Recommend + rank: opener candidates for the headliner. This IS the
   // resolve→describe→recommend→rank chain (G8): rank consumes recommend's
@@ -295,7 +313,7 @@ export async function runVerdict(input, deps) {
   const rankOptions = (legs.recommend?.candidates || []).map((c) => c.id || c.name).filter(Boolean);
   let rank = null;
   if (rankOptions.length > 0) {
-    const rankTask = await mcpTask('rank', 'qloo_rank', { options: rankOptions, option_type: 'artist', signals: [headlinerSignal], signal_location: city }, 'opener shortlist ranked for the city audience', (rs) => ({ ranked: namesOf(rs) }));
+    const rankTask = await mcpTask('rank', 'qloo_rank', { options: rankOptions, option_type: 'artist', signals: [headlinerRef], signal_location: city }, 'opener shortlist ranked for the city audience', (rs) => ({ ranked: namesOf(rs) }));
     applyTask(rankTask);
     rank = rankTask.env;
   } else {
@@ -305,6 +323,26 @@ export async function runVerdict(input, deps) {
   { const aborted = checkAbort(); if (aborted) return aborted; }
   const topOpener = legs.rank?.ranked?.[0] || legs.recommend?.candidates?.[0] || null;
   const topOpenerSignal = topOpener ? topOpener.id || topOpener.name : null;
+  // Gap 3 ID-threading (opener): a recommend/rank candidate that carries no
+  // ID is resolved with one describe call, so compare/trends/REST legs
+  // below take an ID instead of a display name. A failed or ambiguous
+  // resolution keeps the name signal — never a guessed ID. This call is a
+  // resolution helper, not a verdict leg, so it leaves no receipt; a guard
+  // trip inside it is recorded by call() and rethrown below, fail-closed.
+  let openerId = topOpener?.id || null;
+  if (topOpener && !openerId && topOpener.name) {
+    try {
+      const resolved = await call('qloo_describe', { entity: topOpener.name, type: 'artist' });
+      if (resolved && resolved.status !== 'needs_input' && Array.isArray(resolved.results) && resolved.results.length > 0) {
+        openerId = itemId(resolved.results[0]);
+      }
+    } catch (e) {
+      // Name-based fallback below; guard trips are rethrown by throwIfGuardTrip.
+    }
+  }
+  const openerRef = openerId || topOpenerSignal;
+  throwIfGuardTrip();
+  { const aborted = checkAbort(); if (aborted) return aborted; }
 
   // Evidence legs (G8 fan-out): where_popular, demographics, overlap,
   // shared tags, trends, and the REST cross-checks consume only the resolve
@@ -316,17 +354,16 @@ export async function runVerdict(input, deps) {
   const iso = (d) => d.toISOString().slice(0, 10);
   const urns = tags ? tagUrns(tags) : [];
   const headlinerId = legs.describe?.headliner?.id || null;
-  const openerId = topOpener?.id || null;
   const hydrateIds = [headlinerId, openerId].filter(Boolean);
   const evidenceTasks = [
-    mcpTask('wherePopular', 'qloo_where_popular', { entity: headlinerSignal, within: city, limit: 10 }, 'where the headliner is popular (city audience areas)', (rs) => ({ areas: namesOf(rs) })),
-    mcpTask('demographics', 'qloo_audience_demographics', { entity: headlinerSignal, entity_type: 'artist' }, 'audience demographic bands', (rs) => ({ bands: rs.slice(0, 20) })),
-    mcpTask('entityTags', 'qloo_entity_tags', { entities: [headlinerSignal, ...(topOpenerSignal ? [topOpenerSignal] : [])], entity_type: 'artist', limit: 10 }, 'top shared tags evidence', (rs) => ({ tags: rs.slice(0, 20) })),
-    mcpTask('trends', 'qloo_trends', { entities: [headlinerSignal], entity_type: 'artist', start_date: iso(start90), end_date: iso(today) }, 'headliner momentum (90-day trend)', (rs) => ({ points: rs.slice(0, 20) })),
+    mcpTask('wherePopular', 'qloo_where_popular', { entity: headlinerRef, within: city, limit: 10 }, 'where the headliner is popular (city audience areas)', (rs) => ({ areas: namesOf(rs) })),
+    mcpTask('demographics', 'qloo_audience_demographics', { entity: headlinerRef, entity_type: 'artist' }, 'audience demographic bands', (rs) => ({ bands: rs.slice(0, 20) })),
+    mcpTask('entityTags', 'qloo_entity_tags', { entities: [headlinerRef, ...(topOpenerSignal ? [openerRef] : [])], entity_type: 'artist', limit: 10 }, 'top shared tags evidence', (rs) => ({ tags: rs.slice(0, 20) })),
+    mcpTask('trends', 'qloo_trends', { entities: [headlinerRef], entity_type: 'artist', start_date: iso(start90), end_date: iso(today) }, 'headliner momentum (90-day trend)', (rs) => ({ points: rs.slice(0, 20) })),
     restTask('restSearch', '/search', { query: artist, take: 5 }, 'REST name resolution', (out) => ({ entities: out.entities || [] })),
   ];
   if (topOpenerSignal) {
-    evidenceTasks.push(mcpTask('compare', 'qloo_compare_audiences', { group_a: [headlinerSignal], group_b: [topOpenerSignal], target_type: 'artist' }, 'headliner-vs-opener audience overlap', (rs) => ({ result: rs.slice(0, 20) })));
+    evidenceTasks.push(mcpTask('compare', 'qloo_compare_audiences', { group_a: [headlinerRef], group_b: [openerRef], target_type: 'artist' }, 'headliner-vs-opener audience overlap', (rs) => ({ result: rs.slice(0, 20) })));
   } else {
     legs.compare = { status: 'skipped', reason: 'no opener to compare against' };
   }

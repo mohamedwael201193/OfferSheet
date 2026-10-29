@@ -128,12 +128,18 @@ repo):
   deploy.
 - Ticketmaster capacity-field presence varies by venue and is unproven beyond
   the Madison Square Garden response above.
-- The LLM provider shape is OpenAI-compatible chat completions via env; the
-  exact provider is TO-VERIFY at deploy time.
+- The LLM provider shape is OpenAI-compatible chat completions via env, as a
+  fallback chain: `AI_PRIMARY_PROVIDER` + `AI_FALLBACK_PROVIDERS`
+  (comma-separated), each provider configured via
+  `<UPPER_NAME>_BASE_URL` / `<UPPER_NAME>_API_KEY` / `<UPPER_NAME>_MODEL`
+  (legacy `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` still works as a
+  single provider). Providers are tried in order; if all fail, the arms
+  render `unavailable`, never a fabricated pick. The answering provider
+  is named on each arm result.
 
 ## 8. Test ledger — final green run, 2026-10-29
 
-`npm test` from the repo root: **178 tests, 178 pass, 0 fail** — unit/stub/staging tests only; live rows T05/T07/T15 are UNCOVERED and T06/T08 PARTIAL (see table)
+`npm test` from the repo root: **197 tests, 197 pass, 0 fail** — unit/stub/staging tests only; live rows T05/T07/T15 are UNCOVERED and T06/T08 PARTIAL (see table)
 (full output: `test/ledger/FINAL-RUN.txt`; red→green process evidence:
 `test/ledger/T09-red.txt`, `test/ledger/T09-green.txt`). Counts come only
 from this green run. Any row without a passing run is UNCOVERED, never
@@ -200,58 +206,57 @@ sends raw bytes with image content types (webp/png/jpeg/avif) — a UTF-8
 decode of binary assets corrupted them; fixed and verified byte-identical
 for all five frontend assets.
 
-## 9. Deployment status (2026-10-29 — pushed, backend deploy BLOCKED)
+## 9. Deployment status (2026-10-29 — LIVE, bundle pending redeploy check)
 
 Settled identities (parent-verified 2026-10-29): GitHub
 `mohamedwael201193` (id 72895329); Vercel `mohamedwael201193` (frontend);
 Render workspace "Ffcvv's workspace" (user-confirmed, backend).
 
-1. Push: DONE via the GitHub API (remote `main` now at the commit in §10;
-   local commit `e9f3e43` holds the same tree). Git CLI push was not used
-   because the vault-held token is never revealed to the shell.
-2. Render: BLOCKED — service creation for `offersheet-backend` in the
-   Ffcvv workspace returned HTTP 400 "free tier usage quota has been
-   exhausted, new services are not allowed" (the workspace already runs
-   four free web services). No Render service exists for OfferSheet yet.
-   UNBLOCK: suspend or delete an unused free service in the workspace,
-   or upgrade the workspace — then re-run service creation from
-   `render.yaml` (free plan, `node backend/server.js`,
-   health check `/api/health`). After the service exists, set
-   `QLOO_API_KEY` and `TICKETMASTER_API_KEY` on the service from the
-   user's own key copies (the vault credential that serves Muse's calls
-   does NOT transfer to Render). Optionally set `LLM_*` for the Gut/Web
-   arms. A paid plan was NOT chosen — spending was never authorized.
-3. Vercel: BLOCKED downstream of Render — the project (Root Directory
-   `frontend`) can only be deployed once the real Render backend URL
-   replaces the `REPLACE-WITH-RENDER-BACKEND-URL` placeholder in
-   `frontend/vercel.json`. Deploying with the placeholder would ship a
-   demo whose API calls fail, so no Vercel project was created yet.
-4. Post-deploy live checks (still to run after Render + Vercel exist):
-   `qloo setup --status` → "Qloo data: ready" from the backend's
-   environment; `qloo exec find_tags` on "jazz" (5 tags); a timed verdict
-   end-to-end (T15, target ≤30s); a receipt replay (T08); a benchmark
-   trial recorded in `bench/results.json` (S2). Connectivity pre-check
-   already green: Qloo `/search?query=jazz&take=5` → HTTP 200, 5 results
-   (re-verified 2026-10-29 via the connector).
+1. Backend: LIVE — Render service `offersheet-backend`, Starter plan
+   (user-authorized $7, NOT free), URL
+   `https://offersheet-backend-k2zp.onrender.com`, health check
+   `/api/health`. Earlier free-tier creation failed twice (HTTP 400 quota
+   exhausted); the user chose Starter instead.
+2. Demo: LIVE — Vercel project `offersheet` (Root Directory `frontend`),
+   URL `https://offersheet-rouge.vercel.app`. Vercel has NO git
+   integration: every redeploy is a manual files-upload API deploy with
+   base64 encoding on every file.
+3. Env vars on the Render service (verified by API 2026-10-29, names
+   only): `QLOO_API_KEY`, `TICKETMASTER_API_KEY`, plus the 7-provider
+   LLM chain (`AI_PRIMARY_PROVIDER=qwen`,
+   `AI_FALLBACK_PROVIDERS=groq,cerebras,sambanova,together,openrouter,kimi`,
+   each with its own base URL / key / model vars). The vault credentials
+   that serve Muse's calls do NOT transfer to Render — service values
+   come from the user's own copies.
+4. This commit bundles: the full Studio landing page, the backend
+   REST/ID-threading fixes (Gap 2 + Gap 3) and double-slash guard, and
+   the LLM fallback chain. Redeploy verification (health fields, live
+   verdict trials, REST/trends/compare receipts, `//` → 400) follows
+   the push; results land in `bench/results.json` and
+   `test/ledger/LIVE-CHECKS.md`.
+5. Post-deploy live checks still to run after this bundle: a timed
+   verdict end-to-end (T15, target ≤30s); a receipt replay (T08); a
+   benchmark trial recorded in `bench/results.json` (S2).
 
 ## 10. Repo state
 
 Local git repo, remote set to `https://github.com/mohamedwael201193/OfferSheet.git`.
-Remote `main` is at verified commit `bddaecbc7c7f744d699e0ffefe8f8f0c066ef145`
-(verified 2026-10-29 via the GitHub connector; the earlier `732ee4ac…`
-value was superseded by a deploy-agent push). Local HEAD is ahead of remote
-with the QA fix-pass commits (see git log), NOT pushed — push them on top
-of the current remote HEAD at push time, never by force. No credentials, keys, or
-tokens appear in code, repo, files, or logs (verified by T16 and by grep
-for literal key assignments). License: MIT (`LICENSE`, visible in the repo
-root, satisfying the public-repo license rule).
+Remote `main` was at verified commit `e981641f…` (QA squash, parent-verified
+2026-10-29) before this bundle; this bundle was pushed via the GitHub API
+on top of that HEAD (see commit history), never by force and never by git
+CLI push from the local clone (local history diverges from the remote
+squash history; the vault-held token is never revealed to the shell).
+No credentials, keys, or tokens appear in code, repo, files, or logs
+(verified by T16 and by grep for literal key assignments). License: MIT
+(`LICENSE`, visible in the repo root, satisfying the public-repo license
+rule).
 
 ## 11. What is blocked on each pending item
 
 | Pending item | Blocks |
 |---|---|
-| Render free-tier quota in the Ffcvv workspace (4 free web services already running) | Render backend service creation, and downstream Vercel deploy (no backend URL to wire) |
-| `QLOO_API_KEY` value on the Render service (after the service exists) | ALL live Qloo calls from the deployed app (T05, T06 remainder, T07 Qloo legs, T08 remainder, T15) |
-| `TICKETMASTER_API_KEY` value on the Render service (after the service exists) | Ticketmaster capacity leg only (fallback covers its absence) |
-| LLM provider key (optional) | Gut/Web arms only (they render `unavailable`, never fabricated picks) |
+| Render free-tier quota in the Ffcvv workspace | RESOLVED — user chose the Starter plan ($7) for `offersheet-backend` |
+| `QLOO_API_KEY` / `TICKETMASTER_API_KEY` values on the Render service | SET (verified by API 2026-10-29, names only) |
+| LLM provider keys | SET — 7-provider chain (Qwen primary + Groq, Cerebras, SambaNova, Together, OpenRouter, Kimi fallbacks); live trials pending redeploy verification |
+| Live re-verification after this bundle (REST receipts, trends/compare receipt or `envelopeSummary`, `//` → 400 on Render, timed verdict, replay, bench trial) | Pending the redeploy check in §9.4 |
 | Studio frontend implemented 2026-10-29 (no longer gated on a sketch) | — |

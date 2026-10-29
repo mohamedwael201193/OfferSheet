@@ -56,6 +56,19 @@ function sendError(res, err) {
   }
 }
 
+// REST diagnostics (Gap 2, server-side only): path + status + top-level
+// body keys + result count, to stderr. Never the URL (query params carry
+// artist/tag strings), never headers, never the body — so no key or artist
+// string can reach a log, and nothing diagnostic ever enters a client
+// payload (the log object is never returned, only passed to logFn).
+function restLog(info) {
+  try {
+    console.error(`[qloo-rest] ${JSON.stringify(info)}`);
+  } catch {
+    // Logging must never break a call.
+  }
+}
+
 function readBody(req, limit = 65536) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -113,7 +126,7 @@ async function buildDeps({ gutArm, webArm, isCancelled } = {}) {
       isCancelled: isCancelled || (() => false),
       mcpCall,
       restCall: ({ path, params }) => qlooRest({
-        path, params, key: config.qlooKey, baseUrl: config.qlooBaseUrl, timeoutMs: config.restTimeoutMs,
+        path, params, key: config.qlooKey, baseUrl: config.qlooBaseUrl, timeoutMs: config.restTimeoutMs, logFn: restLog,
       }),
       tmEvents: ({ keyword, city }) => searchEvents({
         keyword, city, key: config.ticketmasterKey, baseUrl: config.ticketmasterBaseUrl,
@@ -243,6 +256,7 @@ async function handleReplay(req, res) {
       key: config.qlooKey,
       baseUrl: config.qlooBaseUrl,
       timeoutMs: config.restTimeoutMs,
+      logFn: restLog,
     });
     send(res, 200, {
       kind: 'rest',
@@ -288,7 +302,17 @@ async function handleStatic(req, res) {
 }
 
 const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, 'http://localhost');
+  // URL-parse guard (pre-existing robustness quirk): `new URL` throws on
+  // malformed request targets (e.g. a bare `//`), and the throw used to sit
+  // outside the try below — an uncaught throw that crashed the whole
+  // process. A malformed path now returns a clean 400 instead.
+  let url;
+  try {
+    url = new URL(req.url, 'http://localhost');
+  } catch {
+    send(res, 400, { error: { code: 'BAD_REQUEST', message: 'Malformed request path' } });
+    return;
+  }
   const path = url.pathname;
   try {
     if (req.method === 'GET' && path === '/api/health') {

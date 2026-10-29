@@ -396,3 +396,70 @@ a:focus-visible, summary:focus-visible, .btn:focus-visible { outline: 2px solid 
   .lane-bar { transform: scaleX(1); }
   .btn, .btn::before { transition: none; }
 }
+
+/* Landing page additions (Studio identity, full-page depth).
+   Appended on top of the QA-fixed system; no existing rule above is changed. */
+
+/* Anchored buttons: the hero CTA is a link styled as a printed control. */
+a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+a.btn:hover { text-decoration: none; }
+
+/* Nav links: plain Geist labels, orange underline on hover (theme control rule). */
+.nav-links { display: flex; gap: 18px; flex-wrap: wrap; }
+.nav-links a { font-weight: 500; font-size: 0.9rem; color: var(--color-ink-2); text-decoration: none; }
+.nav-links a:hover { color: var(--color-ink); text-decoration: underline; text-decoration-color: var(--color-accent); text-decoration-thickness: 2px; }
+
+/* Hero actions row. */
+.hero-cta { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 18px 0 22px; }
+
+/* Tool centerpiece + depth proof section: ink borders, like the verdict card. */
+.centerpiece { border: 1px solid var(--color-ink); }
+.depth-card { border: 1px solid var(--color-ink); padding: 24px; }
+.depth-card h3 { margin-top: 22px; }
+
+/* Depth table: 1px ink rule opens the set, 1px rule between rows. No mono. */
+.depth-table { width: 100%; border-collapse: collapse; border-top: 1px solid var(--color-ink); margin: 12px 0 4px; }
+.depth-table th, .depth-table td { padding: 10px 8px; border-bottom: 1px solid var(--color-rule); text-align: left; vertical-align: top; font-size: 0.9rem; }
+.depth-table th { font-weight: 500; color: var(--color-muted); }
+.depth-table td:first-child { font-weight: 500; color: var(--color-ink); overflow-wrap: anywhere; }
+.depth-table td:last-child { color: var(--color-muted); }
+
+/* How-it-works band: paper-2 ground, ink rules, crop-marked specimen cards. */
+.how-band { background: var(--color-paper-2); border-top: 1px solid var(--color-ink); border-bottom: 1px solid var(--color-ink); padding: 24px 20px; margin: 28px 0; }
+.how-band h2 { margin-bottom: 16px; }
+.how-grid { display: grid; gap: 28px; margin-top: 20px; }
+.how-card { background: var(--color-paper-hi); border: 1px solid var(--color-rule); border-radius: var(--radius-card); box-shadow: var(--shadow-sheet); padding: 18px; }
+.how-card h3 { margin-bottom: 8px; }
+.how-card p { margin: 0; }
+
+/* Proof figures: paper objects with crop marks, like the hero figure. */
+.fig { margin: 18px 0; background: var(--color-paper-hi); box-shadow: var(--shadow-sheet); border-radius: var(--radius-card); padding: 10px; }
+.fig img { display: block; width: 100%; height: auto; border-radius: 2px; }
+.fig figcaption { padding-top: 8px; }
+.fig-fallback { display: none; border: 1px solid var(--color-ink); border-radius: var(--radius-card); padding: 24px; background: var(--color-paper-hi); }
+.fig-fallback p { margin: 0; }
+.fig img.img-missing { display: none; }
+.fig img.img-missing + figcaption { display: none; }
+.fig-fallback.show { display: block; }
+
+/* Scroll reveal: CSS scroll-driven view-timeline where supported. Content is
+   NEVER hidden by default — the hiding only exists inside @supports (native
+   view-timeline) or under .io-arm (JS fallback armed it). If neither runs,
+   every section stays visible. */
+@keyframes section-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@supports (animation-timeline: view()) {
+  .reveal { animation: section-rise 700ms var(--ease-out) both; animation-timeline: view(); animation-range: entry 0% entry 55%; }
+}
+.io-arm .reveal { opacity: 0; transform: translateY(16px); transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out); }
+.io-arm .reveal.in-view { opacity: 1; transform: none; }
+
+@media (min-width: 720px) {
+  .how-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Scroll reveal + figure motion off, full construction still visible. */
+  .reveal { animation: none; opacity: 1; transform: none; }
+  .io-arm .reveal { transition: none; opacity: 1; transform: none; }
+  .fig { animation: none; }
+}
