@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OfferSheet — check a live-show offer before you sign it</title>
+<link href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&family=Geist:wght@400;500&family=Sofia+Sans+Extra+Condensed:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="app-page">
+<div id="scrollProgress" class="scroll-progress" aria-hidden="true"></div>
+<header class="nav proof appbar">
+  <div class="wrap nav-inner">
+    <div class="wordmark">OfferSheet <span class="app-kicker">App</span></div>
+    <nav class="nav-links" aria-label="App sections">
+      <a href="#tool">Tool</a>
+      <a href="#depth">Proof</a>
+      <a href="#formula">Formula</a>
+      <a href="#ledger">Ledger</a>
+      <a href="index.html">Landing</a>
+    </nav>
+    <div id="qlooBadge" class="badge">Qloo status: checking…</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- G23: fail-closed banner — shown only when /api/health says Qloo is not configured. -->
+  <div id="configBanner" class="config-banner" hidden role="alert">
+    <p><strong>Qloo is not configured for this demo. No verdict can be computed without live Qloo data.</strong></p>
+    <p class="label">The form below is disabled until Qloo is configured — nothing here is mocked or invented.</p>
+  </div>
+
+  <!-- Verdict tool: the centerpiece of the page. -->
+  <section class="sheet crop centerpiece perf reveal" id="tool" aria-label="Check an offer">
+    <p class="specimen">No. 02 — The offer</p>
+    <div class="sheet-head">
+      <img src="assets/icon-ticket.webp" alt="" width="56" height="56">
+      <div>
+        <h2>Check an offer</h2>
+        <p class="label">Start here — edit any field. This starting example is not a real deal.</p>
+      </div>
+    </div>
+    <p class="wedge">Undercard ranks openers for a show. OfferSheet answers whether to sign the guarantee at all — a ticket count, not a ranking.</p>
+    <p id="formDisabledNote" class="form-disabled-note" hidden>The form is disabled because Qloo is not configured for this demo — no verdict can be computed without live Qloo data.</p>
+    <form id="offerForm">
+      <div class="field">
+        <label for="artist">Artist</label>
+        <input id="artist" name="artist" value="Billie Eilish" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="city">City</label>
+        <input id="city" name="city" value="New York" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="venue">Room / venue (optional)</label>
+        <input id="venue" name="venue" placeholder="Leave blank to use the first matching Ticketmaster event" autocomplete="off">
+        <span class="field-hint">The actual room for this offer. If Ticketmaster finds it, its capacity and event prices ground the verdict; otherwise the first matching Ticketmaster event's venue is used and labeled as not the offer room.</span>
+      </div>
+      <div class="field">
+        <label for="guarantee">Guarantee (USD)</label>
+        <input id="guarantee" name="guarantee" type="number" min="0" step="1" value="250000" required inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="ticketPrice">Ticket price (USD, optional)</label>
+        <input id="ticketPrice" name="ticketPrice" type="number" min="0" step="0.01" value="120" inputmode="decimal">
+        <span class="field-hint">Leave the price blank only if Ticketmaster event history can supply it.</span>
+      </div>
+      <div class="field">
+        <label for="variableCost">Variable cost per ticket (USD, optional)</label>
+        <input id="variableCost" name="variableCost" type="number" min="0" step="0.01" inputmode="decimal">
+        <span class="field-hint">Fees, splits, or other per-ticket costs. Leave blank and the net renders as before variable costs — never as if costs were zero.</span>
+      </div>
+      <div class="field span-2">
+        <label for="capacity">Room capacity (optional)</label>
+        <input id="capacity" name="capacity" type="number" min="1" step="1" placeholder="Leave blank to use Ticketmaster" inputmode="numeric">
+        <span class="field-hint">A value you type here is labeled user-supplied, not Ticketmaster-verified.</span>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn--primary" type="submit">Run the verdict</button>
+      </div>
+    </form>
+    <p class="label" style="margin-top:14px">No sign-in. One money decision, before you sign.</p>
+    <p><a class="link-btn" href="#formula">See how the number is computed</a></p>
+  </section>
+
+  <section id="status" class="status crop" aria-live="polite" hidden></section>
+
+  <!-- Verdict card: the hero of the page -->
+  <section id="verdict" class="sheet verdict-card crop perf" hidden aria-label="Verdict">
+    <div class="sheet-head">
+      <img src="assets/icon-ticket.webp" alt="" width="56" height="56">
+      <div>
+        <h2>Verdict</h2>
+        <p class="label" id="verdictSubject"></p>
+      </div>
+    </div>
+    <div><span id="beTickets" class="verdict-number num">—</span> <span class="verdict-unit">tickets to break even</span></div>
+    <p class="aggregate-note">Aggregate taste signals only — they show how much two audiences share, never a prediction about any individual, and never a promise this show will sell out.</p>
+    <p id="beVerdict" class="verdict-line"></p>
+    <ul id="proofSummary" class="proof-summary"></ul>
+    <div id="cannotBox" class="cannot-box" hidden><p>Cannot break even in this room at this guarantee</p></div>
+    <div id="capacityBadge" class="capacity-badge"></div>
+    <div id="unknownBox" class="unknown-box" hidden>
+      <p id="unknownText"></p>
+    </div>
+    <div id="selloutBox" hidden style="margin-top:12px">
+      <p style="margin:0">Break-even share of seats in this room (not a sellout prediction): <strong id="selloutPct" class="num"></strong></p>
+    </div>
+    <dl class="facts">
+      <div><dt>Ticket price</dt><dd id="bePrice"></dd></div>
+      <div><dt>Net per ticket</dt><dd id="beNet"></dd></div>
+      <div><dt>Capacity</dt><dd id="beCapacity"></dd></div>
+    </dl>
+
+    <details open>
+      <summary>Audience evidence</summary>
+      <p id="audienceNote"></p>
+      <ul id="audienceAreas"></ul>
+    </details>
+    <details open>
+      <summary>Opener shortlist, ranked for this city audience</summary>
+      <ol id="openerList"></ol>
+      <p id="topPick"></p>
+    </details>
+    <details open>
+      <summary>Evidence details: who the audience is, whether the artist is rising, shared tags, how the fan bases overlap</summary>
+      <div id="demoBlock"></div>
+      <div id="trendBlock"></div>
+      <div id="tagsBlock"></div>
+      <div id="overlapBlock"></div>
+    </details>
+    <details open>
+      <summary>Sources checked</summary>
+      <div id="legsBlock"></div>
+    </details>
+  </section>
+
+  <!-- Partial evidence (G43): shown only on price_unknown, never with a verdict number. -->
+  <section id="partialSection" class="sheet crop" hidden aria-label="Partial evidence">
+    <h2>Partial evidence — not a verdict</h2>
+    <p class="label">No break-even number is shown without a price. What follows is partial Qloo evidence, not a verdict.</p>
+    <p id="partialAudienceNote"></p>
+    <ul id="partialAudience"></ul>
+    <ol id="partialOpeners"></ol>
+    <div id="partialLegs"></div>
+  </section>
+
+  <!-- G21: the race is a secondary toggle BELOW the verdict, never a competing primary. -->
+  <div id="raceToggleWrap" class="race-toggle-wrap" hidden>
+    <button class="link-btn" type="button" id="raceToggleBtn">run the live Gut-vs-Graph race</button>
+  </div>
+
+  <!-- Gut-vs-Graph race: secondary to the verdict (G21), collapsed when hollow (G44). -->
+  <section id="raceSection" class="sheet crop" hidden aria-label="Gut versus Graph race">
+    <p class="specimen">No. 05 — The race</p>
+    <div class="sheet-head">
+      <img src="assets/icon-venue.webp" alt="" width="56" height="56">
+      <div>
+        <h2>My gut pick vs the taste-data pick</h2>
+        <p class="label">Gut vs Graph, live. An arm with no provider is shown as unavailable, never given a pick.</p>
+      </div>
+    </div>
+    <figure class="fig crop" data-plx="-0.03">
+      <img src="assets/race-ticket-stack.webp" alt="Ticket stack, close-up: fanned perforated tickets on studio-white proof paper" width="1920" height="1280" data-fallback="stackFallback">
+      <figcaption>Ticket stack, close-up — fanned perforated tickets on proof paper. No numbers are baked into the drawing.</figcaption>
+      <div id="stackFallback" class="fig-fallback" role="note">
+        <p><strong>Ticket stack, close-up.</strong> Fanned perforated tickets on studio-white proof paper, dot grid and crop marks. No numbers are baked into the drawing.</p>
+      </div>
+    </figure>
+    <figure class="fig crop reveal" style="--rd:120ms" data-plx="-0.03">
+      <img id="raceImg" src="assets/proof-race.webp" alt="Two parallel race lanes with a finish flag on studio-white proof paper" width="2736" height="912" data-fallback="raceFallback">
+      <figcaption>Figure 4 — two lanes, one finish line. 3 : 1.</figcaption>
+      <div id="raceFallback" class="fig-fallback" role="note">
+        <p><strong>Two lanes, one finish line.</strong> Two parallel race lanes with a finish flag on studio-white proof paper.</p>
+      </div>
+    </figure>
+    <div id="raceTimer" class="race-timer"></div>
+    <div id="raceNote" class="race-note" hidden>
+      <p>Comparison arms require an LLM provider — verdict unaffected.</p>
+      <details id="raceExpandDetails">
+        <summary>Show the comparison arms anyway</summary>
+        <p class="label">The arms below ran without an LLM provider, so their lanes are unavailable — the verdict above does not depend on them.</p>
+      </details>
+    </div>
+    <div id="raceBody">
+      <div id="armsBlock"></div>
+      <div id="raceBlock"></div>
+      <div id="missBlock"></div>
+    </div>
+  </section>
+
+  <!-- Receipt drawer -->
+  <section id="receiptSection" class="sheet crop" hidden aria-label="Receipts">
+    <div class="sheet-head">
+      <img src="assets/icon-contract.webp" alt="" width="56" height="56">
+      <div>
+        <h2>Proof for every number (click to re-check)</h2>
+        <p class="label">Every claim, with the exact call behind it. Replay re-runs that call live.</p>
+      </div>
+    </div>
+    <div id="receiptList" class="set"></div>
+    <div id="replayOut" class="replay-out"></div>
+  </section>
+
+  <!-- Qloo integration depth: final copy from the integration-depth audit, 2026-10-29. -->
+  <section class="sheet crop depth-card reveal" id="depth" aria-label="Qloo integration depth">
+    <p class="specimen">No. 03 — The proof</p>
+    <h2>How deep does OfferSheet's Qloo integration go?</h2>
+    <p><strong>10 of 10 official Qloo tools, wired into the verdict — 8 of them receipted live.</strong></p>
+    <figure class="fig crop reveal" style="--rd:60ms" data-plx="0.03">
+      <img src="assets/depth-bowl-detail.webp" alt="Seating bowl, detail: amphitheater seating rows drawn on studio-white proof paper" width="1920" height="1280" data-fallback="bowlFallback">
+      <figcaption>Seating bowl, detail — amphitheater rows on proof paper. No numbers are baked into the drawing.</figcaption>
+      <div id="bowlFallback" class="fig-fallback" role="note">
+        <p><strong>Seating bowl, detail.</strong> Amphitheater seating rows on studio-white proof paper, dot grid and crop marks. No numbers are baked into the drawing.</p>
+      </div>
+    </figure>
+    <figure class="fig crop reveal" style="--rd:120ms" data-plx="-0.03">
+      <img id="depthImg" src="assets/proof-receipts.webp" alt="Proof slips, checked: six plain receipt slips with check marks on studio-white proof paper" width="2352" height="1008" data-fallback="depthFallback">
+      <figcaption>Figure 2 — proof slips, checked. 7 : 3. No numbers are baked into the drawing.</figcaption>
+      <div id="depthFallback" class="fig-fallback" role="note">
+        <p><strong>Proof slips, checked.</strong> Six plain receipt slips with check marks on studio-white proof paper, dot grid and crop marks. No numbers are baked into the drawing.</p>
+      </div>
+    </figure>
+    <h3>Qloo tools wired into the verdict</h3>
+    <div class="table-wrap"><table class="depth-table">
+      <thead><tr><th>Tool</th><th>What it does</th><th>Live status</th></tr></thead>
+      <tbody id="depthToolsBody"><tr class="row-live"><td>qloo_<wbr>capabilities</td><td>Readiness gate — runs first on every verdict; the "Qloo live" badge turns green only after a live call succeeds, never from config alone</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>find_<wbr>tags</td><td>Tag-first path — the headliner is resolved to Qloo tags before any audience call; unresolved input shows as unmeasured, never guessed</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>describe</td><td>Headliner + opener cards; an ambiguous name returns candidates to pick from — the verdict never guesses</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>recommend</td><td>Opener candidates from fans of the headliner</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>rank</td><td>The opener shortlist ranked for the city audience</td><td><span class="stamp">Live, receipted (second live run)</span></td></tr><tr class="row-live"><td>qloo_<wbr>where_<wbr>popular</td><td>Where the headliner is popular — the city-audience areas behind the verdict</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>audience_<wbr>demographics</td><td>Full age/gender bands for the headliner audience — not a single top band</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-live"><td>qloo_<wbr>entity_<wbr>tags</td><td>Top shared tags between headliner and opener</td><td><span class="stamp">Live, receipted</span></td></tr><tr class="row-wired"><td>qloo_<wbr>trends</td><td>90-day momentum leg</td><td><span class="stamp">Wired; returned empty on live runs so far — shown as no data, never faked</span></td></tr><tr class="row-wired"><td>qloo_<wbr>compare_<wbr>audiences</td><td>Headliner-vs-opener audience overlap</td><td><span class="stamp">Wired; returned empty on live runs so far — shown as no data, never faked</span></td></tr></tbody>
+    </table></div>
+    <div class="proof-note" id="depthEndpoints">
+      <p><strong>REST cross-check layer.</strong> Four endpoints wired — /search, /v2/insights (with explainability), /v2/analysis/compare, /entities — so the REST legs cross-check the MCP legs on the same question.</p>
+      <p>Status, stated plainly: REST restSearch and restEntities receipted live in the 29 Oct 2026 trials; back-to-back runs returned REST 429s, shown as exact failure labels; trends/compare remain wired and empty on live runs so far.</p>
+    </div>
+    <p class="proof-note" id="depthReceiptNote"><strong>Every claim carries a receipt — and every receipt re-runs.</strong> Each verdict row shows its SHA-256 request hash, its response requestId (REST legs; MCP legs carry an argument hash and no upstream requestId, labeled as such), its result count, and its ordered entity IDs. Click any receipt to re-run the exact call: a match stamps "same IDs in the same order" (proven live: a find_tags replay returned the same 10 tags in the same order); a mismatch surfaces as "count matches but order/IDs differ" — never hidden, never counts-only.</p>
+    <p class="proof-note"><strong>The verdict depends on Qloo — it cannot render without it.</strong> If Qloo is unconfigured or any required evidence leg fails, the page shows "Verdict withheld: evidence incomplete" with no numbers at all. No mock data, no demo numbers, no silent fallback — ever. Live runs observed 2026-10-29: Billie Eilish in New York → break-even 2,084 tickets, Qloo pick Olivia Rodrigo; Taylor Swift in New York → break-even 2,084 tickets, Qloo pick Carly Rae Jepsen; both in ~16–18 seconds, both with capacity honestly unknown (Ticketmaster returned no capacity for the room — shown as tickets needed, never as a sellout percentage).</p>
+    <p class="proof-note" id="depthGutLine"><strong>Gut vs Graph — the honest state.</strong> OfferSheet runs three arms on the same question: Gut (LLM alone), Graph (Qloo-grounded — the verdict), and Web (LLM + Wikidata facts, no Qloo), with every miss named in a ledger. The ledger and all three arms are live in code; <strong>3 live trials ran 29 Oct 2026 (Qwen primary, Groq fallback proven live) and are recorded in the public benchmark ledger in this repo</strong> — counted from ledger rows, never asserted in advance.</p>
+    <p class="proof-note"><strong>What this integration does not claim.</strong> No headcount is ever shown (Qloo returns matched areas and entities, not a population number). No sellout prediction is ever shown. Past winners are pattern context only — their technical depth was never independently verified, so nothing here claims to have beaten them.</p>
+  </section>
+
+  <!-- Formula panel -->
+  <section id="formula" class="sheet crop" aria-label="Formula">
+    <p class="specimen">No. 06 — The formula</p>
+    <div class="sheet-head">
+      <img src="assets/icon-chart.webp" alt="" width="56" height="56">
+      <div>
+        <h2>How the number is computed</h2>
+        <p class="label">Recompute it yourself from the live verdict numbers.</p>
+      </div>
+    </div>
+    <figure class="fig crop reveal" style="--rd:120ms" data-plx="0.03">
+      <img id="formulaImg" src="assets/proof-formula.webp" alt="A dimension line, a ticket strip, and a segmented bar drawn on studio-white proof paper" width="1920" height="1280" data-fallback="formulaFallback">
+      <figcaption>Figure 5 — the count, drawn as a dimension. 3 : 2. No numbers are baked into the drawing.</figcaption>
+      <div id="formulaFallback" class="fig-fallback" role="note">
+        <p><strong>The count, drawn as a dimension.</strong> A dimension line, a ticket strip, and a segmented bar on studio-white proof paper. No numbers are baked into the drawing.</p>
+      </div>
+    </figure>
+    <p>Break-even tickets = ceil(guarantee ÷ (ticket price − variable cost per ticket))</p>
+    <p id="workedExample" class="num">Run a verdict to see its worked example here.</p>
+    <p>When capacity is known and break-even tickets exceed it, the verdict is: “Cannot break even in this room at this guarantee.” When capacity is unknown, no sellout percentage is shown at all.</p>
+  </section>
+
+  <!-- Benchmark ledger -->
+  <section class="sheet crop reveal ledger-card" id="ledger" aria-label="Benchmark ledger">
+    <p class="specimen">No. 07 — The ledger</p>
+    <h2>Benchmark ledger</h2>
+    <p class="label">Committed, rerunnable Qloo-vs-Gut-vs-Web trials. Runs appear here only after real runs.</p>
+    <div id="benchBlock">Loading…</div>
+  </section>
+
+  <!-- Safety strip -->
+  <section class="safety reveal band band--inkwash10" aria-label="Safety">
+    <p><strong>No personal data is sent to Qloo.</strong> Aggregate audiences only. If Qloo is not configured, the page fails closed with a visible 503 — never mock data. Qloo affinities are aggregate taste-overlap signals — how much two audiences share — never predictions about any individual, and never a causal claim that a show will sell out.</p>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer band band--deep reveal">
+    <p>What results do NOT establish: Qloo affinities are aggregate taste-overlap signals — how much two audiences share — not individual behavior, and not a causal claim that a show will sell out. No sellout percentage is ever shown when capacity is unknown. Quota guards are this product’s own design settings, not Qloo-stated quotas — no numeric Qloo quota is documented.</p>
+    <p class="label">OfferSheet — one page, one money decision.</p>
+    <p class="colophon">Colophon — Set in Hedvig Letters Serif and Geist. Printed on studio-white proof paper.</p>
+  </footer>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
