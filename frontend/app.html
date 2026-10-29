@@ -181,10 +181,16 @@
   <!-- Verdict hero: lavender panel, huge number, chip rows, facts as
        chips. It renders only on a successful run (hidden otherwise) —
        there is NO pre-run verdict shell, so no stale figure can ever
-       wear a "live" label. The headliner image slot (dynamic, app.js)
-       inserts at the top of this section when a verdict carries one. -->
+       wear a "live" label. The headliner image slot below is a STATIC
+       figure, hidden by default; app.js fills it ONLY when the verdict
+       carries a Qloo-hosted image for the matched headliner, and leaves
+       it hidden otherwise (never a placeholder). -->
   <section id="verdict" class="sheet verdict-card spotlight" hidden aria-label="Verdict" tabindex="-1">
     <p class="eyebrow">No. 02 — The verdict</p>
+    <figure id="headlinerImage" class="headliner-image" hidden>
+      <img id="headlinerImageImg" alt="">
+      <figcaption>Image: Qloo</figcaption>
+    </figure>
     <div class="sheet-head">
       <img src="assets/photo-icon-ticket.webp" alt="" width="56" height="56">
       <div>

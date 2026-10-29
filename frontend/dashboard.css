@@ -208,9 +208,13 @@ form input:focus, .checker-field input:focus { border-color: var(--purple); outl
 .rerank-out { font-size: 15px; }
 .how-made { margin-top: 20px; border-top: 1px solid var(--hair); padding-top: 12px; }
 .how-made summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--ink); min-height: 48px; display: flex; align-items: center; }
-/* Headliner image (dynamic): capped width, rounded, never page-scrolling. */
+/* Headliner image (static slot in app.html, filled by app.js): capped
+   width, rounded, never page-scrolling. Hidden by default via the
+   hidden attribute; a verdict without a Qloo image, or a failed load,
+   leaves it hidden — never a placeholder, never a stretched image. */
 .headliner-image { margin: 0 0 20px; }
-.headliner-image img { display: block; width: 100%; max-width: 420px; height: auto; border-radius: var(--radius-card); }
+.headliner-image[hidden] { display: none !important; }
+.headliner-image img { display: block; width: 100%; max-width: 420px; height: auto; border-radius: var(--radius-card); background: var(--lavender); }
 .headliner-image figcaption { font-size: 14px; color: var(--muted); margin-top: 6px; }
 
 /* Formula: dark diagram panel + live numbers; checker below it. */
@@ -373,6 +377,7 @@ details[open] summary { margin-bottom: 8px; }
   .wrap, .nav-inner, .footer-inner, .app-rule { padding-left: 16px; padding-right: 16px; }
   .verdict-number { font-size: 64px; }
   .diagram-value { font-size: 20px; }
+  .headliner-image img { max-width: 100%; }
 }
 /* Motion: quiet chrome only. */
 .fig img { animation: p3-fade 300ms ease-out; }

@@ -182,9 +182,12 @@ function hideVerdict() {
   // statuses on screen. The jump link and export rail live inside the
   // verdict section and are hidden with it, but removing them here too
   // keeps hideVerdict a complete reset; wireVerdictAids recreates all
-  // three on the next successful render. The headliner figure is likewise
-  // removed (renderHeadlinerImage also removes its predecessor).
-  for (const id of ['howMade', 'verdictJumpLink', 'exportRail', 'headlinerImage']) {
+  // three on the next successful render. The headliner figure is NOT
+  // removed: it is a static slot in app.html, so it is hidden and its
+  // src cleared instead (removing it would delete the static slot).
+  const headlinerFig = document.getElementById('headlinerImage');
+  if (headlinerFig) hideHeadlinerFigure(headlinerFig);
+  for (const id of ['howMade', 'verdictJumpLink', 'exportRail']) {
     const el = document.getElementById(id);
     if (!el) continue;
     if (typeof el.remove === 'function') el.remove();
@@ -1464,12 +1467,12 @@ function renderVerdict(v, race) {
   $('verdictSubject').textContent = `${v.artist} in ${v.city} · guarantee ${money(v.guarantee)}`;
   // SHIP item 10: checklist above the number.
   renderSignChecklist(v);
-  // Artist image (display-only, additive block — no app.html change: the
-  // figure is created here and inserted at the top of the verdict card).
-  // Renders ONLY when the verdict carries a Qloo-sourced image URL on the
-  // matched headliner — https + Qloo host, re-checked here so no other
-  // URL can ever render. No image -> no slot at all (no placeholder
-  // photo). A failed load removes the figure entirely. The image never
+  // Artist image (display-only): app.html carries a static, hidden
+  // figure at the top of the verdict card; this fills it ONLY when the
+  // verdict carries a Qloo-sourced image URL for the matched headliner
+  // — https + Qloo host, re-checked here so no other URL can ever
+  // render. No image -> the slot stays hidden (no placeholder photo).
+  // A failed load hides the slot and clears its src. The image never
   // affects any number.
   renderHeadlinerImage(v);
   // Phase 3 D: the arithmetic line (number + worked example) carries its
@@ -1776,39 +1779,143 @@ function renderNeedsInput(v) {
   });
 }
 
-function renderHeadlinerImage(v) {
-  // Removal tolerates minimal DOM implementations (test shims): a real
-  // browser always has .remove(); a stub without it simply has nothing
-  // attached to remove.
-  const prev = $('headlinerImage');
-  if (prev) {
-    if (typeof prev.remove === 'function') prev.remove();
-    else if (prev.parentNode && typeof prev.parentNode.removeChild === 'function') prev.parentNode.removeChild(prev);
-  }
-  const headliner = v.legs?.describe?.headliner;
-  const url = headliner?.image;
-  if (typeof url !== 'string' || url === '') return;
-  let hostOk = false;
+// Qloo image URL for ONE entity, in every field shape Qloo has been
+// observed or documented to use for an entity image. The host gate is
+// UNCHANGED and deliberate: https + Qloo's own host only, so the
+// "Image: Qloo" caption is always truthful. A URL on any other host is
+// rejected here (never rendered, never captioned as Qloo) — widening the
+// gate needs live evidence of a Qloo image host, not a guess.
+function qlooImageUrlFromEntity(ent) {
+  if (!ent || typeof ent !== 'object') return null;
+  const raw = (typeof ent.image === 'string' && ent.image !== '' && ent.image)
+    || (typeof ent.imageUrl === 'string' && ent.imageUrl !== '' && ent.imageUrl)
+    || (typeof ent.image_url === 'string' && ent.image_url !== '' && ent.image_url)
+    || (typeof ent.properties?.image?.url === 'string' && ent.properties.image.url !== '' && ent.properties.image.url)
+    || (typeof ent.properties?.image === 'string' && ent.properties.image !== '' && ent.properties.image)
+    || null;
+  if (!raw) return null;
   try {
-    const parsed = new URL(url);
-    hostOk = parsed.protocol === 'https:' && (parsed.hostname === 'qloo.com' || parsed.hostname.endsWith('.qloo.com'));
-  } catch { hostOk = false; }
-  if (!hostOk) return;
-  const fig = document.createElement('figure');
-  fig.id = 'headlinerImage';
-  fig.className = 'headliner-image';
-  const img = document.createElement('img');
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'https:') return null;
+    if (!(parsed.hostname === 'qloo.com' || parsed.hostname.endsWith('.qloo.com'))) return null;
+    return raw;
+  } catch { return null; }
+}
+
+// The matched headliner's Qloo image, wherever the verdict object carries
+// it. Order: (1) the describe headliner itself, in any field shape;
+// (2) a REST-hydrated entity (restEntities / restSearch / restInsights)
+// whose id IS the matched headliner's id; (3) raw describe results under
+// the same id rule. A REST/other-entity image is NEVER used unless its id
+// matches the headliner, and a name-only match is never enough — that is
+// what stops another act's photo rendering as this artist. No image in
+// any of these places -> null -> the slot stays hidden (no placeholder,
+// no generic photo captioned as the artist).
+function qlooHeadlinerImageUrl(v) {
+  const headliner = v?.legs?.describe?.headliner;
+  if (!headliner || typeof headliner !== 'object') return null;
+  const direct = qlooImageUrlFromEntity(headliner);
+  if (direct) return direct;
+  if (typeof headliner.id !== 'string' || headliner.id === '') return null;
+  for (const leg of ['restEntities', 'restSearch', 'restInsights']) {
+    const entities = v.legs?.[leg]?.entities;
+    if (!Array.isArray(entities)) continue;
+    for (const ent of entities) {
+      if (ent && ent.id === headliner.id) {
+        const url = qlooImageUrlFromEntity(ent);
+        if (url) return url;
+      }
+    }
+  }
+  const results = v.legs?.describe?.results;
+  if (Array.isArray(results)) {
+    for (const ent of results) {
+      if (ent && ent.id === headliner.id) {
+        const url = qlooImageUrlFromEntity(ent);
+        if (url) return url;
+      }
+    }
+  }
+  return null;
+}
+
+function figureImage(fig) {
+  if (fig && typeof fig.querySelector === 'function') {
+    const el = fig.querySelector('img');
+    if (el) return el;
+  }
+  const byId = $('headlinerImageImg');
+  if (byId) return byId;
+  if (fig && Array.isArray(fig.children)) {
+    for (const c of fig.children) {
+      if (c && (c.tagName === 'IMG' || c.tagName === 'img')) return c;
+    }
+  }
+  return null;
+}
+
+function figureCaption(fig) {
+  if (fig && typeof fig.querySelector === 'function') {
+    const el = fig.querySelector('figcaption');
+    if (el) return el;
+  }
+  if (fig && Array.isArray(fig.children)) {
+    for (const c of fig.children) {
+      if (c && (c.tagName === 'FIGCAPTION' || c.tagName === 'figcaption')) return c;
+    }
+  }
+  return null;
+}
+
+// Hide the slot and clear its src, so no stale image lingers after a
+// later no-image verdict or a failed load. The node itself is KEPT:
+// the slot is static markup in app.html, and removing it would delete
+// the slot from the page. A hidden slot renders nothing.
+function hideHeadlinerFigure(fig) {
+  if (!fig) return;
+  const img = figureImage(fig);
+  if (img) {
+    if (typeof img.removeAttribute === 'function') img.removeAttribute('src');
+    else img.src = '';
+    img.alt = '';
+  }
+  fig.hidden = true;
+}
+
+function renderHeadlinerImage(v) {
+  const url = qlooHeadlinerImageUrl(v);
+  const headliner = v?.legs?.describe?.headliner;
+  let fig = $('headlinerImage');
+  if (!url) {
+    if (fig) hideHeadlinerFigure(fig);
+    return;
+  }
+  // No static slot (older markup / test shim): create the figure at the
+  // top of the verdict card, as before. With the static slot present
+  // this branch never runs — the slot is refilled in place.
+  if (!fig) {
+    fig = document.createElement('figure');
+    fig.id = 'headlinerImage';
+    fig.className = 'headliner-image';
+    const img0 = document.createElement('img');
+    img0.id = 'headlinerImageImg';
+    const cap0 = document.createElement('figcaption');
+    cap0.textContent = 'Image: Qloo';
+    fig.appendChild(img0);
+    fig.appendChild(cap0);
+    const verdictEl = $('verdict');
+    if (!verdictEl) return;
+    if (typeof verdictEl.insertBefore === 'function') verdictEl.insertBefore(fig, verdictEl.firstChild || null);
+    else if (typeof verdictEl.appendChild === 'function') verdictEl.appendChild(fig);
+  }
+  const img = figureImage(fig);
+  if (!img) return;
   img.src = url;
-  img.alt = headliner?.name || v.artist || 'Headliner';
-  img.onerror = () => { if (typeof fig.remove === 'function') fig.remove(); };
-  const cap = document.createElement('figcaption');
-  cap.textContent = 'Image: Qloo';
-  fig.appendChild(img);
-  fig.appendChild(cap);
-  const verdictEl = $('verdict');
-  if (!verdictEl) return;
-  if (typeof verdictEl.insertBefore === 'function') verdictEl.insertBefore(fig, verdictEl.firstChild || null);
-  else if (typeof verdictEl.appendChild === 'function') verdictEl.appendChild(fig);
+  img.alt = (headliner && headliner.name) || v.artist || 'Headliner';
+  img.onerror = () => { hideHeadlinerFigure(fig); };
+  const cap = figureCaption(fig);
+  if (cap) cap.textContent = 'Image: Qloo';
+  fig.hidden = false;
 }
 
 function appendLegProgress(leg) {

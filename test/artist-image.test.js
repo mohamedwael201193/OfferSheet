@@ -63,14 +63,18 @@ test('artist image: invalid image values are rejected, never rendered', () => {
   assert.equal(qlooImageUrl({ properties: { image: { url: 'https://images.qloo.com/i/x.jpg' } } }), 'https://images.qloo.com/i/x.jpg');
 });
 
-test('artist image: frontend renders dynamically with a source tag, never a static photo', () => {
+test('artist image: frontend renders with a source tag, never a static photo', () => {
   const appJs = readFileSync(fileURLToPath(new URL('../frontend/app.js', import.meta.url)), 'utf8');
   const appHtml = readFileSync(fileURLToPath(new URL('../frontend/app.html', import.meta.url)), 'utf8');
   const css = readFileSync(fileURLToPath(new URL('../frontend/styles.css', import.meta.url)), 'utf8');
-  assert.ok(appJs.includes('function renderHeadlinerImage'), 'dynamic renderer must exist');
+  // d-verdict-image: the slot is now STATIC markup in app.html (hidden
+  // by default, filled by app.js) instead of dynamic-only — the old
+  // "no static slot" assertion is superseded; the slot must exist and
+  // start hidden, and a failed load hides it (node kept, src cleared).
+  assert.ok(appJs.includes('function renderHeadlinerImage'), 'renderer must exist');
   assert.ok(appJs.includes("cap.textContent = 'Image: Qloo'"), 'every rendered image carries a visible source tag');
-  assert.ok(appJs.includes("img.onerror = () => { if (typeof fig.remove === 'function') fig.remove(); }"), 'a failed load removes the slot entirely');
+  assert.ok(appJs.includes('img.onerror = () => { hideHeadlinerFigure(fig); }'), 'a failed load hides the slot and clears its src');
   assert.ok(appJs.includes("parsed.hostname.endsWith('.qloo.com')"), 'client re-checks the Qloo host before rendering');
-  assert.ok(!appHtml.includes('headlinerImage'), 'no static image slot in app.html — dynamic only');
+  assert.ok(appHtml.includes('<figure id="headlinerImage" class="headliner-image" hidden>'), 'static image slot in app.html, hidden by default');
   assert.ok(css.includes('.headliner-image'), 'image slot must be styled');
 });

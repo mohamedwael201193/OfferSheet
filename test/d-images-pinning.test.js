@@ -43,7 +43,13 @@ test('d-images: no old illustration asset is referenced by landing or dashboard'
 test('d-images: every referenced asset file exists on disk', () => {
   for (const [name, html] of [['landing', landing], ['app', app]]) {
     for (const img of imgsOf(html)) {
-      const src = img.match(/src="([^"]+)"/)[1];
+      // D-VERDICT-IMAGE merge: the verdict headliner slot is a src-less
+      // <img id="headlinerImageImg"> filled at runtime by app.js (never a
+      // placeholder asset) — it references no file, so it is skipped here
+      // and pinned separately below as the ONLY src-less img allowed.
+      const m = img.match(/src="([^"]+)"/);
+      if (!m) continue;
+      const src = m[1];
       assert.ok(!src.startsWith('http'), `${name}: img src must be a local asset, got ${src}`);
       assert.ok(existsSync(path.join(FRONTEND, src)), `${name}: missing asset file ${src}`);
     }
@@ -53,7 +59,10 @@ test('d-images: every referenced asset file exists on disk', () => {
 test('d-images: every photographic img is a .webp (deploy uploads assets/*.webp)', () => {
   for (const [name, html] of [['landing', landing], ['app', app]]) {
     for (const img of imgsOf(html)) {
-      const src = img.match(/src="([^"]+)"/)[1];
+      // D-VERDICT-IMAGE merge: src-less runtime-filled slot skipped (see above).
+      const m = img.match(/src="([^"]+)"/);
+      if (!m) continue;
+      const src = m[1];
       assert.ok(src.endsWith('.webp'), `${name}: ${src} must be .webp`);
     }
   }
@@ -73,6 +82,13 @@ test('d-images: no img alt or figcaption names a real artist', () => {
       for (const bad of FORBIDDEN) assert.ok(!cap.includes(bad), `${name}: caption names ${bad}: ${cap}`);
     }
   }
+});
+
+test('d-images: the only src-less img is the runtime-filled verdict headliner slot', () => {
+  const srcless = imgsOf(app).filter((img) => !/src="/.test(img));
+  assert.equal(srcless.length, 1, `exactly one src-less img allowed in app, got ${srcless.length}`);
+  assert.ok(srcless[0].includes('id="headlinerImageImg"'), 'the src-less img must be the headliner slot');
+  assert.ok(app.includes('<figure id="headlinerImage" class="headliner-image" hidden>'), 'headliner figure must exist, hidden by default');
 });
 
 test('d-images: no caption or alt describes a drawing, proof paper, or baked-in numbers', () => {
