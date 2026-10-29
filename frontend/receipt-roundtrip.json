@@ -1,0 +1,43 @@
+{
+  "note": "Verbatim live receipt round-trip record, 29 Oct 2026: one receipt from a live verdict through the deployed backend, replayed verbatim through POST /api/replay. The replayed ID list equals the original ID list exactly. RequestId is null because Qloo returned no request ID for this call \u2014 shown as null here, never invented.",
+  "verdict": {
+    "artist": "Billie Eilish",
+    "city": "New York",
+    "guarantee": 250000,
+    "ticketPrice": 120,
+    "breakEvenTickets": 2084,
+    "status": "verdict",
+    "receiptCount": 9
+  },
+  "receipt": {
+    "claim": "headliner description",
+    "operation": "qloo_describe",
+    "hashKind": "args",
+    "requestHash": "4215cccc7c328070725e3d1f3f8e498c16aa7420ec81bc1ef6c6c673491605cf",
+    "requestId": null,
+    "resultCount": 1,
+    "ids": [
+      "D7BCE4CD-5135-4608-8A7D-78E08FFD52F3"
+    ],
+    "replay": {
+      "kind": "mcp",
+      "tool": "qloo_describe",
+      "args": {
+        "entity": "Billie Eilish",
+        "type": "artist"
+      }
+    }
+  },
+  "replay": {
+    "kind": "mcp",
+    "tool": "qloo_describe",
+    "ids": [
+      "D7BCE4CD-5135-4608-8A7D-78E08FFD52F3"
+    ],
+    "entityIds": [
+      "D7BCE4CD-5135-4608-8A7D-78E08FFD52F3"
+    ],
+    "resultCount": 1
+  },
+  "match": true
+}

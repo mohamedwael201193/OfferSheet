@@ -27,7 +27,7 @@
   line-height: 20px;
   font-weight: 500;
   border: 1px solid rgba(3, 14, 26, 0.32);
-  border-radius: 16px;
+  border-radius: 3px;
   padding: 8px 16px;
   margin: 0 0 16px;
   max-width: 64ch;
@@ -35,7 +35,7 @@
 .beat {
   background: #f1f7f8;
   border: 1px solid rgba(3, 14, 26, 0.12);
-  border-radius: 16px;
+  border-radius: 3px;
   padding: 24px 16px;
   margin: 0 0 16px;
   max-width: 72ch;
@@ -59,7 +59,7 @@
 }
 .same-method-strip {
   border: 1px solid rgba(3, 14, 26, 0.12);
-  border-radius: 16px;
+  border-radius: 3px;
   padding: 24px 16px;
   margin: 0 0 16px;
   max-width: 72ch;
@@ -116,7 +116,7 @@
   color: #030e1a;
   background: #e97219;
   border: 2px solid #030e1a;
-  border-radius: 16px;
+  border-radius: 3px;
   cursor: not-allowed;
 }
 .apk-button:disabled {
@@ -133,7 +133,7 @@
   line-height: 20px;
   font-weight: 500;
   border: 1px solid rgba(3, 14, 26, 0.32);
-  border-radius: 16px;
+  border-radius: 3px;
   padding: 8px 16px;
   margin: 0 0 16px;
   max-width: 390px;
@@ -149,14 +149,14 @@
   max-width: 100%;
   background: #030e1a;
   border: 2px solid #030e1a;
-  border-radius: 40px;
+  border-radius: 3px;
   padding: 8px;
   box-sizing: border-box;
 }
 .mockup-screen-area {
   background: #f1f7f8;
   color: #030e1a;
-  border-radius: 32px;
+  border-radius: 3px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -193,7 +193,7 @@
   line-height: 20px;
   font-weight: 500;
   border: 1px solid rgba(3, 14, 26, 0.32);
-  border-radius: 16px;
+  border-radius: 3px;
   padding: 8px 16px;
   margin: 0;
 }
@@ -215,13 +215,13 @@
 .mockup-card {
   background: #f1f7f8;
   border: 1px solid rgba(3, 14, 26, 0.12);
-  border-radius: 16px;
+  border-radius: 3px;
   padding: 16px;
 }
 .mockup-verdict-card {
   background: #030e1a;
   color: #f1f7f8;
-  border-radius: 16px;
+  border-radius: 3px;
   padding: 24px 16px;
 }
 .mockup-verdict-card .verdict-guide {
@@ -256,7 +256,7 @@
   color: #030e1a;
   background: #f1f7f8;
   border: 1px solid rgba(3, 14, 26, 0.32);
-  border-radius: 16px;
+  border-radius: 3px;
   cursor: pointer;
 }
 .mockup-btn--primary {
@@ -288,7 +288,7 @@ a.mockup-btn {
   display: block;
   width: 120px;
   height: 4px;
-  border-radius: 4px;
+  border-radius: 2px;
   background: #030e1a;
   opacity: 0.32;
 }
@@ -303,7 +303,7 @@ a.mockup-btn {
 @media (max-width: 480px) {
   .mockup-frame {
     width: 100%;
-    border-radius: 32px;
+    border-radius: 3px;
   }
   .story-section,
   .get-app-section {

@@ -390,12 +390,19 @@ export async function runVerdict(input, deps) {
     legs.compare = { status: 'skipped', reason: 'no opener to compare against' };
   }
   if (urns.length > 0) {
-    evidenceTasks.push(restTask('restInsights', '/v2/insights', { 'filter.type': 'urn:entity:artist', 'signal.interests.tags': urns.join(','), 'feature.explainability': 'true' }, 'REST insights by tags with explainability', () => ({})));
+    // G4 (superiority): surface the already-fetched insights payload — no
+    // new call. The entities list is the fetched evidence; the leg previously
+    // discarded it (build returned {}), so a receipted leg carried no data.
+    evidenceTasks.push(restTask('restInsights', '/v2/insights', { 'filter.type': 'urn:entity:artist', 'signal.interests.tags': urns.join(','), 'feature.explainability': 'true' }, 'REST insights by tags with explainability', (out) => ({ entities: (out.entities || []).slice(0, 20) })));
   } else {
     legs.restInsights = { status: 'skipped', reason: 'no tag URNs resolved' };
   }
   if (headlinerId && openerId) {
-    evidenceTasks.push(restTask('restCompare', '/v2/analysis/compare', { 'a.signal.interests.entities': headlinerId, 'b.signal.interests.entities': openerId }, 'REST headliner-vs-opener audience comparison', () => ({})));
+    // G4 (superiority): surface the already-fetched comparison object —
+    // no new call. The body is the fetched evidence; the leg previously
+    // discarded it (build returned {}). Header-only key travel is
+    // unaffected: this is the response body, never the request.
+    evidenceTasks.push(restTask('restCompare', '/v2/analysis/compare', { 'a.signal.interests.entities': headlinerId, 'b.signal.interests.entities': openerId }, 'REST headliner-vs-opener audience comparison', (out) => ({ comparison: out.body ?? null })));
   } else {
     legs.restCompare = { status: 'skipped', reason: 'no headliner + opener entity IDs to compare' };
   }

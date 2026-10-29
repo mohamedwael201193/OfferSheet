@@ -1,0 +1,880 @@
+{
+  "note": "Verbatim stdio transcript: OfferSheet MCP server spawned from a FRESH CLONE of remote main (not the working tree), keyless. Count is read from the tools/list response, not from any spec table.",
+  "serverPath": "/tmp/offersheet-gpush/backend/mcp-server.js",
+  "requests": [
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "method": "initialize",
+      "params": {
+        "protocolVersion": "2024-11-05",
+        "capabilities": {},
+        "clientInfo": {
+          "name": "fresh-clone-probe",
+          "version": "0"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "notifications/initialized"
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "method": "tools/list"
+    }
+  ],
+  "responses": [
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "protocolVersion": "2024-11-05",
+        "capabilities": {
+          "tools": {}
+        },
+        "serverInfo": {
+          "name": "offersheet",
+          "version": "0.1.0"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "result": {
+        "tools": [
+          {
+            "name": "offersheet_verdict_run",
+            "description": "Runs the full OfferSheet verdict (Qloo evidence + Ticketmaster room + money + arms). Does NOT invent numbers: a withheld, price-unknown, or needs-input verdict is a success response with that status, never a number. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "artist": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "guarantee": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "ticketPrice": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "variableCost": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "capacity": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "venue": {
+                  "type": "string"
+                },
+                "entityHint": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "artist",
+                "city",
+                "guarantee"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_verdict_race",
+            "description": "Same verdict as offersheet_verdict_run, plus arm timings (race: gutMs, webMs, totalMs). Does NOT change the verdict; it proves arm timing, which the plain verdict does not report. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "artist": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "guarantee": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "ticketPrice": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "variableCost": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "capacity": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "venue": {
+                  "type": "string"
+                },
+                "entityHint": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "artist",
+                "city",
+                "guarantee"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "qloo_capabilities",
+            "description": "Guarded proxy of Qloo's own qloo_capabilities tool (the pipeline readiness probe). Returns the upstream envelope plus an OfferSheet receipt. Does NOT invent a capability list when the harness is down — that errors. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "operation_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "qloo_find_tags",
+            "description": "Guarded proxy of Qloo's own qloo_find_tags tool. Tag URNs returned here feed the REST insights leg. Does NOT resolve an artist by itself. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": "number",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "qloo_describe",
+            "description": "Guarded proxy of Qloo's own qloo_describe tool. An ambiguous name returns needs_input with candidates — it is never resolved by guessing. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "entity": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "entity"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "qloo_recommend",
+            "description": "Guarded proxy of Qloo's own qloo_recommend tool (opener candidates for a headliner signal). Does NOT rank the candidates — that is qloo_rank, or the sequenced offersheet_opener_shortlist. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "target_type": {
+                  "type": "string"
+                },
+                "signals": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "limit": {
+                  "type": "number",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "target_type",
+                "signals"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "qloo_rank",
+            "description": "Guarded proxy of Qloo's own qloo_rank tool. It ranks options a caller supplies; it does NOT generate candidates. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "option_type": {
+                  "type": "string"
+                },
+                "signals": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "signal_location": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "options",
+                "option_type",
+                "signals"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "qloo_where_popular",
+            "description": "Guarded proxy of Qloo's own qloo_where_popular tool. Returns matched areas/entities only — Qloo returns no headcount, and this tool does NOT invent one. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "entity": {
+                  "type": "string"
+                },
+                "within": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": "number",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "entity"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "qloo_audience_demographics",
+            "description": "Guarded proxy of Qloo's own qloo_audience_demographics tool. Bands carry no entity IDs, so their receipts honestly carry no ID list. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "entity": {
+                  "type": "string"
+                },
+                "entity_type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "entity"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "qloo_entity_tags",
+            "description": "Guarded proxy of Qloo's own qloo_entity_tags tool (shared tags for a set of entities). One of the two accepted overlap evidences, alongside qloo_compare_audiences. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "entities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "entity_type": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": "number",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "entities"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "qloo_trends",
+            "description": "Guarded proxy of Qloo's own qloo_trends tool (momentum over a date window). A failure is a labeled omission in a verdict, never a verdict blocker. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "entities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "entity_type": {
+                  "type": "string"
+                },
+                "start_date": {
+                  "type": "string"
+                },
+                "end_date": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "entities"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "qloo_compare_audiences",
+            "description": "Guarded proxy of Qloo's own qloo_compare_audiences tool (audience-overlap object for two groups). Distinct from qloo_entity_tags (shared-tag list) and from offersheet_rest_compare (REST transport). Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "group_a": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "group_b": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "target_type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "group_a",
+                "group_b",
+                "target_type"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_rest_search",
+            "description": "REST name resolution via GET /search (key in the X-Api-Key header only, never in the URL). Accepts entities- or results-shaped bodies. Does NOT spend an MCP call. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                },
+                "take": {
+                  "type": "number",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_rest_insights_by_tags",
+            "description": "REST insights by tag URNs via GET /v2/insights with explainability on. Runs only when tag URNs are supplied; otherwise the caller reports it skipped. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "tagUrns": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "filterType": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "tagUrns"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_rest_compare",
+            "description": "REST headliner-vs-opener comparison via GET /v2/analysis/compare. An object body with non-error keys counts as a payload. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "aIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "bIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "aIds",
+                "bIds"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_rest_entities",
+            "description": "REST entity hydration via GET /entities. At most 15 IDs are sent per call (enforced, not advisory) — extra IDs are not sent. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "ids"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_receipt_replay",
+            "description": "Re-runs a receipted call live (MCP allowlist or REST allowlist) and compares fresh ordered entity IDs against originalIds (match / mismatch / not_comparable). The Qloo key gate precedes validation: a keyless bogus replay returns NOT_CONFIGURED before any other check. Demographics/overlap receipts carry no IDs, so they honestly report not_comparable. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "mcp",
+                    "rest"
+                  ]
+                },
+                "tool": {
+                  "type": "string"
+                },
+                "args": {
+                  "type": "object"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "params": {
+                  "type": "object"
+                },
+                "originalIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_receipt_verify_hash",
+            "description": "Recomputes a receipt's SHA-256 offline (MCP: tool + args; REST: method + url) and reports valid true/false plus the recomputed hash. Does NOT make a live call and does NOT prove the upstream data — only that the hash matches the claimed request. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "operation": {
+                  "type": "string"
+                },
+                "requestHash": {
+                  "type": "string"
+                },
+                "tool": {
+                  "type": "string"
+                },
+                "args": {
+                  "type": "object"
+                },
+                "method": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "operation",
+                "requestHash"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_receipts_list",
+            "description": "Lists receipts from the session store (this process only; restart clears it) or reads the repo manifest (read-only; currently empty, returned verbatim with its note). The id / requestHash / operation parameters ARE the get operation — there is no separate get tool. This server never writes either source. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "session",
+                    "manifest"
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "requestHash": {
+                  "type": "string"
+                },
+                "operation": {
+                  "type": "string"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_trials_list",
+            "description": "Lists recorded benchmark trials from bench/results.json, labeled recorded, not live on every response. The index parameter IS the get operation. A missing file returns the honest no-runs note, never fabricated runs. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_trial_pack_verify",
+            "description": "Offline verification of frontend/trial-pack.json against bench/results.json: per-trial SHA-256 over the canonicalised core, packSha256 over the joined hashes, and every breakEvenTickets re-derived by ceiling division. Reports exactly which check failed. No Qloo call, no quota. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "packPath": {
+                  "type": "string"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_arm_gut",
+            "description": "The Gut comparison arm: LLM alone, no external data. When no LLM provider is configured it returns status unavailable with no pick — never a rendered guess. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "question": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "question"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_arm_web",
+            "description": "The Web comparison arm: LLM plus Wikidata facts only. When webFacts is absent and artist is given, facts are fetched via the Wikidata path first; empty facts still produce an honest run labeled with no Wikidata facts available, never invented facts. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "question": {
+                  "type": "string"
+                },
+                "webFacts": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "artist": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "question"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_miss_trial_build",
+            "description": "Builds a miss-ledger trial from picks, purely offline. Returns null (no trial) unless a graph pick AND at least one comparison pick are present; identical picks yield a trial with empty misses. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "question": {
+                  "type": "string"
+                },
+                "graphPick": {
+                  "type": "string"
+                },
+                "gutPick": {
+                  "type": "string"
+                },
+                "webPick": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "question",
+                "graphPick"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_venue_search",
+            "description": "Raw Ticketmaster venue lookup for a named room. A null result means the room did not resolve — never a guessed venue. This answers the lookup alone, without spending an events call. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "keyword": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "keyword"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_room_grounding",
+            "description": "The composed Ticketmaster room leg: resolve a named room first, then scope the event lookup to its venue ID. Returns events found, venue name, capacity (value or unknown with its cause), price (value + source), and the grounding label — a resolved room's capacity is never borrowed from another room's event, and a first-event price/capacity is never silently labeled as the offer room's. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "artist": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "venue": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "artist",
+                "city"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_deal_breakeven",
+            "description": "Pure break-even arithmetic: tickets = ceil(guarantee / (ticketPrice - variableCost)); guarantee 0 gives 0 tickets with note no guarantee; net <= 0 is an error, never division by zero; tickets over a known capacity give Cannot break even in this room at this guarantee. A missing ticket price is an error, never an invented number. variableCostProvided keeps a blank cost distinct from zero cost. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "guarantee": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "ticketPrice": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "variableCost": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "capacity": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "variableCostProvided": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "guarantee",
+                "ticketPrice"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_city_geocode",
+            "description": "Keyless Nominatim city lookup (display name + lat/lon, or unavailable). Scope label on every response: display-only — shown for confirmation, never fed into Qloo filters. A failure never yields a guessed coordinate. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_artist_facts",
+            "description": "Wikidata name-to-entity search only (id / label / description matches). Scope label on every response: input to the Web arm only, never a direct verdict input. No claim is ever derived from Wikidata alone. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": "number",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_health",
+            "description": "Booleans only — qlooConfigured, ticketmasterConfigured, llmConfigured — plus status ok and version. No keys, no counts, no guard internals. Works with no keys configured; it is the tool that tells a client whether the others can work. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_limits_status",
+            "description": "The server process's single Guards snapshot: monthlyBudget, monthlyCount, perVisitorDailyCap, perRunCallCap. These are OfferSheet's own adopted tripwires, NOT Qloo-stated quotas. Restart clears guard counters and the session receipt store. There is NO per-visitor usage lookup — Guards has no read method for it — so none is invented here. Spends no Qloo calls.",
+            "inputSchema": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_opener_shortlist",
+            "description": "The composed opener chain: resolve the headliner, recommend opener candidates, then rank those candidates for the city audience — rank consumes recommend's output, so the steps stay sequential, never parallelised. Plus Gap-3 ID threading: an ID-less candidate gets one describe call before downstream use; a failed or ambiguous resolution keeps the name signal, never a guessed ID. Distinct from the plain verdict (no guarantee, no money, no full evidence legs, no venue/arms) and from calling recommend + rank by hand (the sequencing + ID threading is the logic). When recommend is empty, rank is honestly skipped, never an empty ranking presented as a pick. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "artist": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "entityHint": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "artist",
+                "city"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "name": "offersheet_opener_rerank",
+            "description": "The HTTP POST /api/verdict/rerank endpoint as a tool, reusing its logic 1:1 (buildRerankArgs + one qloo_rank call + formatRerankResult, same receipt claim). Re-runs ONLY the ranking step with the same candidate set minus the excluded pick; the original verdict is never touched. An ok-but-empty rank envelope returns status 'empty' with the exact label and no pick — never an invented pick. excludedPick accepts a pick name string or an {id, name} object, as buildRerankArgs does. Spends Qloo quota (guarded).",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "artist": {
+                  "type": "string"
+                },
+                "city": {
+                  "type": "string"
+                },
+                "candidates": {
+                  "type": "array"
+                },
+                "ranked": {
+                  "type": "array"
+                },
+                "excludedPick": {},
+                "headlinerId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "artist",
+                "city",
+                "excludedPick"
+              ],
+              "additionalProperties": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "toolCount": 33,
+  "toolNames": [
+    "offersheet_verdict_run",
+    "offersheet_verdict_race",
+    "qloo_capabilities",
+    "qloo_find_tags",
+    "qloo_describe",
+    "qloo_recommend",
+    "qloo_rank",
+    "qloo_where_popular",
+    "qloo_audience_demographics",
+    "qloo_entity_tags",
+    "qloo_trends",
+    "qloo_compare_audiences",
+    "offersheet_rest_search",
+    "offersheet_rest_insights_by_tags",
+    "offersheet_rest_compare",
+    "offersheet_rest_entities",
+    "offersheet_receipt_replay",
+    "offersheet_receipt_verify_hash",
+    "offersheet_receipts_list",
+    "offersheet_trials_list",
+    "offersheet_trial_pack_verify",
+    "offersheet_arm_gut",
+    "offersheet_arm_web",
+    "offersheet_miss_trial_build",
+    "offersheet_venue_search",
+    "offersheet_room_grounding",
+    "offersheet_deal_breakeven",
+    "offersheet_city_geocode",
+    "offersheet_artist_facts",
+    "offersheet_health",
+    "offersheet_limits_status",
+    "offersheet_opener_shortlist",
+    "offersheet_opener_rerank"
+  ],
+  "offersheetTools": 23,
+  "qlooTools": 10
+}

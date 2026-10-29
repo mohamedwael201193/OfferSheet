@@ -25,6 +25,7 @@ import { runGutArm, runWebArm, llmConfigured } from './src/arms.js';
 import { buildMissTrial } from './src/arms.js';
 import { breakEven } from './src/breakeven.js';
 import { runVerdict } from './src/pipeline.js';
+import { buildRerankArgs, formatRerankResult } from './src/rerank.js';
 
 export const PROTOCOL_VERSION = '2024-11-05';
 export const SERVER_NAME = 'offersheet';
@@ -648,6 +649,51 @@ export function createMcpApp(deps = {}) {
         quotaSpent: true,
       };
     },
+    async offersheet_opener_rerank(a) {
+      // G17 (superiority): the HTTP POST /api/verdict/rerank endpoint, as
+      // an MCP tool — 1:1 reuse, no duplicated rank logic. The same
+      // buildRerankArgs (same candidate set minus the excluded pick, same
+      // throws for absent-excluded / nothing-remaining, mapped to
+      // INVALID_INPUT by the tools/call dispatcher exactly as the HTTP
+      // endpoint maps them) feeds one qloo_rank call, and the same
+      // formatRerankResult shapes the result. The receipt claim matches
+      // the HTTP endpoint's. One honest transport difference: the HTTP
+      // endpoint maps a non-ok result to 502 RERANK_EMPTY, while this tool
+      // returns the same result object with status 'empty'/'error' and no
+      // pick — MCP tools return success responses carrying their status,
+      // and the empty label is identical. excludedPick accepts a pick name
+      // string or an {id, name} object, as buildRerankArgs does; the
+      // validator has no union type, so the def leaves its type open and
+      // buildRerankArgs is the validator for this argument.
+      if (!cfg.qlooKeyConfigured) throw notConfigured();
+      guards.resetRun();
+      let built;
+      try {
+        built = buildRerankArgs({
+          artist: a.artist,
+          city: a.city,
+          candidates: a.candidates,
+          ranked: a.ranked,
+          excludedPick: a.excludedPick,
+          headlinerId: a.headlinerId,
+        });
+      } catch (e) {
+        // Same mapping as the HTTP endpoint: an unusable exclusion set is
+        // an input error, never an upstream failure.
+        throw invalidInput(e.message);
+      }
+      const { remaining: _remaining, ...rankArgs } = built;
+      const call = async (tool, args) => {
+        guards.checkCall();
+        return mcpCall(tool, args);
+      };
+      const rankEnv = await call('qloo_rank', rankArgs);
+      const rankResults = Array.isArray(rankEnv?.results) ? rankEnv.results : [];
+      const receipt = (rankEnv?.status === 'ok' && rankResults.length > 0)
+        ? recordMcp('opener shortlist re-ranked without the top pick', 'qloo_rank', rankArgs, rankEnv)
+        : null;
+      return { ...formatRerankResult(rankEnv, { excludedPick: a.excludedPick, receipt }), quotaSpent: true };
+    },
   };
 
   function compareIds(freshIds, originalIds) {
@@ -711,6 +757,7 @@ export function buildToolDefs() {
     toolDef('offersheet_health', `Booleans only — qlooConfigured, ticketmasterConfigured, llmConfigured — plus status ok and version. No keys, no counts, no guard internals. Works with no keys configured; it is the tool that tells a client whether the others can work. ${NQ}`, {}, 'offersheet_health'),
     toolDef('offersheet_limits_status', `The server process's single Guards snapshot: monthlyBudget, monthlyCount, perVisitorDailyCap, perRunCallCap. These are OfferSheet's own adopted tripwires, NOT Qloo-stated quotas. Restart clears guard counters and the session receipt store. There is NO per-visitor usage lookup — Guards has no read method for it — so none is invented here. ${NQ}`, {}, 'offersheet_limits_status'),
     toolDef('offersheet_opener_shortlist', `The composed opener chain: resolve the headliner, recommend opener candidates, then rank those candidates for the city audience — rank consumes recommend's output, so the steps stay sequential, never parallelised. Plus Gap-3 ID threading: an ID-less candidate gets one describe call before downstream use; a failed or ambiguous resolution keeps the name signal, never a guessed ID. Distinct from the plain verdict (no guarantee, no money, no full evidence legs, no venue/arms) and from calling recommend + rank by hand (the sequencing + ID threading is the logic). When recommend is empty, rank is honestly skipped, never an empty ranking presented as a pick. ${Q}`, { artist: { type: 'string', required: true }, city: { type: 'string', required: true }, entityHint: { type: 'string' } }, 'offersheet_opener_shortlist'),
+    toolDef('offersheet_opener_rerank', `The HTTP POST /api/verdict/rerank endpoint as a tool, reusing its logic 1:1 (buildRerankArgs + one qloo_rank call + formatRerankResult, same receipt claim). Re-runs ONLY the ranking step with the same candidate set minus the excluded pick; the original verdict is never touched. An ok-but-empty rank envelope returns status 'empty' with the exact label and no pick — never an invented pick. excludedPick accepts a pick name string or an {id, name} object, as buildRerankArgs does. ${Q}`, { artist: { type: 'string', required: true }, city: { type: 'string', required: true }, candidates: { type: 'array' }, ranked: { type: 'array' }, excludedPick: { required: true }, headlinerId: { type: 'string' } }, 'offersheet_opener_rerank'),
   ];
 }
 

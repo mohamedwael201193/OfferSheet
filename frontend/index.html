@@ -40,6 +40,7 @@
       <p class="specimen">No. 01 — The problem</p>
       <h1>A promoter signs a guarantee with his own money. If the room does not fill, he eats it.</h1>
       <p class="hero-sub">It tells a promoter how many tickets he must sell before he signs.</p>
+      <p class="hero-tagline">One money decision, before you sign.</p>
       <p class="hero-support">One number decides the signature: how many tickets must sell before the guarantee pays for itself — checked against live taste evidence, not a guess.</p>
       <div class="guide" aria-hidden="true"></div>
       <div class="hero-cta">
@@ -118,6 +119,7 @@
     </div>
     <p class="miss-ledger">Where the gut pick was wrong on this run: Gut picked Clairo while Graph picked Olivia Rodrigo; Web picked Armani White while Graph picked Olivia Rodrigo.</p>
     <p class="miss-ledger" id="armsTally">Recorded tally unavailable — trial-pack data could not be loaded.</p>
+    <p class="miss-ledger">Test rig — the tally above is computed from the same recorded 3-trial pack the bench panel replays. Recorded, not live; live runs vary, and the ledger records what actually ran.</p>
     <script>
     // Arms tally, computed in this browser from the static trial-pack.json
     // (the same file the app uses). Display-only: no data endpoint, no
@@ -164,7 +166,7 @@
       </article>
       <article class="how-card crop reveal" style="--rd:90ms">
         <h3>Live evidence is gathered</h3>
-        <p>Audience, openers, venue, and prices — each with its receipt, each re-runnable live from the drawer below.</p>
+        <p>Audience, openers, venue, and prices — the receipted lines re-run live from the drawer below; arithmetic lines carry no receipt by design.</p>
       </article>
       <article class="how-card crop reveal" style="--rd:180ms">
         <h3>A count, or a withheld verdict</h3>
@@ -204,6 +206,10 @@
       <article class="refuse-card crop reveal" style="--rd:90ms">
         <h3>No headcount, no sellout prediction</h3>
         <p>No headcount is ever shown (Qloo returns matched areas and entities, not a population number). No sellout prediction is ever shown.</p>
+      </article>
+      <article class="refuse-card crop reveal" style="--rd:180ms">
+        <h3>What this idea is NOT</h3>
+        <p>Not a sales forecast. Not a demand predictor. Not a booking agent. Not a ticket seller. It is one break-even count, receipted, before a signature.</p>
       </article>
     </div>
   </section>
@@ -249,7 +255,7 @@
   <section class="story-section" id="maya-story" aria-label="A promoter walkthrough">
     <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
     <h2>Maya, and the offer on the table</h2>
-    <p class="story-intro">Maya is an independent promoter weighing a guarantee offer. Her walkthrough replays a recorded trial, step by step.</p>
+    <p class="story-intro">Maya is an independent promoter weighing a guarantee offer. Her walkthrough replays a recorded trial, step by step. The workspace reads offers, routing, then settlement as a season.</p>
 
     <article class="beat">
       <p class="beat-num">Beat 1 — The doubt</p>
@@ -273,9 +279,15 @@
     </article>
 
     <div class="same-method-strip">
+      <h3>The cost of being wrong</h3>
+      <p>Illustrative arithmetic on the recorded trial. At the recorded trial's $120 ticket price, being wrong by 100 tickets = $12,000 of guarantee exposure (100 × 120 = 12,000). That 100-ticket gap is hypothetical — not a measured outcome, not a real loss, and not a prediction.</p>
+    </div>
+
+    <div class="same-method-strip">
       <h3>Same method, different recorded offer</h3>
       <p>Taylor Swift — New York — $250,000 / $120 → 2,084 tickets (29 Oct 2026).</p>
       <p>Olivia Rodrigo — Los Angeles — $180,000 / $95 → 1,895 tickets (29 Oct 2026).</p>
+      <p>Same inputs give the same count: the count is ceil(guarantee ÷ net per ticket) — deterministic arithmetic. The arms' picks are not deterministic and may vary run to run.</p>
       <p class="strip-label">Recorded trials, 29 Oct 2026.</p>
     </div>
 
@@ -283,7 +295,7 @@
       <p class="beat-num">Beat 4 — The receipts</p>
       <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
       <h3>Don't take the number. Take the receipt.</h3>
-      <p>Every verdict ships with a SHA-256 receipt and a clickable re-run. Same inputs in, same verdict out — or the receipt says otherwise, and you don't sign.</p>
+      <p>Every verdict ships with a SHA-256 receipt and a clickable re-run. Same inputs in, same count out — the count is deterministic arithmetic (ceil of guarantee ÷ net per ticket). The arms' picks are not deterministic; a re-run may pick differently, and the receipt shows what actually ran.</p>
     </article>
 
     <article class="beat">
@@ -305,8 +317,20 @@
       <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
       <h3>A wrong page costs nothing. A wrong verdict costs real money.</h3>
       <p>That is why the receipts exist, and why a missing answer is a refusal, not a guess. Maya signs — or walks away — with a number she can re-run, a receipt she can show, and a ledger that remembers when gut beat graph. A demo can afford to be wrong. A promoter cannot.</p>
-      <p>Illustrative arithmetic on the recorded trial. At the recorded trial's $120 ticket price, being wrong by 100 tickets = $12,000 of guarantee exposure (100 × 120 = 12,000). That 100-ticket gap is hypothetical — not a measured outcome, not a real loss, and not a prediction.</p>
+      <p>The check is falsifiable: after the show, the promoter-reported attendance either clears the recorded break-even or it does not. No show has settled yet — the settle ledger is empty.</p>
     </article>
+
+    <article class="beat">
+      <p class="beat-num">Beat 8 — After the show / next season</p>
+      <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
+      <h3>The ledger outlives the night.</h3>
+      <p>After the show, the workspace settles the offer: the promoter-reported attendance is recorded against the break-even the verdict gave, and the next offer starts from a ledger that remembers. No show has settled yet — the settle ledger is empty, and no settled figure is claimed anywhere on this page.</p>
+    </article>
+
+    <div class="same-method-strip">
+      <h3>Route, not just a number</h3>
+      <p>In the workspace, one base city and up to ten candidate cities become a route table — cities only, geocoded and mapped. The table is authoritative. This strip promises no venue, no opener, no sponsor, and no date.</p>
+    </div>
   </section>
 
   <!-- Get the app: display-only showcase + recorded-trial phone mockup. -->

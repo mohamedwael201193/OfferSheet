@@ -32,7 +32,7 @@ const SPEC_NAMES = [
   'offersheet_venue_search', 'offersheet_room_grounding', 'offersheet_deal_breakeven',
   'offersheet_city_geocode', 'offersheet_artist_facts',
   'offersheet_health', 'offersheet_limits_status',
-  'offersheet_opener_shortlist',
+  'offersheet_opener_shortlist', 'offersheet_opener_rerank',
 ];
 
 function baseCfg(overrides = {}) {
@@ -81,13 +81,13 @@ test('mcp: initialize returns protocol 2024-11-05, tools-only capabilities, offe
   assert.equal(notif, null);
 });
 
-test('mcp: tools/list has exactly 32 entries with the spec names, in order', async () => {
+test('mcp: tools/list has exactly 33 entries with the spec names, in order', async () => {
   const s = makeServer();
   const res = await s.handleRequest({ jsonrpc: '2.0', id: 2, method: 'tools/list' });
   const names = res.result.tools.map((t) => t.name);
-  assert.equal(names.length, 32);
+  assert.equal(names.length, 33);
   assert.deepEqual(names, SPEC_NAMES);
-  assert.equal(names.filter((n) => n.startsWith('offersheet_')).length, 22);
+  assert.equal(names.filter((n) => n.startsWith('offersheet_')).length, 23);
   assert.equal(names.filter((n) => n.startsWith('qloo_')).length, 10);
   for (const t of res.result.tools) {
     assert.equal(t.inputSchema.type, 'object');
@@ -96,7 +96,7 @@ test('mcp: tools/list has exactly 32 entries with the spec names, in order', asy
   }
 });
 
-test('mcp: spawned keyless server answers tools/list with 32 tools (real stdio transcript shape)', async () => {
+test('mcp: spawned keyless server answers tools/list with 33 tools (real stdio transcript shape)', async () => {
   const child = spawn(process.execPath, [SERVER_FILE], { env: { ...process.env, QLOO_API_KEY: '', TICKETMASTER_API_KEY: '' }, stdio: ['pipe', 'pipe', 'pipe'] });
   try {
     const lines = [];
@@ -116,7 +116,7 @@ test('mcp: spawned keyless server answers tools/list with 32 tools (real stdio t
     await Promise.race([done, new Promise((r) => setTimeout(r, 10000))]);
     const list = lines.find((m) => m.id === 2);
     assert.ok(list, 'tools/list response received over stdio');
-    assert.equal(list.result.tools.length, 32);
+    assert.equal(list.result.tools.length, 33);
     assert.deepEqual(list.result.tools.map((t) => t.name), SPEC_NAMES);
   } finally {
     child.kill();
@@ -556,6 +556,67 @@ test('mcp tool 32: ID-less candidate triggers one describe threading call; recom
   assert.equal(e.payload.topPick, null);
   const keyless = makeServer({ config: { qlooKeyConfigured: false } });
   const k = await call(keyless, 'offersheet_opener_shortlist', { artist: 'Billie Eilish', city: 'New York' });
+  assert.equal(k.payload.code, 'NOT_CONFIGURED');
+});
+
+// ---- G17: tool 33, exclusion re-rank — 1:1 reuse of /api/verdict/rerank ----
+test('mcp tool 33: opener rerank excludes the top pick and returns the new pick with a receipt', async () => {
+  const calls = [];
+  const s = makeServer({ mcpCall: async (tool, args) => {
+    calls.push([tool, args]);
+    if (tool === 'qloo_rank') return { status: 'ok', results: [{ id: 'beyonce', name: 'Beyoncé' }] };
+    return mcpFixture()(tool, args);
+  } });
+  const { isError, payload } = await call(s, 'offersheet_opener_rerank', {
+    artist: 'Taylor Swift', city: 'New York',
+    ranked: [{ id: 'carly', name: 'Carly Rae Jepsen' }, { id: 'beyonce', name: 'Beyoncé' }],
+    excludedPick: 'Carly Rae Jepsen',
+  });
+  assert.equal(isError, false);
+  assert.equal(payload.status, 'ok');
+  assert.equal(payload.newPick.name, 'Beyoncé');
+  assert.equal(payload.excludedPick, 'Carly Rae Jepsen');
+  const rankCall = calls.find(([t]) => t === 'qloo_rank');
+  assert.deepEqual(rankCall[1].options, ['beyonce'], 'rank options must be the set minus the excluded pick');
+  assert.equal(rankCall[1].option_type, 'artist');
+  assert.equal(rankCall[1].signal_location, 'New York');
+  assert.equal(payload.receipt.operation, 'qloo_rank');
+  assert.equal(payload.receipt.claim, 'opener shortlist re-ranked without the top pick');
+  assert.equal(payload.quotaSpent, true);
+});
+
+test('mcp tool 33: ok-but-empty rank returns empty with the exact label and no pick', async () => {
+  const s = makeServer({ mcpCall: async (tool) => {
+    if (tool === 'qloo_rank') return { status: 'ok', results: [] };
+    return mcpFixture()(tool, {});
+  } });
+  const { isError, payload } = await call(s, 'offersheet_opener_rerank', {
+    artist: 'Billie Eilish', city: 'New York',
+    ranked: [{ name: 'Olivia Rodrigo' }, { name: 'Beyoncé' }],
+    excludedPick: 'Olivia Rodrigo',
+  });
+  assert.equal(isError, false, 'empty is a success response carrying its status, not a tool error');
+  assert.equal(payload.status, 'empty');
+  assert.equal(payload.label, 'no data for this entity/region');
+  assert.equal(payload.newPick, null);
+  assert.equal(payload.receipt, null);
+});
+
+test('mcp tool 33: excluded pick absent from the set is INVALID_INPUT; keyless is NOT_CONFIGURED', async () => {
+  const s = makeServer({ mcpCall: async () => ({ status: 'ok', results: [] }) });
+  const bad = await call(s, 'offersheet_opener_rerank', {
+    artist: 'Billie Eilish', city: 'New York',
+    ranked: [{ name: 'Olivia Rodrigo' }],
+    excludedPick: 'Nobody Here',
+  });
+  assert.equal(bad.isError, true);
+  assert.equal(bad.payload.code, 'INVALID_INPUT');
+  const keyless = makeServer({ config: { qlooKeyConfigured: false } });
+  const k = await call(keyless, 'offersheet_opener_rerank', {
+    artist: 'Billie Eilish', city: 'New York',
+    ranked: [{ name: 'Olivia Rodrigo' }, { name: 'Beyoncé' }],
+    excludedPick: 'Olivia Rodrigo',
+  });
   assert.equal(k.payload.code, 'NOT_CONFIGURED');
 });
 

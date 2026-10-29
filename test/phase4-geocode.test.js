@@ -107,8 +107,8 @@ test('streamed legs: server emits leg events and client renders them live', () =
   assert.ok(stylesCss.includes('.leg-progress'), 'leg progress list must be styled');
 });
 
-test('catalogue gate copy: own server stated with the 22+10 split, stale sentence gone', () => {
-  assert.ok(toolsHtml.includes('32 tools: 22 OfferSheet tools + 10 guarded Qloo tools'), 'catalogue must state the split');
+test('catalogue gate copy: own server stated with the 23+10 split, stale sentence gone', () => {
+  assert.ok(toolsHtml.includes('33 tools: 23 OfferSheet tools + 10 guarded Qloo tools'), 'catalogue must state the split');
   assert.ok(toolsHtml.includes('node backend/mcp-server.js'), 'catalogue must give the start command');
   assert.ok(toolsHtml.includes('"offersheet"'), 'catalogue must give the client config block');
   assert.ok(toolsHtml.includes('Proven 29 Oct 2026'), 'catalogue must date the fresh-clone + replay proofs');

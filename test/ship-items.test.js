@@ -334,7 +334,7 @@ test('static: SHIP containers, links, and copy present on both pages', () => {
   assert.ok(tools.includes('npm install --global @qloo/qloo-harness'), 'tools install block');
   assert.ok(tools.includes('"command": "qloo"'), 'tools mcp block');
   assert.ok(tools.includes('key never leaves the server'), 'tools key line');
-  assert.ok(tools.includes('32 tools: 22 OfferSheet tools + 10 guarded Qloo tools'), 'own server stated with the 22+10 split (gate proven 29 Oct 2026)');
+  assert.ok(tools.includes('33 tools: 23 OfferSheet tools + 10 guarded Qloo tools'), 'own server stated with the 23+10 split (gate proven 29 Oct 2026)');
   assert.ok(tools.includes('node backend/mcp-server.js'), 'own server start command');
   assert.ok(tools.includes('Proven 29 Oct 2026'), 'own server proof dated');
 });

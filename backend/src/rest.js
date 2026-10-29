@@ -8,11 +8,27 @@
 // entity IDs and counts are extracted best-effort; an unparseable leg is labeled
 // (status 'unparsed'), never guessed.
 import { requestHashFor } from './receipts.js';
+import { invalidInput } from './errors.js';
 
 // G6: replay allowlist — the ONLY REST paths a replay may re-run. Any other
 // path (including an absolute URL, which would otherwise override baseUrl)
 // is rejected before any call is made.
 export const REST_PATHS = ['/search', '/v2/insights', '/v2/analysis/compare', '/entities'];
+
+// G3 (superiority): per-path parameter allowlist, enforced in the single
+// REST caller below — so verdict legs AND replay pass through the same
+// gate. A typo'd or unallowlisted param fails closed BEFORE any call is
+// made, and a replay carrying an unallowlisted param is rejected with a
+// 400, never sent to Qloo under a receipt. This closes the
+// silent-unfiltered-data-under-receipt risk: without it, a mistyped
+// filter param would silently return unfiltered data that still earned a
+// receipt. The keys below are exactly the sets the four wrappers send.
+export const REST_PARAM_ALLOWLIST = {
+  '/search': ['query', 'take'],
+  '/v2/insights': ['filter.type', 'signal.interests.tags', 'feature.explainability'],
+  '/v2/analysis/compare': ['a.signal.interests.entities', 'b.signal.interests.entities'],
+  '/entities': ['entity_ids'],
+};
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -46,6 +62,24 @@ export async function qlooRest({
   // and send the key to an attacker-chosen host — reject it outright.
   if (typeof path !== 'string' || !path.startsWith('/') || path.includes('://') || path.startsWith('//')) {
     throw new Error('Qloo REST path must be a relative path');
+  }
+  // G3: per-path param allowlist + mandatory filter.type for /v2/insights.
+  // Checked before any fetch: an unallowlisted key (typo or replay-injected)
+  // or a missing filter.type fails closed here, never under a receipt.
+  const allowedParams = REST_PARAM_ALLOWLIST[path];
+  if (!allowedParams) {
+    throw invalidInput(`Qloo REST path not allowlisted: ${path}`);
+  }
+  for (const k of Object.keys(params)) {
+    if (!allowedParams.includes(k)) {
+      throw invalidInput(`Qloo REST param not allowlisted for ${path}: ${k}`);
+    }
+  }
+  if (path === '/v2/insights') {
+    const ft = params['filter.type'];
+    if (typeof ft !== 'string' || ft === '') {
+      throw invalidInput('Qloo REST /v2/insights requires a non-empty filter.type');
+    }
   }
   const url = new URL(path, baseUrl);
   for (const [k, v] of Object.entries(params)) {

@@ -835,3 +835,20 @@ html, body { overflow-x: clip; }
 .proof-pack-wrap { margin-top: 16px; border-top: 1px solid var(--color-rule); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
 .proof-pack-wrap h3 { margin: 0; width: 100%; }
 .proof-pack-wrap .label { width: 100%; }
+
+/* G5/G7/G8/G9/G10/G12/G13 (superiority, additive — dashboard merge: KEEP).
+   Studio tokens only; no layout restyle. Skip link is visually hidden
+   until focused; the step lead, rail, and how-made summary are plain
+   text/controls in the existing type scale. */
+.skip-link { position: absolute; left: -9999px; top: 0; background: var(--color-paper-hi); color: var(--color-ink); border: 2px solid var(--color-ink); padding: 8px 16px; z-index: 100; }
+.skip-link:focus { position: static; left: auto; }
+.step-lead { font-size: 14px; color: var(--color-ink); word-break: break-all; }
+.verdict-jump { margin-top: 12px; }
+.export-rail { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; margin-top: 12px; }
+.share-note { font-size: 14px; color: var(--color-muted); word-break: break-all; }
+.how-made { margin-top: 16px; border-top: 1px solid var(--color-rule); padding-top: 12px; }
+.how-made summary { cursor: pointer; font-size: 14px; color: var(--color-ink); }
+.how-made ol { margin: 6px 0; }
+
+/* G15 (superiority, copy lock): the verbatim tagline line in the hero. */
+.hero-tagline { font-family: var(--font-display); font-size: 1.1rem; line-height: 1.3; color: var(--color-ink); max-width: 62ch; margin: 0 0 10px; }

@@ -222,6 +222,8 @@ test('C: full-evidence verdict sheet and brief are unregressed', () => {
     'OfferSheet verdict — Billie Eilish in New York',
     'Guarantee $250,000 · ticket price $120 (user-supplied) · net per ticket $120 (before variable costs)',
     'Break-even: 2,084 tickets (capacity unknown — no sellout percentage)',
+    // G11: the code-filled liveness line (all 13 legs forced ok above).
+    'Live legs this run: 13 ok · 0 empty · 0 error.',
     'Graph pick: Olivia Rodrigo',
     'Miss: gut picked Finneas.; Qloo picked Olivia Rodrigo.',
     `Miss: web picked ${LIVE.missTrial.misses[1].pick}; Qloo picked Olivia Rodrigo.`,
