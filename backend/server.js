@@ -11,9 +11,9 @@ import { fileURLToPath } from 'node:url';
 import { config } from './src/config.js';
 import { Guards } from './src/guards.js';
 import { ReceiptStore } from './src/receipts.js';
-import { McpSession } from './src/mcp.js';
-import { qlooRest } from './src/rest.js';
-import { searchEvents } from './src/ticketmaster.js';
+import { McpSession, MCP_TOOLS } from './src/mcp.js';
+import { qlooRest, REST_PATHS } from './src/rest.js';
+import { searchEvents, searchVenues } from './src/ticketmaster.js';
 import { geocode } from './src/osm.js';
 import { searchEntities } from './src/wikidata.js';
 import { runGutArm, runWebArm, llmConfigured } from './src/arms.js';
@@ -89,7 +89,7 @@ async function readJsonBody(req) {
   }
 }
 
-async function buildDeps({ gutArm, webArm } = {}) {
+async function buildDeps({ gutArm, webArm, isCancelled } = {}) {
   const session = new McpSession({
     command: config.qlooMcpCommand,
     args: ['mcp'],
@@ -110,12 +110,20 @@ async function buildDeps({ gutArm, webArm } = {}) {
       receipts: new ReceiptStore(),
       checkCall: () => guards.checkCall(),
       checkVisitor: (ip) => guards.checkVisitor(ip),
+      isCancelled: isCancelled || (() => false),
       mcpCall,
       restCall: ({ path, params }) => qlooRest({
         path, params, key: config.qlooKey, baseUrl: config.qlooBaseUrl, timeoutMs: config.restTimeoutMs,
       }),
       tmEvents: ({ keyword, city }) => searchEvents({
         keyword, city, key: config.ticketmasterKey, baseUrl: config.ticketmasterBaseUrl,
+      }),
+      // G11 production wiring: the pipeline resolves a named room first
+      // (deps.tmVenues) and scopes events by that venue's ID. Without this
+      // line the pipeline falls back — honestly labeled — to first-event
+      // grounding and notes "venue search not wired".
+      tmVenues: ({ keyword }) => searchVenues({
+        keyword, key: config.ticketmasterKey, baseUrl: config.ticketmasterBaseUrl,
       }),
       geocodeFn: ({ query }) => geocode({ query, baseUrl: config.osmBaseUrl }),
       wikidataFn: ({ query }) => searchEntities({ query, baseUrl: config.wikidataBaseUrl }),
@@ -129,6 +137,11 @@ async function buildDeps({ gutArm, webArm } = {}) {
 async function handleVerdict(req, res, { race = false } = {}) {
   const input = await readJsonBody(req);
   const visitorIp = req.socket?.remoteAddress || 'unknown';
+  // G47: abort the pipeline when the client request closes. The flag is
+  // checked between legs; a run aborted this way ends withheld, never
+  // presented as a partial verdict.
+  let cancelled = false;
+  req.on('close', () => { cancelled = true; });
   let gutMs = null;
   let webMs = null;
   let gutArm;
@@ -147,7 +160,7 @@ async function handleVerdict(req, res, { race = false } = {}) {
       return out;
     };
   }
-  const { deps, close } = await buildDeps({ gutArm, webArm });
+  const { deps, close } = await buildDeps({ gutArm, webArm, isCancelled: () => cancelled });
   try {
     const verdict = await runVerdict({ ...input, visitorIp }, deps);
     if (race) {
@@ -160,10 +173,33 @@ async function handleVerdict(req, res, { race = false } = {}) {
   }
 }
 
+// G7: ordered entity IDs from a replayed run, so the frontend compares IDs
+// + order, not counts only. MCP envelopes and REST bodies both carry
+// entity_id/id/uuid shapes; names are kept alongside for display only.
+function orderedEntityIds(items) {
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((it) => (it && typeof it === 'object' ? (it.entity_id ?? it.id ?? it.uuid ?? null) : null))
+    .filter((id) => id !== null);
+}
+
 async function handleReplay(req, res) {
   const body = await readJsonBody(req);
   if (!config.qlooKeyConfigured) throw notConfigured();
+  // G6: replay is a live-call endpoint, so it is guarded like a verdict leg
+  // (per-visitor cap + call budget) — an unguarded replay would be an
+  // unbounded key-spending hole. The key gate above precedes validation:
+  // a keyless bogus replay still fails closed, never replays.
+  const visitorIp = req.socket?.remoteAddress || 'unknown';
   if (body.kind === 'mcp' && typeof body.tool === 'string') {
+    if (!MCP_TOOLS.includes(body.tool)) {
+      throw new OfferError('INVALID_INPUT', 400, `Replay tool not allowlisted: ${body.tool}`);
+    }
+    if (body.args !== undefined && (typeof body.args !== 'object' || body.args === null || Array.isArray(body.args))) {
+      throw new OfferError('INVALID_INPUT', 400, 'Replay MCP args must be an object');
+    }
+    guards.checkVisitor(visitorIp);
+    guards.checkCall();
     const session = new McpSession({
       command: config.qlooMcpCommand,
       args: ['mcp'],
@@ -172,13 +208,35 @@ async function handleReplay(req, res) {
     try {
       await session.start();
       const envelope = await session.call(body.tool, body.args || {});
-      send(res, 200, { kind: 'mcp', tool: body.tool, envelope });
+      const results = Array.isArray(envelope?.results) ? envelope.results : [];
+      send(res, 200, {
+        kind: 'mcp',
+        tool: body.tool,
+        envelope,
+        // Both names: the replay comparator reads `ids` first, `entityIds` second.
+        ids: orderedEntityIds(results),
+        entityIds: orderedEntityIds(results),
+        resultCount: envelope?.result_count ?? results.length,
+      });
     } finally {
       session.close();
     }
     return;
   }
   if (body.kind === 'rest' && typeof body.path === 'string') {
+    // Absolute URLs are rejected before the allowlist check: a replayed
+    // absolute URL would otherwise redirect the keyed call off-host.
+    if (!body.path.startsWith('/') || body.path.includes('://') || body.path.startsWith('//')) {
+      throw new OfferError('INVALID_INPUT', 400, 'Replay REST paths must be relative paths');
+    }
+    if (!REST_PATHS.includes(body.path)) {
+      throw new OfferError('INVALID_INPUT', 400, `Replay REST path not allowlisted: ${body.path}`);
+    }
+    if (body.params !== undefined && (typeof body.params !== 'object' || body.params === null || Array.isArray(body.params))) {
+      throw new OfferError('INVALID_INPUT', 400, 'Replay REST params must be an object');
+    }
+    guards.checkVisitor(visitorIp);
+    guards.checkCall();
     const result = await qlooRest({
       path: body.path,
       params: body.params || {},
@@ -186,7 +244,15 @@ async function handleReplay(req, res) {
       baseUrl: config.qlooBaseUrl,
       timeoutMs: config.restTimeoutMs,
     });
-    send(res, 200, { kind: 'rest', path: body.path, result });
+    send(res, 200, {
+      kind: 'rest',
+      path: body.path,
+      result,
+      // Both names: the replay comparator reads `ids` first, `entityIds` second.
+      ids: orderedEntityIds(result.entities),
+      entityIds: orderedEntityIds(result.entities),
+      resultCount: result.resultCount,
+    });
     return;
   }
   throw new OfferError('INVALID_INPUT', 400, 'Replay requires kind mcp (tool + args) or kind rest (path + params)');
@@ -226,14 +292,15 @@ const server = http.createServer(async (req, res) => {
   const path = url.pathname;
   try {
     if (req.method === 'GET' && path === '/api/health') {
+      // G10/G18: health exposes ONLY the configured booleans the frontend
+      // reads (qlooConfigured). No hardcoded tool count, no guard counts —
+      // counts are tripwire internals, not a public signal.
       send(res, 200, {
         status: 'ok',
         version: '0.1.0',
-        tools: 10,
         qlooConfigured: config.qlooKeyConfigured,
         ticketmasterConfigured: config.tmKeyConfigured,
         llmConfigured: llmConfigured(),
-        guards: guards.snapshot(),
       });
     } else if (req.method === 'POST' && path === '/api/verdict') {
       await handleVerdict(req, res);

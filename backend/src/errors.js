@@ -41,6 +41,13 @@ export const runCapTripped = () => new OfferError(
 
 export const invalidInput = (message) => new OfferError('INVALID_INPUT', 400, message);
 
+// Guard trips (quota floor, per-run cap) must fail the whole verdict run
+// closed, never degrade into a generic per-leg error. The pipeline checks
+// this before the verdict gate.
+export function isGuardTrip(e) {
+  return e?.code === 'QUOTA_FLOOR' || e?.code === 'RUN_CAP';
+}
+
 // Map a Qloo MCP envelope error to an OfferError. Retry only when retryable=true
 // (official envelope rule); a non-retryable error is a section-incomplete state.
 export function mapEnvelopeError(envelope) {

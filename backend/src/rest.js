@@ -9,6 +9,11 @@
 // (status 'unparsed'), never guessed.
 import { requestHashFor } from './receipts.js';
 
+// G6: replay allowlist — the ONLY REST paths a replay may re-run. Any other
+// path (including an absolute URL, which would otherwise override baseUrl)
+// is rejected before any call is made.
+export const REST_PATHS = ['/search', '/v2/insights', '/v2/analysis/compare', '/entities'];
+
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -31,6 +36,12 @@ export async function qlooRest({
   timeoutMs = 25000,
   fetchImpl = fetch,
 }) {
+  // G6 defense-in-depth: only relative paths may reach the host. An absolute
+  // URL passed as `path` would override baseUrl in `new URL(path, baseUrl)`
+  // and send the key to an attacker-chosen host — reject it outright.
+  if (typeof path !== 'string' || !path.startsWith('/') || path.includes('://') || path.startsWith('//')) {
+    throw new Error('Qloo REST path must be a relative path');
+  }
   const url = new URL(path, baseUrl);
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined || v === null || v === '') continue;

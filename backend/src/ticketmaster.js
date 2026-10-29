@@ -6,11 +6,15 @@
 // tested, (c) ticket-price fields. Until a live call proves otherwise, capacity
 // field presence is UNKNOWN — a missing capacity always yields the
 // "unknown capacity" state, never an invented number.
-export async function searchEvents({ keyword, city, key, baseUrl, fetchImpl = fetch, size = 5 }) {
+export async function searchEvents({ keyword, city, venueId, key, baseUrl, fetchImpl = fetch, size = 5 }) {
   const url = new URL(`${baseUrl}/events.json`);
   url.searchParams.set('apikey', key);
   if (keyword) url.searchParams.set('keyword', keyword);
   if (city) url.searchParams.set('city', city);
+  // G11: when a venue resolved via venue search, scope the event lookup to
+  // that venue (Ticketmaster's documented venueId filter) so capacity and
+  // price describe the offer room, not whatever event matches first.
+  if (venueId) url.searchParams.set('venueId', venueId);
   url.searchParams.set('size', String(size));
   url.searchParams.set('sort', 'date,asc');
   const controller = new AbortController();
@@ -77,4 +81,13 @@ export function extractFirstVenue(eventsBody) {
     if (Array.isArray(venues) && venues.length > 0) return venues[0];
   }
   return null;
+}
+
+// G11: first venue from a venue-search response body (venues.json shape:
+// _embedded.venues), or null when the search resolved nothing. A null here
+// means "named room did not resolve" — never a guessed venue.
+export function extractFirstVenueResult(venuesBody) {
+  const venues = venuesBody?._embedded?.venues;
+  if (!Array.isArray(venues)) return null;
+  return venues[0] ?? null;
 }

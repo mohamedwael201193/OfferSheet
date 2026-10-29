@@ -35,6 +35,15 @@ export class Guards {
 
   checkVisitor(ip) {
     const dayKey = new Date().toISOString().slice(0, 10);
+    // G10: prune by day so the map stays bounded — yesterday's entries are
+    // dead weight, and the map must never grow unboundedly across days.
+    for (const key of this.visitorCounts.keys()) {
+      if (!key.endsWith(`:${dayKey}`)) this.visitorCounts.delete(key);
+    }
+    // Hard bound on distinct visitors in one day (oldest entries go first).
+    while (this.visitorCounts.size >= 5000) {
+      this.visitorCounts.delete(this.visitorCounts.keys().next().value);
+    }
     const key = `${ip}:${dayKey}`;
     const count = this.visitorCounts.get(key) || 0;
     if (count >= this.perVisitorDailyCap) throw visitorCapTripped();

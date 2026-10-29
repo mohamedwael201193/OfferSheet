@@ -85,7 +85,10 @@ pre { font-family: inherit; white-space: pre-wrap; word-break: break-word; }
 
 /* Crop marks: eight 1px ticks, one pair at each corner, set off by a small gap. */
 .crop { position: relative; }
-.crop::before {
+/* Race lanes and the replay box are app-rendered cards (their markup lives in
+   app.js, so no class can be added there): they take the same crop marks here. */
+.lane, .replay-out { position: relative; }
+.crop::before, .lane::before, .replay-out::before {
   content: "";
   position: absolute;
   inset: -12px;
@@ -113,12 +116,53 @@ pre { font-family: inherit; white-space: pre-wrap; word-break: break-word; }
 }
 @keyframes guide-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
+/* Motion additions (animation + UX audit) — keyframes only, no scripts,
+   no `transition: all` anywhere. Transform/opacity or stroke-dashoffset only. */
+@keyframes hero-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes verdict-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes plan-draw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes lane-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes receipt-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Hero entrance: transform/opacity only, once. */
+.hero h1 { animation: hero-rise 600ms var(--ease-out) both; }
+.hero figure { animation: hero-rise 600ms var(--ease-out) 120ms both; }
+
+/* Venue-plan construction lines: blueprint line-draw over the hero image.
+   pathLength="100" in markup normalizes every dash, so each line draws once
+   along its full length, staggered. */
+.plan-draw { position: absolute; top: 10px; left: 10px; width: calc(100% - 20px); height: auto; aspect-ratio: 3 / 2; pointer-events: none; }
+.plan-draw path { fill: none; stroke: var(--color-accent); stroke-width: 1; stroke-dasharray: 100; stroke-dashoffset: 100; animation: plan-draw 900ms var(--ease-out) both; }
+.plan-draw path:nth-child(2) { animation-delay: 150ms; }
+.plan-draw path:nth-child(3) { animation-delay: 300ms; }
+.plan-draw path:nth-child(4) { animation-delay: 450ms; }
+
+/* Verdict-number reveal: transform/opacity only, plays when the verdict card
+   is first unhidden (the animation starts on first display). */
+.verdict-number { animation: verdict-in 500ms var(--ease-out) both; }
+
+/* Race-lane motion: scaleX fill bars, staggered per lane. */
+.lane-bar { height: 3px; margin-top: 10px; background: var(--color-accent); transform-origin: left center; animation: lane-fill 600ms var(--ease-out) both; }
+.lane:nth-child(2) .lane-bar { animation-delay: 120ms; }
+.lane:nth-child(3) .lane-bar { animation-delay: 240ms; }
+.lane-bar--empty { background: var(--color-paper-2); animation: none; transform: scaleX(1); }
+
+/* Receipt rows: staggered reveal, transform/opacity only. */
+.receipt { animation: receipt-in 400ms var(--ease-out) both; }
+.receipt:nth-child(2) { animation-delay: 60ms; }
+.receipt:nth-child(3) { animation-delay: 120ms; }
+.receipt:nth-child(4) { animation-delay: 180ms; }
+.receipt:nth-child(5) { animation-delay: 240ms; }
+.receipt:nth-child(6) { animation-delay: 300ms; }
+.receipt:nth-child(7) { animation-delay: 360ms; }
+.receipt:nth-child(8) { animation-delay: 420ms; }
+
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 var(--space); }
 
 /* Nav */
 .nav { border-bottom: 1px solid var(--color-ink); }
 .nav-inner {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
   padding: 18px 0 14px;
 }
 .wordmark { font-family: var(--font-display); font-size: 1.75rem; letter-spacing: var(--tracking-display); color: var(--color-ink); line-height: 1; }
@@ -131,9 +175,9 @@ pre { font-family: inherit; white-space: pre-wrap; word-break: break-word; }
   text-align: right;
   max-width: 320px;
 }
-.badge.amber { border-color: var(--color-accent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-accent) 45%, transparent); }
+.badge.amber { border-color: var(--color-accent); }
 .badge.green { border-color: var(--color-ink); background: var(--color-paper-hi); }
-.badge.red { border-color: var(--color-focus); color: var(--color-focus); }
+.badge.red { border-color: var(--color-focus); color: var(--color-ink); }
 
 /* Hero */
 .hero { padding: 28px 0 8px; }
@@ -175,7 +219,7 @@ pre { font-family: inherit; white-space: pre-wrap; word-break: break-word; }
 /* Form */
 form { display: grid; gap: 14px; }
 .field { display: flex; flex-direction: column; gap: 6px; }
-.field label { font-weight: 500; color: var(--color-ink); font-size: 0.95rem; }
+.field label { font-weight: 500; color: var(--color-muted); font-size: 0.875rem; }
 .field-hint { margin-top: -2px; }
 input {
   width: 100%;
@@ -187,7 +231,19 @@ input {
   padding: 12px 14px;
   font-variant-numeric: tabular-nums;
 }
-input:focus { outline: 2px solid var(--color-focus); outline-offset: 1px; border-color: var(--color-ink); }
+input:focus {
+  outline: 2px solid var(--color-focus); outline-offset: 1px; border-color: var(--color-ink);
+  /* Crop marks appear on focus: eight 1px inside-corner ticks, 4px inset. */
+  background-image:
+    linear-gradient(var(--color-mark), var(--color-mark)) 4px 4px / 8px 1px no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) 4px 4px / 1px 8px no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - 4px) 4px / 8px 1px no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - 4px) 4px / 1px 8px no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) 4px calc(100% - 4px) / 8px 1px no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) 4px calc(100% - 4px) / 1px 8px no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - 4px) calc(100% - 4px) / 8px 1px no-repeat,
+    linear-gradient(var(--color-mark), var(--color-mark)) calc(100% - 4px) calc(100% - 4px) / 1px 8px no-repeat;
+}
 .form-actions { display: grid; gap: 10px; margin-top: 4px; }
 
 /* Controls: 48px, 1px ink border, 2px radius, inset second rule, crop marks that open on hover. */
@@ -222,12 +278,12 @@ input:focus { outline: 2px solid var(--color-focus); outline-offset: 1px; border
 .btn:hover::before, .btn:focus-visible::before { opacity: 1; inset: -12px; }
 .btn--primary { background: var(--color-accent); color: var(--color-accent-ink); }
 .btn:disabled { opacity: 0.55; cursor: wait; }
-.btn-sm { min-height: 40px; padding: 0 14px; font-size: 0.9rem; }
+.btn-sm { min-height: 48px; padding: 0 14px; font-size: 0.9rem; }
 
 /* Status / verdict */
 .status { border: 1px solid var(--color-ink); border-radius: var(--radius-card); padding: 18px; margin: 24px 0; background: var(--color-paper-hi); box-shadow: var(--shadow-sheet); }
 .status.red { border-color: var(--color-focus); }
-.status .big { font-family: var(--font-display); font-size: 1.4rem; line-height: 1.1; color: var(--color-ink); }
+.status .big { font-family: var(--font-display); font-size: 1.4rem; line-height: 1.04; color: var(--color-ink); }
 .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--color-rule); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 800ms linear infinite; vertical-align: -3px; margin-right: 8px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .progress { height: 3px; background: var(--color-paper-2); margin-top: 12px; overflow: hidden; border-radius: 2px; }
@@ -235,15 +291,15 @@ input:focus { outline: 2px solid var(--color-focus); outline-offset: 1px; border
 @keyframes slide { from { margin-left: 0; } to { margin-left: 60%; } }
 
 .verdict-card { border: 1px solid var(--color-ink); }
-.verdict-number { font-family: var(--font-display); font-size: clamp(4rem, 16vw, 8.5rem); line-height: 0.95; letter-spacing: var(--tracking-display); color: var(--color-ink); font-variant-numeric: tabular-nums; }
-.verdict-unit { font-family: var(--font-display); font-size: 1.5rem; color: var(--color-ink); }
-.verdict-line { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.15; color: var(--color-ink); margin-top: 10px; }
+.verdict-number { font-family: var(--font-display); font-size: clamp(4rem, 16vw, 8.5rem); line-height: 1.0; letter-spacing: var(--tracking-display); color: var(--color-ink); font-variant-numeric: tabular-nums; }
+.verdict-unit { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.0; color: var(--color-ink); }
+.verdict-line { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.04; color: var(--color-ink); margin-top: 10px; }
 .capacity-badge { display: inline-block; border: 1px solid var(--color-ink); border-radius: 2px; padding: 4px 8px; margin-top: 12px; font-weight: 500; font-size: 0.85rem; color: var(--color-ink); }
-.capacity-badge.unknown { border-color: var(--color-focus); color: var(--color-focus); }
+.capacity-badge.unknown { border-color: var(--color-focus); color: var(--color-ink); }
 .unknown-box { border-top: 1px solid var(--color-ink); margin-top: 16px; padding-top: 14px; }
 .unknown-box p { margin: 0; color: var(--color-ink); }
 .cannot-box { border: 1px solid var(--color-focus); border-radius: var(--radius-card); padding: 14px; margin-top: 16px; }
-.cannot-box p { margin: 0; font-family: var(--font-display); font-size: 1.3rem; line-height: 1.15; color: var(--color-ink); }
+.cannot-box p { margin: 0; font-family: var(--font-display); font-size: 1.3rem; line-height: 1.04; color: var(--color-ink); }
 .facts { display: grid; gap: 0; margin-top: 18px; border-top: 1px solid var(--color-ink); }
 .facts > div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--color-rule); }
 .facts dt { font-weight: 500; color: var(--color-muted); font-size: 0.9rem; }
@@ -262,7 +318,7 @@ li { margin-bottom: 6px; }
 /* Race lanes */
 .lane { border: 1px solid var(--color-rule); border-radius: var(--radius-card); padding: 14px; margin: 10px 0; background: var(--color-paper); }
 .lane-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
-.lane-pick { font-family: var(--font-display); font-size: 1.25rem; color: var(--color-ink); }
+.lane-pick { font-family: var(--font-display); font-size: 1.25rem; line-height: 1.04; color: var(--color-ink); }
 .lane-unavailable { color: var(--color-muted); font-style: normal; }
 .race-timer { font-weight: 500; color: var(--color-ink); font-variant-numeric: tabular-nums; }
 
@@ -274,9 +330,41 @@ li { margin-bottom: 6px; }
 .replay-out { margin-top: 12px; padding: 12px; border: 1px solid var(--color-rule); border-radius: var(--radius-card); background: var(--color-paper); }
 .replay-out:empty { display: none; }
 
+/* Design-audit fixes (property overrides only — no motion rule touched):
+   orange stays on 1px guides + the one primary fill, so loading/fill
+   indicators render in ink; the empty lane bar keeps paper-2. Plus an
+   explicit visible keyboard-focus outline for links, summaries, buttons. */
+.spinner { border-top-color: var(--color-ink); }
+.progress::after { background: var(--color-ink); }
+.lane-bar:not(.lane-bar--empty) { background: var(--color-ink); }
+a:focus-visible, summary:focus-visible, .btn:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+
 /* Safety / bench / footer */
 .safety { border-top: 1px solid var(--color-ink); border-bottom: 1px solid var(--color-ink); padding: 18px 0; margin: 28px 0; }
 .safety p { margin: 0; }
+
+/* QA frontend fix pass — layout and new components only, no motion rules. */
+.config-banner { border: 1px solid var(--color-focus); border-radius: var(--radius-card); padding: 18px; margin: 24px 0; background: var(--color-paper-hi); box-shadow: var(--shadow-sheet); }
+.config-banner p { margin: 0 0 8px; }
+.config-banner p:last-child { margin-bottom: 0; }
+.hero-sub { font-family: var(--font-display); font-size: 1.25rem; line-height: 1.15; color: var(--color-ink); max-width: 62ch; margin: 0 0 10px; }
+.wedge { font-family: var(--font-display); font-size: 1.15rem; line-height: 1.15; color: var(--color-ink); margin: 0 0 16px; }
+.form-disabled-note { border: 1px solid var(--color-focus); border-radius: var(--radius-card); padding: 12px 14px; margin: 0 0 14px; color: var(--color-ink); }
+.aggregate-note { margin-top: 12px; color: var(--color-muted); font-size: 0.9rem; }
+.proof-summary { margin: 14px 0 0; padding-left: 22px; border-top: 1px solid var(--color-rule); padding-top: 12px; }
+.proof-summary li { margin-bottom: 4px; }
+.proof-summary strong { color: var(--color-ink); font-weight: 500; }
+.race-toggle-wrap { margin: 0 0 28px; }
+.link-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--color-ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.link-btn:disabled { opacity: 0.55; cursor: wait; }
+.race-note { border: 1px solid var(--color-rule); border-radius: var(--radius-card); padding: 14px; margin: 10px 0; background: var(--color-paper); }
+.race-note p { margin: 0 0 8px; }
+.race-note p:last-child { margin-bottom: 0; }
+.icon-placeholder { width: 56px; height: 56px; flex: none; background: var(--color-paper-2); border: 1px solid var(--color-rule); border-radius: 2px; }
+
+@media (max-width: 520px) {
+  .verdict-number { font-size: clamp(3rem, 14vw, 4.5rem); }
+}
 .footer { padding: 24px 0 40px; }
 .footer p { color: var(--color-muted); font-size: 0.9rem; }
 .empty { color: var(--color-muted); }
@@ -295,7 +383,16 @@ li { margin-bottom: 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .guide, .spinner, .progress::after { animation: none; }
+  /* Every shipped animation is killed here AND its end state is forced, so
+     the full construction still shows: lines fully drawn, bars full,
+     content complete and opaque. */
+  .guide, .spinner, .progress::after,
+  .hero h1, .hero figure, .verdict-number,
+  .plan-draw path, .lane-bar, .receipt { animation: none; }
   .guide { transform: scaleX(1); }
   .progress::after { width: 100%; margin-left: 0; }
+  .hero h1, .hero figure, .verdict-number, .receipt { opacity: 1; transform: none; }
+  .plan-draw path { stroke-dashoffset: 0; }
+  .lane-bar { transform: scaleX(1); }
+  .btn, .btn::before { transition: none; }
 }

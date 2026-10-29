@@ -23,13 +23,16 @@ export function breakEven({ guarantee, ticketPrice, variableCost = 0, capacity =
     throw new Error('net per-ticket contribution must be positive');
   }
   if (guarantee === 0) {
-    return { tickets: 0, note: 'no guarantee', verdict: null, net, capacity };
+    return { tickets: 0, note: 'no guarantee', verdict: null, net, capacity, variableCost: cost };
   }
   const tickets = Math.ceil(guarantee / net);
   const verdict = (capacity !== null && capacity !== undefined && tickets > capacity)
     ? 'Cannot break even in this room at this guarantee'
     : null;
-  return { tickets, note: null, verdict, net, capacity };
+  // G12: the cost actually subtracted is echoed so callers can render it —
+  // the pipeline separately records whether the promoter entered one at all
+  // (blank must never render as if costs were zero).
+  return { tickets, note: null, verdict, net, capacity, variableCost: cost };
 }
 
 export function canBreakEven(result, capacity) {

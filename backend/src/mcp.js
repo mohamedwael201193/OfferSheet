@@ -8,6 +8,21 @@ import { mapEnvelopeError } from './errors.js';
 
 const PROTOCOL_VERSION = '2024-11-05';
 
+// G6: replay allowlist — exactly the 10 official `qloo mcp` tools. Any other
+// tool name is rejected before a session is spawned.
+export const MCP_TOOLS = [
+  'qloo_capabilities',
+  'qloo_find_tags',
+  'qloo_describe',
+  'qloo_recommend',
+  'qloo_rank',
+  'qloo_where_popular',
+  'qloo_compare_audiences',
+  'qloo_audience_demographics',
+  'qloo_entity_tags',
+  'qloo_trends',
+];
+
 export class McpSession {
   constructor({ command = 'qloo', args = ['mcp'], timeoutMs = 60000, spawnFn = spawn } = {}) {
     this.command = command;

@@ -1,5 +1,7 @@
-// Gut arm (LLM alone) and Web arm (LLM + generic web data) — the two comparison
-// arms beside the Qloo-grounded Graph arm.
+// Gut arm (LLM alone) and Web arm (LLM + Wikidata facts) — the two comparison
+// arms beside the Qloo-grounded Graph arm. G9: the Web arm's facts come
+// solely from Wikidata search results — no broader web search is ever
+// called, so the label must name Wikidata and nothing broader.
 // Provider rule: the LLM provider is pluggable via environment ONLY
 // (LLM_BASE_URL + LLM_API_KEY + LLM_MODEL, OpenAI-compatible chat-completions
 // shape — the exact provider is TO-VERIFY at deploy time). When unconfigured,
@@ -52,9 +54,9 @@ export async function runWebArm({ question, webFacts, fetchImpl = fetch }) {
   if (!llmConfigured()) {
     return { arm: 'web', status: 'unavailable', reason: 'LLM arm not configured — no pick rendered' };
   }
-  const facts = (webFacts || []).map((f) => `- ${f}`).join('\n') || '(no generic web facts available)';
+  const facts = (webFacts || []).map((f) => `- ${f}`).join('\n') || '(no Wikidata facts available)';
   const out = await callLlm({
-    messages: [{ role: 'user', content: `Pick ONE opening act for this live-show question using ONLY the generic web facts below (no Qloo taste data). Question: ${question}\nFacts:\n${facts}` }],
+    messages: [{ role: 'user', content: `Pick ONE opening act for this live-show question using ONLY the Wikidata facts below (no Qloo taste data). Question: ${question}\nFacts:\n${facts}` }],
     fetchImpl,
   });
   if (out.status !== 'ok') return { arm: 'web', status: 'error', reason: out.reason };

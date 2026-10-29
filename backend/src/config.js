@@ -21,4 +21,7 @@ export const config = {
   perRunCallCap: Number(process.env.PER_RUN_CALL_CAP || 40),
   restTimeoutMs: 25000,
   mcpTimeoutMs: 60000,
+  // Overall verdict budget (G8/G47): a run that exceeds this ends withheld
+  // with a disclosed timeout — never a partial verdict presented as complete.
+  verdictBudgetMs: Number(process.env.VERDICT_BUDGET_MS || 90000),
 };

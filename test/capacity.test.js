@@ -60,10 +60,15 @@ test('T11: user-supplied capacity renders labeled, never as Ticketmaster-verifie
 });
 
 test('T11: Ticketmaster-reported capacity renders with its source', async () => {
+  // G11 (intentional change, 2026-10-29): with NO venue entered, the
+  // first-event capacity is no longer labeled with the bare
+  // 'Ticketmaster-reported' — it now carries the honest "not the offer
+  // room" suffix. The bare label survives only for a venue-search-resolved
+  // room (see money-ground-truth.test.js, G11 resolved case).
   const v = await runVerdict(baseInput(), baseDeps({ tmEvents: tmEventsWithCapacity(5000) }));
   assert.equal(v.capacity.state, 'known');
   assert.equal(v.capacity.value, 5000);
-  assert.equal(v.capacity.source, 'Ticketmaster-reported');
+  assert.equal(v.capacity.source, `Ticketmaster-reported — first matching Ticketmaster event's venue, not the offer room`);
 });
 
 test('T11: no price anywhere yields price_unknown, never an invented number', async () => {
