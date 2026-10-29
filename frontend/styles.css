@@ -463,3 +463,127 @@ a.btn:hover { text-decoration: none; }
   .io-arm .reveal { transition: none; opacity: 1; transform: none; }
   .fig { animation: none; }
 }
+
+/* REDESIGN v2 — "Deal Sheet" deepening of Studio (2026-10-29).
+   Appended only; no existing rule above is changed. Identity: the
+   promoter's deal sheet becomes the page — ticket perforation, proof
+   slips, venue plan, dimension lines. All motion is transform/opacity
+   only and has a reduced-motion end state. */
+
+/* Scroll progress: the page's orange guide line, growing as you read
+   (scroll-progress pattern, vanilla JS + CSS scaleX). */
+.scroll-progress {
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 50;
+  background: var(--color-accent);
+  transform: scaleX(var(--sp, 0)); transform-origin: left center;
+}
+
+/* Deal-sheet hero: two-column composition, headline left, 3D stack right. */
+.hero--deal { position: relative; overflow: hidden; }
+.hero--deal .hero-copy { position: relative; z-index: 1; }
+.hero--deal h1 { font-size: clamp(2.4rem, 5.2vw, 4.25rem); max-width: 16ch; }
+.hero-support { font-size: 1rem; line-height: 1.55; color: var(--color-muted); max-width: 58ch; margin: 0 0 10px; }
+
+/* Ghost velocity band: oversized display words in their own band
+   (aria-hidden, 7% ink — never over text that must be read, never a number). */
+.ghost-strip {
+  overflow: hidden; white-space: nowrap; pointer-events: none; user-select: none;
+  height: 88px; display: flex; align-items: center; margin: 4px 0 0;
+}
+.ghost-strip span {
+  display: inline-block;
+  font-family: var(--font-display); font-size: clamp(3rem, 8vw, 6rem);
+  line-height: 1; letter-spacing: var(--tracking-display);
+  color: color-mix(in oklab, var(--color-ink) 7%, transparent);
+  will-change: transform;
+}
+
+/* 3D deal stack (TiltedCard pattern, vanilla): perspective on the stage,
+   preserve-3d on the stack, sheets at real Z depths. The stack reads
+   even with no pointer and no script: sheets carry 2D offsets too. */
+.hero-stage { position: relative; z-index: 1; perspective: 1200px; animation: stack-float 7s ease-in-out infinite; }
+@keyframes stack-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+.deal-stack { position: relative; transform-style: preserve-3d; transform: rotateX(10deg) rotateY(-12deg); transition: transform 200ms ease-out; will-change: transform; }
+.deal-sheet { background: var(--color-paper-hi); border: 1px solid var(--color-rule); border-radius: var(--radius-card); box-shadow: var(--shadow-sheet); padding: 10px; }
+.deal-sheet img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 2px; }
+.deal-sheet--back { position: absolute; inset: 0; transform: translate(-26px, 26px) translateZ(-40px); }
+.deal-sheet--mid { position: absolute; inset: 0; transform: translate(-13px, 13px) translateZ(0px); }
+.deal-sheet--front { position: relative; transform: translateZ(40px); }
+.deal-sheet--front figcaption { padding-top: 8px; }
+.deal-caption { margin: 48px 0 0 28px; font-weight: 500; font-size: 0.9rem; color: var(--color-muted); }
+.deal-caption::before { content: ""; display: inline-block; width: 18px; height: 1px; background: var(--color-accent); vertical-align: middle; margin-right: 8px; }
+
+/* Ticket perforation: punched paper holes along the top edge of the
+   two money sheets (tool + verdict). ::after is free on .sheet. */
+.perf::after {
+  content: ""; position: absolute; top: -7px; left: 14px; right: 14px; height: 14px;
+  background-image: radial-gradient(circle at 7px 7px, var(--color-paper) 5px, transparent 6px);
+  background-size: 28px 14px; background-repeat: repeat-x; pointer-events: none;
+}
+
+/* Stats ticker (marquee pattern, vanilla): duplicated track, CSS loop,
+   pause on hover; the same four spec-honest facts, never shortened. */
+.ticker { border-top: 1px solid var(--color-ink); border-bottom: 1px solid var(--color-ink); padding: 12px 0; margin: 28px 0 8px; overflow: hidden; background: var(--color-paper-hi); -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent); mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent); }
+.ticker-track { display: flex; width: max-content; animation: ticker-scroll 46s linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+.ticker-group { display: flex; align-items: baseline; }
+.ticker-item { white-space: nowrap; padding: 0 26px; font-size: 0.95rem; color: var(--color-muted); }
+.ticker-item strong { font-family: var(--font-display); font-size: 1.15rem; color: var(--color-ink); font-weight: 400; margin-right: 6px; }
+.ticker-item + .ticker-item { border-left: 1px solid var(--color-rule); }
+@keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* Depth proof notes: chunked with an orange guide + air, every word kept. */
+.proof-note { border-left: 1px solid var(--color-accent); padding-left: 18px; margin: 22px 0; }
+.proof-note p { margin: 0 0 12px; }
+.proof-note p:last-child { margin-bottom: 0; }
+.table-wrap { overflow-x: auto; }
+.depth-table td { padding: 14px 10px; }
+.depth-table td:first-child { font-family: var(--font-display); font-size: 1.05rem; }
+.stamp { display: inline-block; border: 1px solid var(--color-ink); border-radius: 2px; padding: 3px 8px; font-size: 0.8rem; color: var(--color-ink); white-space: nowrap; }
+
+/* Reveal stagger: --rd delays the entrance per child (both the
+   view-timeline path and the IntersectionObserver fallback path). */
+.reveal { animation-delay: var(--rd, 0ms); }
+.io-arm .reveal { transition-delay: var(--rd, 0ms); }
+
+@media (min-width: 900px) {
+  .hero--deal { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 36px; align-items: center; padding: 40px 0 12px; }
+  .hero--deal .hero-copy { padding-bottom: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* v2 motion off, full construction visible: flat readable stack,
+     static ticker row, no ghost, no float. */
+  .hero-stage { animation: none; }
+  .deal-stack { transform: none; transition: none; }
+  .ticker-track { animation: none; flex-wrap: wrap; width: auto; }
+  .ghost-strip { display: none; }
+}
+
+/* v2 round-2 fixes: keep a figure ratio on one line; let the static
+   ticker wrap inside its groups under reduced motion. */
+.nowrap { white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .ticker-group { flex-wrap: wrap; }
+}
+
+/* v2 round-3 fixes: tool names break only at underscores (never
+   mid-token) with a usable first column; under reduced motion the
+   marquee's duplicate track is hidden instead of repeated statically. */
+.depth-table td:first-child { overflow-wrap: normal; word-break: normal; min-width: 118px; }
+@media (prefers-reduced-motion: reduce) {
+  .ticker-group[aria-hidden="true"] { display: none; }
+}
+
+/* v2 round-4: on narrow viewports tighten the depth table so the
+   status stamps need as little horizontal scrolling as possible. */
+@media (max-width: 640px) {
+  .depth-table th, .depth-table td { padding: 10px 8px; }
+  .depth-table .stamp { font-size: 0.8rem; padding: 3px 6px; }
+}
+
+/* v2 round-4b: on narrow viewports let status stamps wrap so the
+   depth table fits instead of forcing a 700px-wide scroll. */
+@media (max-width: 640px) {
+  .depth-table .stamp { white-space: normal; }
+}

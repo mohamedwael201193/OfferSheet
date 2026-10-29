@@ -312,6 +312,31 @@ function renderProofSummary(v) {
     + line('Overlap', overlap);
 }
 
+// Motion hook (v2): the verdict number counts up to its REAL value
+// (NumberTicker pattern, vanilla rAF + easeOutQuart). The final value is
+// identical to the direct assignment it replaces; reduced motion (or a
+// non-numeric value) sets it instantly. Never a fabricated figure.
+let ticketsRaf = null;
+function animateTickets(value) {
+  const el = $('beTickets');
+  if (typeof value !== 'number' || !isFinite(value)) { el.textContent = fmt(value); return; }
+  if (ticketsRaf) cancelAnimationFrame(ticketsRaf);
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    el.textContent = fmt(value);
+    return;
+  }
+  const start = performance.now();
+  const dur = 900;
+  const step = (now) => {
+    const t = Math.min((now - start) / dur, 1);
+    const eased = 1 - Math.pow(1 - t, 4);
+    el.textContent = fmt(Math.round(value * eased));
+    if (t < 1) ticketsRaf = requestAnimationFrame(step);
+    else { el.textContent = fmt(value); ticketsRaf = null; }
+  };
+  ticketsRaf = requestAnimationFrame(step);
+}
+
 function renderVerdict(v, race) {
   hideStatus();
   lastVerdict = v;
@@ -328,7 +353,7 @@ function renderVerdict(v, race) {
   $('raceToggleWrap').hidden = false;
 
   $('verdictSubject').textContent = `${v.artist} in ${v.city} · guarantee ${money(v.guarantee)}`;
-  $('beTickets').textContent = fmt(be.tickets);
+  animateTickets(be.tickets);
   $('beVerdict').textContent = be.verdict || (be.note === 'no guarantee' ? 'No guarantee to cover — 0 tickets.' : '');
   renderProofSummary(v);
   $('cannotBox').hidden = !cannot;
@@ -528,3 +553,56 @@ if (typeof CSS !== 'undefined' && !CSS.supports('animation-timeline', 'view()') 
 
 loadHealth();
 loadBench();
+
+// ---- Redesign v2 motion layer (transform/opacity only, all guarded) ----
+// Scroll progress is page state (like a scrollbar) and updates always;
+// ghost drift, stack tilt, and magnetic buttons are decoration and skip
+// reduced motion entirely. Any failure leaves the page fully usable.
+try {
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ghost = document.querySelector('.ghost-strip span');
+  let lastY = window.scrollY, vel = 0, ghostX = 0;
+  const onScroll = () => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = max > 0 ? Math.min(window.scrollY / max, 1) : 0;
+    document.documentElement.style.setProperty('--sp', ratio.toFixed(4));
+    if (!reducedMotion && ghost) {
+      const y = window.scrollY;
+      vel = vel * 0.85 + (y - lastY) * 0.15;
+      lastY = y;
+      ghostX = Math.max(-240, Math.min(240, ghostX + vel * 0.35));
+      ghost.style.transform = `translateX(${ghostX.toFixed(1)}px)`;
+    }
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (!reducedMotion) {
+    // Hero-stack pointer tilt (TiltedCard pattern, vanilla): perspective
+    // 1200px on the stage, base pose 10/-12, pointer adds at most 8deg.
+    const stage = document.getElementById('heroStage');
+    const stack = document.getElementById('dealStack');
+    if (stage && stack) {
+      stage.addEventListener('pointermove', (e) => {
+        const r = stage.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width - 0.5;
+        const py = (e.clientY - r.top) / r.height - 0.5;
+        stack.style.transform = `rotateX(${(10 - py * 8).toFixed(2)}deg) rotateY(${(-12 + px * 8).toFixed(2)}deg)`;
+      });
+      const resetStack = () => { stack.style.transform = ''; };
+      stage.addEventListener('pointerleave', resetStack);
+      stage.addEventListener('pointercancel', resetStack);
+    }
+    // Magnetic primary buttons: a few pixels toward the pointer, spring back.
+    document.querySelectorAll('.btn--primary').forEach((btn) => {
+      btn.addEventListener('pointermove', (e) => {
+        const r = btn.getBoundingClientRect();
+        const dx = (e.clientX - (r.left + r.width / 2)) / r.width;
+        const dy = (e.clientY - (r.top + r.height / 2)) / r.height;
+        btn.style.transform = `translate(${(dx * 6).toFixed(1)}px, ${(dy * 4).toFixed(1)}px)`;
+      });
+      const resetBtn = () => { btn.style.transform = ''; };
+      btn.addEventListener('pointerleave', resetBtn);
+      btn.addEventListener('pointercancel', resetBtn);
+    });
+  }
+} catch { /* motion is enhancement-only; the page works without it */ }
