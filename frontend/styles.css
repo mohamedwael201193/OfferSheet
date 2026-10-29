@@ -58,51 +58,100 @@ section > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
   display: flex; gap: 4px; align-items: center; padding: 8px 10px;
   max-width: calc(100vw - 32px); overflow-x: auto;
   border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14);
-  background: rgba(17, 17, 17, .72); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  background: rgba(17, 17, 17, .82); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
 }
 .nav-links a { flex: none; min-height: 48px; display: inline-flex; align-items: center; padding: 0 16px; border-radius: 999px; text-decoration: none; font-size: 15px; font-weight: 600; color: #FFFFFF; white-space: nowrap; }
 .nav-links a:hover { background: rgba(255, 255, 255, .12); }
 .nav-links-cta { background: #FFFFFF !important; color: #0A0A0A !important; }
+.nav-links .glass-nav-cta { background: #FFFFFF; color: #0A0A0A; }
+.nav-links .glass-nav-cta:hover { background: #E5E5E5; color: #0A0A0A; }
 
 /* Type scale: giant display + wide-tracked micro-labels. */
 .display { font-family: var(--display); font-weight: 800; letter-spacing: -0.01em; }
-.hero h1.display { font-size: clamp(52px, 11vw, 150px); }
+/* Hero h1 size: see the HERO REBUILD block below (single source of truth). */
 .display--section { font-size: clamp(40px, 10vw, 96px); margin-bottom: 24px; }
 .display--giant { font-size: clamp(56px, 14vw, 180px); }
 .micro-label { font-size: 13px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
-.hero { position: relative; padding-top: 80px; padding-bottom: 96px; overflow: hidden; }
+/* HERO REBUILD (d-hero, filing day): dark cinematic, theatrical rhythm.
+   The old hero failed on three measurable counts, all visible in the
+   localhost before-renders: (1) the copy sat in the bare <section>, so
+   the section > * auto-margin rule centred the 60ch sub-copy away from
+   the headline's left edge; (2) the max-height:950px shrink capped the
+   headline at 110px on a normal laptop and at 44px at 390px, so the
+   "giant display" never arrived; (3) the figure kept its natural 3:2
+   aspect inside the 1200px column, so at 1440x900 the whole image sat
+   below the first viewport and the first glance was text on black
+   with only a sliver of light blueprint at the bottom edge.
+   Rebuild: copy wrapped in .hero-inner (left-aligned, widened past
+   1400px so the giant headline holds 3 lines),
+   giant Baloo 2 headline at full size, and the figure as a full-bleed,
+   sharp-cornered, cover-cropped photographic frame with a dark
+   gradient caption scrim — so the slot reads dark cinematic under
+   EITHER the current file or the photographic swap the images agent
+   drops into the same src. No hero copy changed; no nav target, href,
+   or label changed. */
+.hero { position: relative; padding: clamp(72px, 9vh, 120px) 0 80px; overflow: hidden; background: #0A0A0A; color: #FFFFFF; }
 .hero-beam { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(46, 143, 158, .18), transparent 70%); }
-.hero-sub { font-size: 20px; color: var(--body); max-width: 60ch; }
+.hero-inner { padding: 0 24px; }
+.hero .micro-label { margin-bottom: 20px; }
+.hero h1.display { font-size: clamp(56px, 9vw, 128px); line-height: .98; letter-spacing: -0.02em; margin-bottom: 28px; }
+.hero-sub { font-size: 20px; line-height: 1.6; color: #D4D4D4; max-width: 56ch; margin-bottom: 0; }
 /* Hero settle: one short transform/opacity settle on the hero heading
    and sub-copy (600ms, once). Killed by the reduced-motion block below
    (its * rule sets animation: none); without the animation the final
    frame is the natural style, so no-JS still renders the full hero. */
 @keyframes hero-settle { from { opacity: 0; transform: translateY(12px) scale(1.015); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .hero h1.display, .hero-sub { animation: hero-settle 600ms ease-out both; }
-.hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin: 28px 0 48px; }
-/* Short viewports: shrink the hero stack so the CTA row's bottom edge
-   sits at least 100px above the viewport bottom at first paint,
-   clearing the fixed bottom-center pill nav (~84px band). The pill
-   itself is not moved or hidden. Tall viewports keep the giant type. */
-@media (max-height: 950px) {
-  .hero { padding-top: 24px; }
-  .hero h1.display { font-size: clamp(52px, 11vw, 110px); }
+.hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin: 32px 0 40px; }
+/* Short viewports: tighten the stack's voids only — the headline stays
+   giant (cap 120px, never the old 110px/44px shrink). The CTAs sit near
+   the top of the page, so the fixed bottom pill nav never covers them
+   at first paint on a normal laptop viewport. */
+@media (max-height: 800px) {
+  .hero { padding-top: 32px; }
+  .hero h1.display { font-size: clamp(52px, 11vw, 120px); margin-bottom: 20px; }
+  .hero-sub { font-size: 19px; }
+  .hero-ctas { margin: 20px 0 28px; }
 }
-/* Narrow + short: the 52px clamp floor above does not shrink the
-   headline, so shrink the stack from the other ends instead. */
-@media (max-width: 820px) and (max-height: 950px) {
-  .hero { padding-top: 16px; }
-  .hero h1.display { font-size: clamp(44px, 11vw, 110px); }
-  .hero-ctas { margin-top: 20px; }
+/* Wide viewports: the hero copy column widens to 1360px so the giant
+   headline keeps its 3-line break ("How many tickets" / "must sell
+   before" / "you sign?") instead of collapsing to 4 lines and
+   pushing the CTAs under the fixed pill nav. */
+@media (min-width: 1400px) {
+  .hero-inner { max-width: 1360px; }
 }
-.hero-figure img { border-radius: 0; width: 100%; }
-.hero-figure figcaption { color: #AAAAAA; font-size: 15px; margin-top: 12px; max-width: 64ch; }
-.rotating-badge { position: absolute; right: 48px; top: 64px; width: 120px; height: 120px; opacity: .85; }
+/* Full-bleed frame: breaks out of the section > * 1200px column
+   (max-width:none + margin 0), spans the viewport width as a plain
+   100% width (never 100vw, so no scrollbar-driven horizontal scroll),
+   and cover-crops to a theatrical band. Sharp corners (radius 0) per
+   the dark cinematic language. */
+.hero-figure { position: relative; max-width: none; margin: 0; width: 100%; }
+.hero-figure img { border-radius: 0; width: 100%; height: clamp(440px, 56vh, 680px); object-fit: cover; object-position: center 40%; }
+/* Caption rides the image on a dark gradient scrim, so it stays
+   legible over the current light blueprint AND over any photographic
+   swap. Colour lifted to #D4D4D4 (was #AAAAAA) for the contrast floor
+   on the scrim; wording unchanged and generic — it names no artist
+   and claims no live data. */
+.hero-figure figcaption { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; padding: 28px 24px 20px; color: #D4D4D4; font-size: 15px; line-height: 1.6; max-width: none; background: linear-gradient(to top, rgba(10, 10, 10, .88) 0%, rgba(10, 10, 10, .55) 55%, transparent 100%); }
+/* Hero figure scroll reveal: JS-gated (see landing.js). No-JS and
+   reduced-motion never get the .js-hero class, so the figure renders
+   at full opacity by default; the reduced-motion block below also
+   forces it visible if the class ever lands. */
+.hero-figure.js-hero { opacity: 0; transform: translateY(16px); transition: opacity 600ms ease-out, transform 600ms ease-out; }
+.hero-figure.js-hero.revealed { opacity: 1; transform: none; }
+/* Rotating badge: parked top-right of the hero. Shown only at
+   >=1700px, where the wide copy column still leaves a clear right
+   margin; below that it would sit on the headline, so it hides.
+   Decorative (aria-hidden). */
+.rotating-badge { position: absolute; right: 48px; top: 96px; width: 120px; height: 120px; opacity: .85; z-index: 2; }
 .rotating-badge svg { width: 100%; height: 100%; animation: spin 24s linear infinite; }
 .rotating-badge text { fill: var(--muted); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; font-family: var(--sans); }
 .rotating-badge circle { fill: var(--text); }
 @keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 1699px) {
+  .rotating-badge { display: none; }
+}
 
 /* Marquee: tagline + section labels ONLY, never numbers. */
 .marquee { overflow: hidden; border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); padding: 20px 0; }
@@ -222,10 +271,94 @@ td { color: var(--body); }
   .nav-links { gap: 2px; }
   .nav-links a { padding: 0 12px; font-size: 14px; }
 }
+/* Hero at narrow widths: generous but usable at 390px. Headline floor
+   52px (never the old 44px shrink); image band 300px floor, full-bleed;
+   CTAs stack at full 48px targets; caption stays on its scrim. */
+@media (max-width: 820px) {
+  .hero { padding-top: 48px; padding-bottom: 48px; }
+  .hero-inner { padding: 0 20px; }
+  .hero h1.display { font-size: clamp(52px, 13.5vw, 84px); margin-bottom: 24px; }
+  .hero-sub { font-size: 19px; }
+  .hero-ctas { margin: 28px 0 36px; }
+  .hero-ctas .btn { width: 100%; }
+  .hero-figure img { height: clamp(300px, 72vw, 440px); }
+  .hero-figure figcaption { padding: 24px 20px 16px; }
+}
+/* LANDING-WIDE DARK (d-hero scope update, filing day).
+   Why this block exists: styles.css loads FIRST; landing-mobile.css,
+   mobile-section.css and sim-animation.css load after it and still
+   carry the light Studio tokens (paper #f1f7f8, ink #030e1a, cadmium
+   orange, Hedvig serif). The phone section's chrome was already
+   patched dark inside mobile-section.css, but the phone SCREEN still
+   inherited the light variables, the get-the-app kicker tick still
+   used the orange accent, the recorded-demo verdict number still set
+   Hedvig serif, and the footer focus outline still used orange.
+   This block redefines those inherited variables on .ms-section at
+   higher specificity (body.landing-page .ms-section beats a bare
+   .ms-section rule in any sheet, regardless of load order) and
+   overrides the handful of hardcoded Studio values, so hero through
+   phone section render one dark language WITHOUT editing the later
+   sheets — their pinned structure (device shell, island, keys,
+   aspect, reduced-motion handling) is untouched.
+   This SUPERSEDES the old "lit phone in a dark room" note in
+   mobile-section.css: the screen is now dark like everything else.
+   Revert: delete this block and the screen returns to light paper.
+   Contrast floor on the flipped surfaces: #FFFFFF / #D4D4D4 on
+   #0A0A0A and on #111111 all clear 4.5:1 (white-on-black ~21:1,
+   #D4D4D4-on-black ~13.6:1, #AAAAAA-on-black ~9.3:1). */
+body.landing-page .ms-section {
+  --color-paper: #0A0A0A;
+  --color-paper-hi: #111111;
+  --color-ink: #FFFFFF;
+  --color-ink-2: #D4D4D4;
+  --color-muted: #AAAAAA;
+  --color-rule: rgba(255, 255, 255, .14);
+  --color-accent: #FFFFFF;
+  --color-focus: #FFFFFF;
+  --color-mark: rgba(255, 255, 255, .35);
+  --font-display: "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 0;
+  --radius-pill: 999px;
+  background: #0A0A0A;
+  color: #D4D4D4;
+}
+/* Hardcoded Studio values the variable flip cannot reach: the
+   recorded-demo verdict number (serif in sim-animation.css) joins
+   the rounded display face; the recorded label becomes a pill and
+   the receipt cards go sharp-cornered, matching the landing's
+   pill buttons and sharp photography. The device shell keeps its
+   48px hardware corners (documented exception, still dark). */
+body.landing-page .sim-verdict-num { font-family: "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif; font-weight: 800; }
+body.landing-page .sim-label { border-radius: 999px; }
+body.landing-page .sim-receipt { border-radius: 0; }
+/* Footer focus outline: landing-mobile.css still sets cadmium
+   orange; on the dark footer the outline is white. */
+body.landing-page .footer-meta a:focus-visible { outline-color: #FFFFFF; }
+/* Dead-rule hardening: .story-section has NO element in the current
+   index.html, but its sheet still defines light paper. If that
+   section ever returns, it must not return light. Zero render
+   effect on the current page. */
+body.landing-page .story-section { background: #0A0A0A; color: #D4D4D4; }
+body.landing-page .story-section h2 { font-family: "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif; color: #FFFFFF; }
+body.landing-page .story-section .beat, body.landing-page .story-section .same-method-strip { background: #111111; border-color: #2A2A2A; }
+body.landing-page .story-section .beat h3, body.landing-page .story-section .same-method-strip h3 { font-family: "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif; color: #FFFFFF; }
+body.landing-page .story-section .persona-label { border-color: rgba(255, 255, 255, .32); }
+
+/* Narrow appbar: at <=480px the wordmark + CTA wrap to two rows and
+   steal ~50px of first-paint height, pushing the second hero CTA under
+   the fixed pill nav. Hiding the LANDING kicker (wordmark stays) keeps
+   the appbar to one row, so both CTAs clear the nav at 390px. The
+   .app-kicker rule itself stays defined (pinned by landing-split). */
+@media (max-width: 480px) {
+  .app-kicker { display: none; }
+  .appbar-inner { padding: 16px 20px; gap: 16px; }
+}
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   [data-reveal] .rl { opacity: 1; transform: none; }
+  .hero-figure.js-hero { opacity: 1; transform: none; }
   [data-clip].js-clip { clip-path: none; }
   .draw-svg.js-draw .draw-path { stroke-dashoffset: 0; }
   .btn--glow, .btn--glow:hover { box-shadow: 0 0 0 1px rgba(255, 255, 255, .25); }

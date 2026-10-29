@@ -94,6 +94,20 @@
       el.classList.add('js-clip');
       io.observe(el);
     });
+    /* Hero figure scroll reveal (d-hero): one short fade/rise, once,
+       observed like the other reveals. JS-gated: the .js-hero class is
+       only added here, so no-JS and reduced-motion (which returns
+       before this block) render the figure at full opacity. */
+    var heroFigure = document.querySelector('.hero-figure');
+    if (heroFigure) {
+      heroFigure.classList.add('js-hero');
+      var ioHero = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('revealed'); ioHero.unobserve(e.target); }
+        });
+      }, { threshold: 0.15 });
+      ioHero.observe(heroFigure);
+    }
     var ioDraw = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         if (e.isIntersecting) { e.target.classList.add('drawn'); ioDraw.unobserve(e.target); }
