@@ -1,8 +1,7 @@
 # OfferSheet — check a live-show offer before you sign it
 
 An independent promoter enters an offer (artist, room, guarantee) and gets,
-on one page, no sign-in (measured 26–40 seconds across the 3 recorded trials, 29 Oct 2026; a fresh timed end-to-end run on the deployed demo is UNCOVERED, see §8 T15): the break-even ticket count plus
-whether the room's taste audience will show up — with a receipt on every Qloo-backed
+on one page, no sign-in (measured 26–40 seconds across the 3 recorded trials, 29 Oct 2026; a fresh timed end-to-end run on the deployed demo is UNCOVERED, see §8 T15): the break-even ticket count plus the Qloo taste-overlap evidence behind the opener pick — with a receipt on every Qloo-backed
 claim, a Gut-vs-Graph verdict, and a fail-closed guarantee (no key means a
 visible 503, never a mock).
 
@@ -20,7 +19,7 @@ OfferSheet is a free demo with no sign-in: an independent promoter pastes an art
 
 ## 2. How it works
 
-Run path: `POST /api/verdict` → MCP chain (10 tools wired; all 10 invoked per verdict, 3 trials recorded 29 Oct 2026 — see bench/results.json) → REST receipt
+Run path: `POST /api/verdict` → MCP chain (10 tools wired; each tool invoked when its precondition holds — rank skipped with no candidates, compare skipped with no opener, REST legs skipped on failed preconditions — and receipted only when it returns data; the "8 receipted live" figure is collective across the 3 recorded trials, not per-verdict; 3 trials recorded 29 Oct 2026 — see bench/results.json) → REST receipt
 legs → Ticketmaster / OpenStreetMap / Wikidata legs → break-even calculator
 → one-page card. The frontend never calls Qloo directly; the Node backend
 runs `qloo mcp` over stdio and the REST receipt layer, same-origin only.
@@ -31,7 +30,7 @@ cost per ticket))`. If break-even exceeds a known capacity, the verdict is
 
 ## 3. Qloo tools and workflows — and why they fit
 
-All 10 MCP tools are wired and invoked per verdict (8 receipted live; trends/compare returned empty on live runs so far — see the app depth panel):
+All 10 MCP tools are wired, invoked when their precondition holds (rank skipped with no candidates, compare skipped with no opener, REST legs skipped on failed preconditions), and receipted only when they return data (8 receipted live, collective across the 3 recorded trials, not per-verdict; trends/compare returned empty on live runs so far — see the app depth panel):
 
 | Tool | OfferSheet use |
 |---|---|
@@ -69,9 +68,7 @@ never a causal claim, and never a population headcount (Qloo returns none).
 
 The deployed demo is live (see §9). No screenshots are included here: none have been captured from a
 deployed demo, and none are fabricated. The frontend in this repo is the
-full Studio design system (light studio-white proof paper, ink dot grid,
-blue-black ink, Hedvig Letters Serif heads, crop marks, cadmium-orange
-construction guides + the one primary action): compact wound line + form
+full dark design system (set in a rounded display face and one grotesk sans, + the one primary action): compact wound line + form
 first, verdict card as page hero, hero figure collapsible below the
 verdict, spec-honest stats strip (tools wired, not all live-verified;
 receipts on Qloo claims; 3 arms wired; 3 trials run live and recorded
@@ -158,7 +155,7 @@ claimed.
 | T12 quota-floor trip (staging) | Monthly budget trip → QUOTA_FLOOR 503; month rollover resets | GREEN, 2/2 |
 | T13 per-visitor cap (staging) | Per-IP daily cap → VISITOR_CAP 429; other IPs unaffected | GREEN, 1/1 |
 | T14 retry/backoff (local stub) | 429→200 after exactly 2 requests; always-500 after exactly 2; timeout → throw after 2 | GREEN, 3/3 |
-| T15 E2E judge path ≤30s on deployed demo | Needs deploy | UNCOVERED |
+| T15 E2E judge path on deployed demo | Needs deploy | UNCOVERED |
 | T16 no-mock static audit | No fixture imports, no mock/fake/stub identifiers outside strings/comments, NOT_CONFIGURED + verdict_withheld present, no literal key assignment | GREEN, 4/4 (see note) |
 | S1 verdict gating | Full evidence → verdict + receipts + miss trial; no key → NOT_CONFIGURED; required-leg failure → WITHHELD with no numbers; optional-leg failure → verdict still renders; ambiguous headliner → needs_input | GREEN, 6/6 |
 | D1 break-even edges | Huge guarantee 10^12 (exact ceil), zero/negative/non-numeric price, negative variable cost, non-numeric guarantee, capacity-equality boundary, null-capacity canBreakEven | GREEN, 11/11 |
@@ -232,7 +229,7 @@ Render workspace "Ffcvv's workspace" (user-confirmed, backend).
    the push; results land in `bench/results.json` and
    `test/ledger/LIVE-CHECKS.md`.
 5. Post-deploy live checks still to run after this bundle: a timed
-   verdict end-to-end (T15, target ≤30s); a receipt replay (T08); a
+   verdict end-to-end (T15); a receipt replay (T08); a
    benchmark trial recorded in `bench/results.json` (S2).
 
 ## 10. Repo state

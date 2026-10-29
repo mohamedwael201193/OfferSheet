@@ -1414,7 +1414,7 @@ function renderVerdict(v, race) {
     $('capacityBadge').textContent = 'capacity unknown';
     $('unknownText').textContent = (typeof cap.message === 'string' && cap.message)
       ? cap.message
-      : 'Venue capacity unknown — break-even is shown as tickets needed, not as a sellout percentage. Verify room size before signing.';
+      : 'Venue capacity unknown — Ticketmaster returned no capacity for this room. Break-even is shown as tickets needed, not as a sellout percentage. Verify room size before signing.';
     $('unknownBox').hidden = false;
     $('beCapacity').textContent = 'Unknown';
     $('selloutBox').hidden = true;

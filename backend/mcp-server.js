@@ -557,7 +557,7 @@ export function createMcpApp(deps = {}) {
         status: 'ok',
         eventsFound,
         venueName: (venueResolved ? resolvedVenue?.name : venue?.name) ?? null,
-        capacity: capacityValue !== null ? { value: capacityValue, state: 'known', source: venueResolved ? 'Ticketmaster-reported' : 'Ticketmaster-reported — first matching Ticketmaster event\'s venue, not the offer room' } : { value: null, state: 'unknown', cause: 'no_field', message: 'Venue capacity unknown — Ticketmaster returned no capacity for this room.' },
+        capacity: capacityValue !== null ? { value: capacityValue, state: 'known', source: venueResolved ? 'Ticketmaster-reported' : 'Ticketmaster-reported — first matching Ticketmaster event\'s venue, not the offer room' } : { value: null, state: 'unknown', cause: 'no_field', message: 'Venue capacity unknown — Ticketmaster returned no capacity for this room. Break-even is shown as tickets needed, not as a sellout percentage. Verify room size before signing.' },
         price,
         grounding,
         venueResolved,

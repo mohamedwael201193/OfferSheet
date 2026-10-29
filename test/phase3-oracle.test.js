@@ -184,7 +184,7 @@ test('S1: landing arms tally recomputed from trial-pack.json (same file the app 
 test('S2: cost-of-being-wrong beat carries the verbatim label and checkable arithmetic', () => {
   assert.ok(landingHtml.includes('Illustrative arithmetic on the recorded trial.'),
     'story beat must carry the verbatim label');
-  assert.ok(landingHtml.includes('being wrong by 100 tickets = $12,000 of guarantee exposure (100 × 120 = 12,000)'),
+  assert.ok(landingHtml.includes('Being wrong by 100 tickets = $12,000 of guarantee exposure (100 × 120 = 12,000)'),
     'story beat must state the 100-ticket arithmetic');
   assert.equal(100 * 120, 12000, 'illustrative arithmetic must recompute');
   assert.ok(landingHtml.includes('That 100-ticket gap is hypothetical — not a measured outcome, not a real loss, and not a prediction.'),
