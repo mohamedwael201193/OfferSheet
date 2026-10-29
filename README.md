@@ -2,7 +2,8 @@
 
 An independent promoter enters an offer (artist, room, guarantee) and gets,
 on one page, no sign-in (design target: about 30 seconds — the timed
-end-to-end run on a deployed demo is UNCOVERED, see §8 T15): the break-even ticket count plus
+end-to-end run on the deployed demo is PARTIAL (26–40s observed;
+the ≤30s bar is met sometimes, not always, see §8 T15): the break-even ticket count plus
 whether the room's taste audience will show up — with a receipt on every
 claim, a Gut-vs-Graph verdict, and a fail-closed guarantee (no key means a
 visible 503, never a mock).
@@ -76,8 +77,8 @@ blue-black ink, Hedvig Letters Serif heads, crop marks, cadmium-orange
 construction guides + the one primary action): compact wound line + form
 first, verdict card as page hero, hero figure collapsible below the
 verdict, spec-honest stats strip (tools wired, not all live-verified;
-receipts on Qloo claims; 3 arms wired, live run pending), race as a
-secondary toggle below the verdict (live three-arm run UNCOVERED, see
+receipts on Qloo claims; 3 arms wired — 3 live trials recorded 29 Oct 2026), race as a
+secondary toggle below the verdict (live three-arm runs recorded 29 Oct 2026, see
 §8 T07), receipt drawer with replay, formula panel, safety strip, and
 benchmark ledger — with designed loading, empty, error,
 unknown-capacity, and verdict-withheld states. The capacity box renders
@@ -139,7 +140,7 @@ repo):
 
 ## 8. Test ledger — final green run, 2026-10-29
 
-`npm test` from the repo root: **197 tests, 197 pass, 0 fail** — unit/stub/staging tests only; live rows T05/T07/T15 are UNCOVERED and T06/T08 PARTIAL (see table)
+`npm test` from the repo root: **197 tests, 197 pass, 0 fail** — unit/stub/staging tests only; live rows T05/T07 are live, T15 PARTIAL, and T06/T08 PARTIAL (see table)
 (full output: `test/ledger/FINAL-RUN.txt`; red→green process evidence:
 `test/ledger/T09-red.txt`, `test/ledger/T09-green.txt`). Counts come only
 from this green run. Any row without a passing run is UNCOVERED, never
@@ -151,17 +152,17 @@ claimed.
 | T02 receipt-hash determinism (unit) | SHA-256 stability, manifest shape, null requestId never invented | GREEN, 4/4 |
 | T03 quota-guard logic (unit) | per-run cap + reset, rollover, snapshot | GREEN, 3/3 in guards file (2 more under T12/T13) |
 | T04 fail-closed mapping (unit) | NOT_CONFIGURED/QLOO_AUTH 503, visitor 429, envelope mapping | GREEN, 2/2 |
-| T05 MCP chain live (all 10 tools) | Needs the deploy-time Qloo key in the app's environment | UNCOVERED |
-| T06 REST receipt leg live | `/search` verified live via the connector (HTTP 200, 5 results); insights/compare/entities need the deploy-time key | PARTIAL |
-| T07 three-arm run live | Needs the Qloo key AND an LLM provider key | UNCOVERED |
-| T08 receipt replay live | Search-leg replay reproduced (two identical runs, same names/order); full replay needs the deploy-time key | PARTIAL |
+| T05 MCP chain live (all 10 tools) | 10/10 MCP tools invoked live; 8/10 receipted (trends + compare_audiences wired, empty on live runs so far, shown as no data) | LIVE |
+| T06 REST receipt leg live | search live 200; restSearch + restEntities receipted live in trial 1; REST 429s on back-to-back runs (exact failure labels) | PARTIAL |
+| T07 three-arm run live | 3 bench trials recorded 2026-10-29 (Qwen primary, Groq fallback proven live) + browser-judge runs with all 3 lanes + miss ledger | LIVE |
+| T08 receipt replay live | Live-proven: replay MATCH same IDs in same order (10 results), plus a "not comparable" case when no ID list exists | PARTIAL |
 | T09 red→green regression (process) | Red run (missing module) + green run on disk | EVIDENCED |
 | T10 no-key 503 staging run | Server with no key: health `qlooConfigured: false`, verdict 503 NOT_CONFIGURED, page still serves | GREEN, 1/1 |
 | T11 missing-capacity state | Pure extraction + pipeline: unknown state with exact wording, no sellout fields; user/TM capacity labeling; price_unknown | GREEN, 5/5 |
 | T12 quota-floor trip (staging) | Monthly budget trip → QUOTA_FLOOR 503; month rollover resets | GREEN, 2/2 |
 | T13 per-visitor cap (staging) | Per-IP daily cap → VISITOR_CAP 429; other IPs unaffected | GREEN, 1/1 |
 | T14 retry/backoff (local stub) | 429→200 after exactly 2 requests; always-500 after exactly 2; timeout → throw after 2 | GREEN, 3/3 |
-| T15 E2E judge path ≤30s on deployed demo | Needs deploy | UNCOVERED |
+| T15 E2E judge path ≤30s on deployed demo | Ran on the deployed demo; times 26–40s (in-page race timer 34,856ms on one run); the ≤30s bar is met sometimes, NOT always | PARTIAL |
 | T16 no-mock static audit | No fixture imports, no mock/fake/stub identifiers outside strings/comments, NOT_CONFIGURED + verdict_withheld present, no literal key assignment | GREEN, 4/4 (see note) |
 | S1 verdict gating | Full evidence → verdict + receipts + miss trial; no key → NOT_CONFIGURED; required-leg failure → WITHHELD with no numbers; optional-leg failure → verdict still renders; ambiguous headliner → needs_input | GREEN, 6/6 |
 | D1 break-even edges | Huge guarantee 10^12 (exact ceil), zero/negative/non-numeric price, negative variable cost, non-numeric guarantee, capacity-equality boundary, null-capacity canBreakEven | GREEN, 11/11 |
@@ -192,13 +193,12 @@ Supporting live evidence (not test rows): `test/ledger/LIVE-CHECKS.md`
 without a key, OSM geocode, Wikidata search).
 
 MAX+ status: S1 verdict gating DONE (tested). S2 bench ledger: schema +
-`/api/bench` endpoint DONE; zero trials recorded (UNCOVERED until a real
-trial runs). S3 receipts manifest: repo manifest shape + per-verdict
+`/api/bench` endpoint DONE; 3 trials recorded 2026-10-29 in bench/results.json. S3 receipts manifest: repo manifest shape + per-verdict
 receipts with replay data DONE; the manifest itself is empty until real
 runs are recorded. S4 formula panel DONE (formula + worked example
 in real numbers, recomputed from live verdict numbers). S7 live race:
 `/api/race` + secondary race toggle with timings + miss ledger DONE in
-code; live three-arm run UNCOVERED (needs Qloo + LLM keys). S5 stats
+code; live three-arm runs recorded 29 Oct 2026 (keys present; Qwen primary, Groq fallback proven live). S5 stats
 strip, S6 wound-first screen, and S8 safety strip presentation DONE in the
 Studio frontend (form-first with wound line, spec-honest stats strip below
 the verdict, collapsible hero figure, visible safety strip). Backend static handler
