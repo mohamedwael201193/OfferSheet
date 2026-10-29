@@ -12,6 +12,10 @@
   var SETTLE_PROVES = 'What this check proves: whether the promoter-reported attendance reached the ticket threshold computed from the recorded guarantee, price, and costs. That is an arithmetic comparison between a recorded threshold and a reported outcome.';
   var SETTLE_NOT_PROVES = 'What this check does NOT prove: that Qloo affinity caused the sales; that affinity predicts sales; that this verdict method will be right next time; or that any other show will behave the same way. One settled show is one data point about one threshold, not validation of a prediction method. Affinity data describes taste match; it has never been a sales forecast in this product, and this check does not turn it into one.';
   var SORT_NOTE = 'Sorted by tickets needed to break even. This is not a ranking of which offer will succeed.';
+  // Phase 3 (S6, copy only): season-ledger framing for the workspace UI.
+  // No new behaviour, no new numbers, no new features — the same steps,
+  // read as a season: offers, routing, then settlement.
+  var SEASON_LEDGER_LINE = 'Season ledger: offers, routing, then settlement — the same workspace, read as a season, using only the steps already here.';
   var ROUTE_LABEL = 'affinity-ranked, not demand-proven';
   var ROUTE_NOTE = 'Ranking reflects how many areas Qloo matched for this headliner in each city. It is not a sales forecast, not an attendance estimate, and not evidence of sales.';
   var DELTA_LABEL = 'arithmetic on the two break-evens at the recorded net — not a forecast of money made or lost';
@@ -309,13 +313,13 @@
     var sec = $('workspace'); if (!sec) return;
     var head = $('wsHeader'), base = $('wsBase'), acts = $('wsActions');
     if (!ws) {
-      if (head) head.innerHTML = '<p class="ws-settle-line">Settlement status: no workspace</p>';
+      if (head) head.innerHTML = '<p class="ws-season-ledger">' + esc(SEASON_LEDGER_LINE) + '</p><p class="ws-settle-line">Settlement status: no workspace</p>';
       if (base) base.innerHTML = needsVerdictHtml();
       if (acts) acts.innerHTML = '';
       renderPanelsEmpty(); bindStatic(); return;
     }
     var b = ws.baseOffer, bv = ws.baseVerdict;
-    if (head) head.innerHTML = '<p><strong>' + esc(b.artist) + '</strong> in <strong>' + esc(b.city) + '</strong>' + (b.venue ? ' · room: ' + esc(b.venue) : '') + '</p>' +
+    if (head) head.innerHTML = '<p class="ws-season-ledger">' + esc(SEASON_LEDGER_LINE) + '</p><p><strong>' + esc(b.artist) + '</strong> in <strong>' + esc(b.city) + '</strong>' + (b.venue ? ' · room: ' + esc(b.venue) : '') + '</p>' +
       '<p>' + guaranteeLine(b.guarantee) + '</p>' +
       '<p class="ws-settle-line">Settlement status: ' + esc(settlementStatus()) + '</p>' +
       '<p class="ws-label">Workspace id: ' + esc(ws.workspaceId || '—') + ' · stored on this device only (localStorage + export). No server copy exists.</p>';
@@ -481,16 +485,42 @@
       (r.supersedes ? '<p class="ws-label">Supersedes the entry recorded ' + esc(r.supersedes) + '</p>' : '') +
       '<p class="ws-label">Derived from the base recorded ' + esc(r.baseRef ? r.baseRef.recordedAt : '') + ' (' + esc(r.baseRef ? r.baseRef.receiptCount : '') + ' receipts). ' + costLabel() + '</p></article>';
   }
+  // Phase 3 (F): one why-not line per non-top ranked candidate, computed
+  // ONLY from the routing result's own matched-area counts (top candidate
+  // included for comparison). Matched areas are taste overlap only — the
+  // line never mentions demand, sales, or attendance. If either count is
+  // absent, the line is omitted and the omission is labelled, never
+  // filled with prose. A count above the top count contradicts the rank
+  // order, so that line is omitted too.
+  function whyNotHtml(c, top) {
+    if (!top || c === top) return 'Ranked first.';
+    var tc = top.matchedAreasCount, cc = c.matchedAreasCount;
+    if (typeof tc !== 'number' || !isFinite(tc) || typeof cc !== 'number' || !isFinite(cc)) return 'Why not ranked first: omitted — matched-area count not present in the routing result.';
+    if (cc > tc) return 'Why not ranked first: omitted — matched-area count contradicts the rank order.';
+    if (cc === tc) return 'Why not ranked first: ' + fmt(cc) + ' matched areas — the same count as ' + top.city + ', ranked below it by Qloo return order.';
+    return 'Why not ranked first: ' + fmt(cc) + ' matched areas vs ' + fmt(tc) + ' for ' + top.city + ' — fewer matched areas.';
+  }
   function routingHtml(r) {
     if (!r) return '';
-    var rows = (r.candidates || []).map(function (c) {
-      if (c.status !== 'ok') return '<tr><td>' + esc(c.city) + '</td><td>unranked: no live evidence</td><td>—</td><td>' + esc(c.reason || c.status || '') + '</td><td><span class="ws-label">No receipt — not ranked</span></td></tr>';
+    var cands = r.candidates || [];
+    var top = null;
+    for (var ti = 0; ti < cands.length; ti++) {
+      if (cands[ti].status === 'ok' && cands[ti].rank === 1) { top = cands[ti]; break; }
+    }
+    if (!top) {
+      for (var tj = 0; tj < cands.length; tj++) {
+        if (cands[tj].status === 'ok') { top = cands[tj]; break; }
+      }
+    }
+    var rows = cands.map(function (c) {
+      if (c.status !== 'ok') return '<tr><td>' + esc(c.city) + '</td><td>unranked: no live evidence</td><td>—</td><td>' + esc(c.reason || c.status || '') + '</td><td><span class="ws-label">No receipt — not ranked</span></td><td class="ws-why-not">—</td></tr>';
       var recs = c.receipts || (c.receipt ? [c.receipt] : []);
-      if (recs.length === 0 || !recs[0].replay) return '<tr><td>' + esc(c.city) + '</td><td>unranked: no live evidence</td><td>—</td><td>No receipt for this row — not ranked</td><td><span class="ws-label">No receipt — not ranked</span></td></tr>';
-      return '<tr><td>' + esc(c.city) + '</td><td>' + esc(c.rank != null ? c.rank : '—') + '</td><td>' + fmt(c.matchedAreasCount) + '</td><td>' + (c.areas || []).map(function (a) { return esc(a.name || a.id || ''); }).join(', ') + '</td><td>' + receiptsHtml(recs, 'route-' + esc(c.city)) + '</td></tr>';
+      if (recs.length === 0 || !recs[0].replay) return '<tr><td>' + esc(c.city) + '</td><td>unranked: no live evidence</td><td>—</td><td>No receipt for this row — not ranked</td><td><span class="ws-label">No receipt — not ranked</span></td><td class="ws-why-not">—</td></tr>';
+      return '<tr><td>' + esc(c.city) + '</td><td>' + esc(c.rank != null ? c.rank : '—') + '</td><td>' + fmt(c.matchedAreasCount) + '</td><td>' + (c.areas || []).map(function (a) { return esc(a.name || a.id || ''); }).join(', ') + '</td><td>' + receiptsHtml(recs, 'route-' + esc(c.city)) + '</td><td class="ws-why-not">' + esc(whyNotHtml(c, top)) + '</td></tr>';
     }).join('');
     return '<article class="ws-row"><p><strong>' + esc(ROUTE_LABEL) + '</strong></p><p>' + esc(ROUTE_NOTE) + '</p>' +
-      '<div class="ws-table-wrap"><table class="ws-table"><thead><tr><th>City</th><th>Rank</th><th>Matched areas</th><th>Areas</th><th>Receipts</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<p class="ws-label">Map strip unavailable — no geography lookup is wired to the workspace panel, so no pins are shown and no coordinates are used here. The table below is the full routing result.</p>' +
+      '<div class="ws-table-wrap"><table class="ws-table"><thead><tr><th>City</th><th>Rank</th><th>Matched areas</th><th>Areas</th><th>Receipts</th><th>Why not first</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<p class="ws-label">Ranking key: count of Qloo-matched areas/entities per city, tie-broken by Qloo’s own return order. This is not a sales forecast.</p></article>';
   }
   function envelopeHtml(r) {

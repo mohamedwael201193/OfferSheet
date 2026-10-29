@@ -109,6 +109,7 @@
     </div>
     <div id="signChecklist" class="sign-checklist" aria-label="Before you sign checklist"></div>
     <div><span id="beTickets" class="verdict-number num">—</span> <span class="verdict-unit">tickets to break even</span></div>
+    <p id="arithmeticSourceTag" class="source-tag-line"></p>
     <div id="confidenceBox" class="confidence-box" aria-label="Evidence strength"></div>
     <div id="thinBadge" class="thin-badge" hidden></div>
     <p class="aggregate-note">Aggregate taste signals only — they show how much two audiences share, never a prediction about any individual, and never a promise this show will sell out.</p>
@@ -133,11 +134,13 @@
       <summary>Audience evidence</summary>
       <p id="audienceNote"></p>
       <ul id="audienceAreas"></ul>
+      <p id="audienceSourceTag" class="source-tag-line"></p>
     </details>
     <details open>
       <summary>Opener shortlist, ranked for this city audience</summary>
       <ol id="openerList"></ol>
       <p id="topPick"></p>
+      <p id="openerSourceTag" class="source-tag-line"></p>
     </details>
     <details open>
       <summary>Evidence details: who the audience is, whether the artist is rising, shared tags, how the fan bases overlap</summary>
@@ -145,12 +148,33 @@
       <div id="trendBlock"></div>
       <div id="tagsBlock"></div>
       <div id="overlapBlock"></div>
+      <p id="evidenceSourceTag" class="source-tag-line"></p>
     </details>
     <details open>
       <summary>Sources checked</summary>
       <p id="legSummary" class="leg-summary"></p>
       <div id="legsBlock"></div>
+      <p id="legsSourceTag" class="source-tag-line"></p>
     </details>
+    <!-- Phase 3 Wave 2: miss taxonomy (E), re-rank without the top pick
+      (I, separate section — the original verdict above is never
+      overwritten), and proof-pack / CSV exports (B, L). All three render
+      only on a successful verdict; withheld, price-unknown, and
+      needs-input verdicts never reach this card. -->
+    <div id="missTaxonomy" class="miss-taxonomy" aria-label="Miss taxonomy"></div>
+    <div id="rerankSection" class="rerank-section" hidden aria-label="Re-rank without the top pick">
+      <h3>Re-rank without the top pick</h3>
+      <p class="label">Re-runs only the ranking step with the same candidate set minus the current top pick. The original verdict above stays untouched.</p>
+      <button class="btn" type="button" id="rerankBtn">Re-rank without the top pick</button>
+      <div id="rerankOut" class="rerank-out" aria-live="polite"></div>
+    </div>
+    <div id="proofPackWrap" class="proof-pack-wrap" hidden aria-label="Proof pack exports">
+      <h3>Proof pack</h3>
+      <p class="label">Downloads serialize this same verdict object — no new server call. The JSON pack carries its own SHA-256; the CSV is the same object, second rendering.</p>
+      <button class="btn" type="button" id="proofPackBtn">Download proof pack</button>
+      <button class="btn" type="button" id="verdictCsvBtn">Download verdict CSV</button>
+      <p id="proofPackNote" class="label"></p>
+    </div>
   </section>
 
   <!-- Partial evidence (G43): shown only on price_unknown, never with a verdict number. -->
@@ -202,6 +226,7 @@
     </div>
     <div id="raceBody">
       <div id="armsBlock"></div>
+      <p id="armsSourceTag" class="source-tag-line"></p>
       <div id="raceBlock"></div>
       <div id="missBlock"></div>
     </div>
@@ -259,6 +284,7 @@
     <h2>Gut vs Graph — recorded trials</h2>
     <div id="tallyTable"></div>
     <p id="tallyLine" class="tally-line"></p>
+    <div id="tallyTaxonomy" class="miss-taxonomy" aria-label="Recorded miss taxonomy"></div>
   </section>
 
   <!-- Receipt drawer -->
@@ -272,6 +298,7 @@
       </div>
     </div>
     <div id="receiptList" class="set"></div>
+    <p id="receiptSourceTag" class="source-tag-line"></p>
     <div id="replayOut" class="replay-out"></div>
   </section>
 
@@ -285,6 +312,7 @@
       </div>
     </div>
     <div id="sheetBody"></div>
+    <p id="sheetSourceTag" class="source-tag-line"></p>
     <div id="refusedBlock"></div>
     <div class="sheet-actions">
       <button class="btn" type="button" id="printSheetBtn">Print sheet</button>
@@ -346,6 +374,7 @@
     </figure>
     <p>Break-even tickets = ceil(guarantee ÷ (ticket price − variable cost per ticket))</p>
     <p id="workedExample" class="num">Run a verdict to see its worked example here.</p>
+    <p id="formulaSourceTag" class="source-tag-line"></p>
     <p>When capacity is known and break-even tickets exceed it, the verdict is: “Cannot break even in this room at this guarantee.” When capacity is unknown, no sellout percentage is shown at all.</p>
   </section>
 

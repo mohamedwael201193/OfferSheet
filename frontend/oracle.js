@@ -69,6 +69,101 @@
       '; Web agreed ' + t.webSame + '/' + t.n + ')';
   }
 
+  /* Bench panel: wall time only. The trial pack carries timingMs, picks,
+     misses, and inputs, but NO structured per-trial receipt counts or
+     per-leg ok/empty/error counts, and bench liveLegNotes are prose —
+     prose is never parsed into counts here. No percentile is computed:
+     on a tiny n a percentile would imply precision the data does not
+     carry, so the panel shows the median and the range only. */
+  function computeBenchStats(trials) {
+    var rows = (Array.isArray(trials) ? trials : []).filter(function (t) {
+      return t && isFiniteNum(t.timingMs);
+    }).map(function (t) {
+      var inp = trialInput(t);
+      return {
+        artist: inp.artist || '', city: inp.city || '', timingMs: t.timingMs,
+        breakEvenTickets: t.breakEvenTickets, misses: trialMisses(t).length,
+        recordedAt: t.recordedAt || null
+      };
+    });
+    if (rows.length === 0) return null;
+    var sorted = rows.map(function (r) { return r.timingMs; }).sort(function (a, b) { return a - b; });
+    var mid = Math.floor(sorted.length / 2);
+    var medianMs = sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    return { n: rows.length, rows: rows, medianMs: medianMs, minMs: sorted[0], maxMs: sorted[sorted.length - 1] };
+  }
+  function benchSecs(ms) { return (ms / 1000).toFixed(3) + ' s'; }
+
+  /* Re-runnability per trial, from the loaded trial-pack data only.
+     Record hash: SHA-256 of the trial's canonical JSON (sorted keys, array
+     order kept) — no keys, no new live runs. Arithmetic recompute: ceil
+     (guarantee ÷ net), where net is the ticket price when no variable cost
+     is recorded for the trial, compared with the recorded break-even. */
+  async function computeBenchRepro(trials) {
+    var list = (Array.isArray(trials) ? trials : []).filter(function (t) {
+      return t && isFiniteNum(t.timingMs);
+    });
+    var out = [];
+    for (var i = 0; i < list.length; i++) {
+      var t = list[i];
+      var inp = trialInput(t);
+      var hash = null;
+      try { hash = await sha256Hex(canon(t)); } catch (e) { hash = null; }
+      var net = isFiniteNum(inp.ticketPrice)
+        ? inp.ticketPrice - (isFiniteNum(inp.variableCost) ? inp.variableCost : 0)
+        : null;
+      var expected = (isFiniteNum(inp.guarantee) && net !== null && net > 0)
+        ? Math.ceil(inp.guarantee / net) : null;
+      out.push({
+        artist: inp.artist || '', city: inp.city || '', recordHash: hash,
+        expectedTickets: expected, recordedTickets: t.breakEvenTickets,
+        matches: expected !== null && expected === t.breakEvenTickets
+      });
+    }
+    return out;
+  }
+
+  async function renderBenchPanel() {
+    var box = $('benchPanel');
+    if (!box) return; // No-op on pages without the oracle panel.
+    if (!state.pack || !Array.isArray(state.pack.trials)) {
+      box.innerHTML = checkCard('cannot verify', 'Bench panel', [LOAD_FAIL]);
+      return;
+    }
+    var stats = computeBenchStats(state.pack.trials);
+    if (!stats) {
+      box.innerHTML = checkCard('cannot verify', 'Bench panel',
+        ['No recorded trial carries a timingMs value — no wall time can be computed.']);
+      return;
+    }
+    var repro = await computeBenchRepro(state.pack.trials);
+    var rowsHtml = stats.rows.map(function (r, i) {
+      var p = repro[i] || {};
+      var hashLine = p.recordHash
+        ? 'Record hash (SHA-256 of canonical trial JSON): <span class="hash">' + esc(p.recordHash) + '</span>'
+        : 'Record hash: cannot verify — SHA-256 is unavailable in this browser.';
+      var recomputeLine = p.expectedTickets !== null && p.expectedTickets !== undefined
+        ? 'Arithmetic recompute: ceil(guarantee ÷ net) = ' + fmt(p.expectedTickets) +
+          ', recorded ' + fmt(p.recordedTickets) + ' — ' + (p.matches ? 'match' : 'MISMATCH')
+        : 'Arithmetic recompute: not computable from these trial inputs.';
+      return '<div class="check"><p class="check-title">' + esc(r.artist) + ', ' + esc(r.city) + '</p>' +
+        '<p class="check-detail">Wall time ' + fmt(r.timingMs) + ' ms (' + benchSecs(r.timingMs) + ') · ' +
+        fmt(r.breakEvenTickets) + ' tickets · misses recorded: ' + r.misses +
+        ' · recorded ' + esc((r.recordedAt || '').slice(0, 10)) + '</p>' +
+        '<p class="check-detail">' + hashLine + '</p>' +
+        '<p class="check-detail">' + recomputeLine + '</p></div>';
+    }).join('');
+    box.innerHTML =
+      '<p class="status-line bench-n">n = ' + stats.n + ' trials</p>' +
+      '<div class="check"><p class="check-title">Median wall time — ' + fmt(stats.medianMs) + ' ms (' + benchSecs(stats.medianMs) + ')</p>' +
+      '<p class="check-detail">Range: ' + fmt(stats.minMs) + ' ms (' + benchSecs(stats.minMs) + ') to ' +
+      fmt(stats.maxMs) + ' ms (' + benchSecs(stats.maxMs) + ').</p></div>' +
+      rowsHtml +
+      '<p class="check-detail">Receipt counts per trial: not recorded in the trial pack.</p>' +
+      '<p class="check-detail">Per-leg ok / empty / error counts: not recorded in the trial pack — bench liveLegNotes are prose, not counts, and prose is not parsed into counts here.</p>' +
+      '<p class="check-detail">No percentile is shown: n is too small for a percentile to mean anything.</p>';
+  }
+
   function normaliseTrial(t) {
     var inp = trialInput(t);
     var price = inp.ticketPrice;
@@ -319,7 +414,9 @@
       saveHistory(loadHistory().filter(function (e) { return e.id !== id; }));
       renderHistory(); renderCompareOptions();
     },
-    clear: function () { saveHistory([]); renderHistory(); renderCompareOptions(); }
+    clear: function () { saveHistory([]); renderHistory(); renderCompareOptions(); },
+    benchStats: computeBenchStats,
+    benchRepro: computeBenchRepro
   };
 
   /* ---------------- recorded trials sub-panel ---------------- */
@@ -603,10 +700,12 @@
     loadPack().then(function (pack) {
       state.pack = pack;
       renderRecordedTrials();
+      renderBenchPanel();
       renderCompareOptions();
     }).catch(function () {
       state.packError = true;
       renderRecordedTrials();
+      renderBenchPanel();
       renderCompareOptions();
       $('compareStatus').textContent = LOAD_FAIL;
     });

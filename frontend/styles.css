@@ -800,3 +800,23 @@ html, body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) {
   .trial-card { transition: none; translate: 0 0; }
 }
+
+/* Phase 3: source tags + expandable receipt step logs. Studio palette only. */
+.source-tag { display: inline-block; font-size: 13px; color: var(--color-muted); border: 1px solid var(--color-rule); border-radius: var(--radius-pill); padding: 2px 8px; margin: 2px 4px 2px 0; }
+.source-tag-chip { font: inherit; font-size: 13px; color: var(--color-ink); background: var(--color-paper-hi); border: 1px solid var(--color-ink); border-radius: var(--radius-pill); padding: 0 8px; cursor: pointer; }
+.source-tag-line { margin: 8px 0; }
+.receipt-step { margin-top: 8px; }
+.receipt-step summary { cursor: pointer; font-size: 14px; color: var(--color-ink); }
+.receipt-step p { font-size: 14px; color: var(--color-muted); word-break: break-word; }
+.receipt-step code { color: var(--color-ink); word-break: break-all; }
+
+/* Phase 3 Wave 2: miss taxonomy, re-rank section, proof-pack exports. */
+.miss-taxonomy { margin-top: 16px; }
+.miss-taxonomy h3 { margin: 0 0 6px; }
+.miss-taxonomy ul { margin: 6px 0; }
+.rerank-section { margin-top: 16px; border-top: 1px solid var(--color-rule); padding-top: 12px; }
+.rerank-section h3 { margin: 0 0 6px; }
+.rerank-out { margin-top: 10px; }
+.proof-pack-wrap { margin-top: 16px; border-top: 1px solid var(--color-rule); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+.proof-pack-wrap h3 { margin: 0; width: 100%; }
+.proof-pack-wrap .label { width: 100%; }

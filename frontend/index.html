@@ -26,6 +26,7 @@
       <a href="#refuses">What it refuses</a>
       <a href="#formula">Formula</a>
       <a href="app.html">Check an offer</a>
+      <a href="oracle.html">Oracle</a>
     </nav>
     <a class="btn btn--primary nav-cta" href="app.html">Open the app</a>
   </div>
@@ -116,6 +117,33 @@
       </article>
     </div>
     <p class="miss-ledger">Where the gut pick was wrong on this run: Gut picked Clairo while Graph picked Olivia Rodrigo; Web picked Armani White while Graph picked Olivia Rodrigo.</p>
+    <p class="miss-ledger" id="armsTally">Recorded tally unavailable — trial-pack data could not be loaded.</p>
+    <script>
+    // Arms tally, computed in this browser from the static trial-pack.json
+    // (the same file the app uses). Display-only: no data endpoint, no
+    // verdict machinery. On any fetch failure the unavailable label above
+    // stays — no number is ever invented.
+    (function () {
+      var el = document.getElementById('armsTally');
+      if (!el) return;
+      fetch('trial-pack.json').then(function (res) {
+        if (!res.ok) throw new Error('trial-pack fetch failed');
+        return res.json();
+      }).then(function (pack) {
+        var trials = (pack && Array.isArray(pack.trials)) ? pack.trials : [];
+        if (trials.length === 0) return;
+        var n = trials.length;
+        var missed = function (t, arm) {
+          return (Array.isArray(t.misses) ? t.misses : []).some(function (m) { return m.arm === arm; });
+        };
+        var gutSame = trials.filter(function (t) { return !missed(t, 'gut'); }).length;
+        var webSame = trials.filter(function (t) { return !missed(t, 'web'); }).length;
+        var changed = trials.filter(function (t) { return missed(t, 'gut') || missed(t, 'web'); }).length;
+        el.textContent = 'Recorded, not live. Qloo changed the pick in ' + changed + '/' + n +
+          ' trials (Gut agreed ' + gutSame + '/' + n + '; Web agreed ' + webSame + '/' + n + ').';
+      }).catch(function () { /* unavailable label stays */ });
+    })();
+    </script>
   </section>
 
   <!-- How it works: editorial depth, describing only what the tool already does. -->
@@ -277,6 +305,7 @@
       <p class="persona-label">Illustrative promoter — fictional persona, real recorded trials.</p>
       <h3>A wrong page costs nothing. A wrong verdict costs real money.</h3>
       <p>That is why the receipts exist, and why a missing answer is a refusal, not a guess. Maya signs — or walks away — with a number she can re-run, a receipt she can show, and a ledger that remembers when gut beat graph. A demo can afford to be wrong. A promoter cannot.</p>
+      <p>Illustrative arithmetic on the recorded trial. At the recorded trial's $120 ticket price, being wrong by 100 tickets = $12,000 of guarantee exposure (100 × 120 = 12,000). That 100-ticket gap is hypothetical — not a measured outcome, not a real loss, and not a prediction.</p>
     </article>
   </section>
 

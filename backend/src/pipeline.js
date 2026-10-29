@@ -31,6 +31,7 @@ import { notConfigured, invalidInput, isGuardTrip } from './errors.js';
 import { breakEven } from './breakeven.js';
 import { argsHashFor } from './receipts.js';
 import { extractCapacity, extractPrice, extractFirstVenue, extractFirstVenueResult } from './ticketmaster.js';
+import { classifyMisses } from './rerank.js';
 
 function itemId(item) {
   if (!item || typeof item !== 'object') return null;
@@ -605,16 +606,28 @@ export async function runVerdict(input, deps) {
   { const aborted = checkAbort(); if (aborted) return aborted; }
   const gutPick = gut.status === 'ok' ? gut.pick : null;
   const webPick = web.status === 'ok' ? web.pick : null;
+  // Phase 3 Wave 2 (E): every miss carries its taxonomy code, computed
+  // from this run's own ranked + candidate sets — no new model call, no
+  // invented reason. The ranked/candidate sets travel on the verdict, so
+  // the frontend renders the same codes without recomputing a new reason.
+  const rawMisses = [
+    ...(gutPick && gutPick !== graphPick ? [{ arm: 'gut', pick: gutPick, graphPick }] : []),
+    ...(webPick && webPick !== graphPick ? [{ arm: 'web', pick: webPick, graphPick }] : []),
+  ];
+  const missTaxonomy = classifyMisses(rawMisses, {
+    artist,
+    ranked: legs.rank?.ranked || [],
+    candidates: legs.recommend?.candidates || [],
+    setsRecorded: (legs.rank?.ranked?.length > 0) || (legs.recommend?.candidates?.length > 0),
+  });
   const missTrial = (gutPick || webPick) && graphPick
     ? {
         question,
         graphPick,
         gutPick,
         webPick,
-        misses: [
-          ...(gutPick && gutPick !== graphPick ? [{ arm: 'gut', pick: gutPick, graphPick }] : []),
-          ...(webPick && webPick !== graphPick ? [{ arm: 'web', pick: webPick, graphPick }] : []),
-        ],
+        misses: missTaxonomy.misses,
+        taxonomy: { counts: missTaxonomy.counts, total: missTaxonomy.total },
         recordedAt: new Date().toISOString(),
       }
     : null;

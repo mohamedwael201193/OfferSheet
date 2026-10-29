@@ -74,6 +74,11 @@ function hideVerdict() {
   $('receiptSection').hidden = true;
   $('raceToggleWrap').hidden = true;
   $('partialSection').hidden = true;
+  // Phase 3 Wave 2: the re-rank section and proof-pack buttons exist only
+  // on a successful verdict — withheld, price-unknown, and needs-input
+  // verdicts never reach renderVerdict, so they offer no export.
+  const rr = $('rerankSection'); if (rr) rr.hidden = true;
+  const pp = $('proofPackWrap'); if (pp) pp.hidden = true;
   const sheet = $('verdictSheet');
   if (sheet) sheet.hidden = true;
 }
@@ -103,19 +108,27 @@ function kvOrList(value, title) {
   return `<h3>${esc(title)}</h3><p>${esc(value)}</p>`;
 }
 
-function armLane(label, arm) {
+function armLane(label, arm, tag) {
   // Lane bar: a scaleX fill (CSS only) on arms with a pick; a muted, unfilled
   // track on arms with no provider — never a fabricated pick.
-  if (!arm) return `<div class="lane"><div class="lane-head"><strong>${label}</strong></div><p class="lane-unavailable">Unavailable — no data this run.</p><div class="lane-bar lane-bar--empty" aria-hidden="true"></div></div>`;
+  // Phase 3 D: each lane carries its source tag. LLM lanes are
+  // comparison-arm output, never receipt-backed; the Graph lane is
+  // receipt-backed only when its receipt exists this run.
+  const tagHtml = tag ? `<p>${tag}</p>` : '';
+  if (!arm) return `<div class="lane"><div class="lane-head"><strong>${label}</strong></div><p class="lane-unavailable">Unavailable — no data this run.</p><div class="lane-bar lane-bar--empty" aria-hidden="true"></div>${tagHtml}</div>`;
   if (arm.status === 'ok') {
-    return `<div class="lane"><div class="lane-head"><strong>${label}</strong></div><p class="lane-pick">${esc(arm.pick)}</p><div class="lane-bar" aria-hidden="true"></div></div>`;
+    return `<div class="lane"><div class="lane-head"><strong>${label}</strong></div><p class="lane-pick">${esc(arm.pick)}</p><div class="lane-bar" aria-hidden="true"></div>${tagHtml}</div>`;
   }
-  return `<div class="lane"><div class="lane-head"><strong>${label}</strong></div><p class="lane-unavailable">Unavailable — ${esc(arm.reason || arm.status)}</p><div class="lane-bar lane-bar--empty" aria-hidden="true"></div></div>`;
+  return `<div class="lane"><div class="lane-head"><strong>${label}</strong></div><p class="lane-unavailable">Unavailable — ${esc(arm.reason || arm.status)}</p><div class="lane-bar lane-bar--empty" aria-hidden="true"></div>${tagHtml}</div>`;
 }
 
 function renderArms(v) {
   const a = v.arms || {};
-  $('armsBlock').innerHTML = armLane('Gut (LLM alone)', a.gut) + armLane('Graph (Qloo-grounded)', a.graph) + armLane('Web (LLM + Wikidata facts)', a.web);
+  const graphTag = receiptTagFor(v, ['qloo_rank', 'qloo_recommend']);
+  const armTag = sourceTagHtml('comparison-arm output');
+  $('armsBlock').innerHTML = armLane('Gut (LLM alone)', a.gut, armTag) + armLane('Graph (Qloo-grounded)', a.graph, graphTag) + armLane('Web (LLM + Wikidata facts)', a.web, armTag);
+  const armsTag = $('armsSourceTag');
+  if (armsTag) armsTag.innerHTML = `${sourceTagHtml('comparison-arm output')} ${graphTag}`;
   if (v.missTrial) {
     const m = v.missTrial;
     $('missBlock').innerHTML = m.misses.length === 0
@@ -134,6 +147,412 @@ function renderArms(v) {
   det.ontoggle = () => { $('raceBody').hidden = !det.open; };
 }
 
+// ---- Phase 3: expandable step log, source tags, guarded sheet ----
+// All three read ONLY the verdict object already rendered. No new call,
+// no new endpoint, no invented receipt, no fallback number.
+
+// A. Step log: operation + replay parameters + result count + status,
+// rendered ONLY from the receipt's own replay payload. Key-like fields
+// are never rendered: any replay argument whose name looks like a key,
+// secret, token, password, credential, or hash is dropped, and the
+// receipt's hash/id fields are never part of the log. A receipt with no
+// replay payload gets no parameters at all — never a guess. Withheld
+// verdicts never reach this function (renderVerdict only), so no log
+// renders without a verdict.
+const KEY_LIKE_ARG = /(key|secret|token|password|auth|credential|hash)/i;
+function sanitizedReplayArgs(replay) {
+  const args = replay && typeof replay === 'object' ? replay.args : null;
+  if (!args || typeof args !== 'object' || Array.isArray(args)) return null;
+  const out = {};
+  for (const [k, val] of Object.entries(args)) {
+    if (KEY_LIKE_ARG.test(k)) continue;
+    out[k] = val;
+  }
+  return out;
+}
+const OPERATION_LEG = {
+  qloo_find_tags: 'findTags', qloo_describe: 'describe', qloo_recommend: 'recommend',
+  qloo_rank: 'rank', qloo_where_popular: 'wherePopular',
+  qloo_audience_demographics: 'demographics', qloo_entity_tags: 'entityTags',
+  qloo_trends: 'trends', qloo_compare_audiences: 'compare',
+};
+function stepLogHtml(r, v) {
+  const op = (r.replay && r.replay.tool) || r.operation;
+  const legKey = OPERATION_LEG[r.operation];
+  const leg = legKey ? (v.legs || {})[legKey] : null;
+  const status = leg ? `leg ${leg.status}` : 'receipted (no leg status recorded)';
+  if (!r.replay) {
+    return `<details class="receipt-step"><summary>Step log</summary><p>Step: ${esc(op)} · results: ${esc(r.resultCount ?? '—')} · status: ${esc(status)} — no replay payload recorded for this receipt, so no parameters are shown.</p></details>`;
+  }
+  const args = sanitizedReplayArgs(r.replay);
+  const params = args === null ? 'unavailable — replay payload carries no argument object'
+    : (Object.keys(args).length === 0 ? '(no parameters)' : JSON.stringify(args));
+  return `<details class="receipt-step"><summary>Step log</summary><p>Step: ${esc(op)} · parameters: <code>${esc(params)}</code> · results: ${esc(r.resultCount ?? '—')} · status: ${esc(status)}</p></details>`;
+}
+
+// ---- Phase 3 Wave 2: scored-miss taxonomy, re-rank, proof pack, CSV ----
+// E. Taxonomy mirror of backend/src/rerank.js (same codes, same order,
+// same precedence). The pipeline attaches codes server-side; this mirror
+// lets the page render codes from the verdict object it already holds,
+// and lets the recorded-trials tally classify with no sets at all.
+// Data-honesty rule (mirrored): with no candidate/ranked set recorded,
+// every miss is UNCLASSIFIED — never guessed from the pick text.
+const MISS_CODE_LABELS_W2 = {
+  NOT_IN_RANKED: 'pick not in the ranked set',
+  NOT_IN_CANDIDATES: 'pick not in the candidate set',
+  SAME_AS_HEADLINER: 'pick identical to the main artist',
+  EMPTY_OR_UNRESOLVED: 'pick empty or unresolved',
+  UNCLASSIFIED: 'unclassified — reason not derivable from this run',
+};
+const UNRECORDED_SET_DETAIL_W2 = 'candidate set not recorded for this trial';
+function normNameW2(s) {
+  return String(s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+}
+function pickLeadW2(pick) {
+  const t = String(pick ?? '').trim();
+  let end = t.length;
+  for (const sep of ['.', '—', '\n', ':']) {
+    const i = t.indexOf(sep);
+    if (i > 0 && i < end) end = i;
+  }
+  const lead = t.slice(0, end).trim();
+  return lead || t;
+}
+// Lead-name match (mirrors backend pickMatchesName): prose after the lead
+// never counts, so a pick that merely mentions the headliner in its
+// explanation is not coded SAME_AS_HEADLINER.
+function pickMatchesNameW2(pick, name) {
+  const p = normNameW2(pickLeadW2(pick));
+  const n = normNameW2(name);
+  if (!p || !n) return false;
+  return p === n || p.startsWith(n + ' ') || n.startsWith(p + ' ');
+}
+function namesOfSetW2(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map((it) => (it && typeof it === 'object' ? (it.name ?? it.id ?? null) : it))
+    .filter((v) => v !== null && v !== undefined && String(v).trim() !== '');
+}
+function classifyMiss(miss, ctx) {
+  ctx = ctx || {};
+  const pick = miss ? miss.pick : null;
+  const ranked = namesOfSetW2(ctx.ranked);
+  const candidates = namesOfSetW2(ctx.candidates);
+  const setsRecorded = ctx.setsRecorded === undefined
+    ? (ranked.length > 0 || candidates.length > 0)
+    : ctx.setsRecorded === true;
+  if (!setsRecorded) {
+    return { code: 'UNCLASSIFIED', label: MISS_CODE_LABELS_W2.UNCLASSIFIED, detail: UNRECORDED_SET_DETAIL_W2 };
+  }
+  const pickText = typeof pick === 'string' ? pick.trim() : '';
+  if (pickText === '' || normNameW2(pickText) === 'unresolved') {
+    return { code: 'EMPTY_OR_UNRESOLVED', label: MISS_CODE_LABELS_W2.EMPTY_OR_UNRESOLVED, detail: 'pick empty or unresolved this run' };
+  }
+  if (ctx.artist && pickMatchesNameW2(pickText, ctx.artist)) {
+    return { code: 'SAME_AS_HEADLINER', label: MISS_CODE_LABELS_W2.SAME_AS_HEADLINER, detail: 'pick names the main artist itself' };
+  }
+  const inCandidates = candidates.length > 0 && candidates.some((c) => pickMatchesNameW2(pickText, c));
+  const inRanked = ranked.length > 0 && ranked.some((r) => pickMatchesNameW2(pickText, r));
+  if (candidates.length > 0 && !inCandidates) {
+    return { code: 'NOT_IN_CANDIDATES', label: MISS_CODE_LABELS_W2.NOT_IN_CANDIDATES, detail: 'pick appears in neither the candidate set nor the ranked set' };
+  }
+  if (ranked.length > 0 && !inRanked) {
+    return { code: 'NOT_IN_RANKED', label: MISS_CODE_LABELS_W2.NOT_IN_RANKED, detail: 'pick is in the candidate set but not the ranked set' };
+  }
+  if (ranked.length === 0 && candidates.length === 0) {
+    return { code: 'UNCLASSIFIED', label: MISS_CODE_LABELS_W2.UNCLASSIFIED, detail: 'no candidate or ranked set recorded for this run' };
+  }
+  return { code: 'UNCLASSIFIED', label: MISS_CODE_LABELS_W2.UNCLASSIFIED, detail: 'pick is in the ranked set but is not the top pick — no more specific code applies' };
+}
+function classifyMisses(misses, ctx) {
+  const list = Array.isArray(misses) ? misses : [];
+  const coded = list.map((m) => {
+    const c = classifyMiss(m, ctx);
+    return { arm: m.arm, pick: m.pick, graphPick: m.graphPick, code: c.code, label: c.label, detail: c.detail };
+  });
+  const counts = {};
+  for (const c of coded) counts[c.code] = (counts[c.code] || 0) + 1;
+  return { misses: coded, counts, total: coded.length };
+}
+function taxonomyCountsHtml(counts, total) {
+  const rows = Object.entries(counts || {}).map(([code, n]) => `<li>${esc(code)} — ${esc(MISS_CODE_LABELS_W2[code] || code)}: ${n}</li>`).join('');
+  return rows ? `<ul>${rows}</ul><p>Miss total: ${total} (codes sum to the miss count).</p>` : '<p>No misses — taxonomy total 0.</p>';
+}
+function renderMissTaxonomy(v) {
+  const box = $('missTaxonomy');
+  if (!box) return;
+  // Prefer the pipeline's server-attached codes; recompute only when the
+  // verdict predates them. Either way the codes come from this run's sets.
+  const server = v.missTrial && v.missTrial.taxonomy && typeof v.missTrial.taxonomy.total === 'number'
+    ? v.missTrial.taxonomy : null;
+  const computed = classifyMisses(v.missTrial?.misses || [], {
+    artist: v.artist,
+    ranked: v.openers?.ranked || [],
+    candidates: v.openers?.candidates || [],
+  });
+  const counts = server ? server.counts : computed.counts;
+  const total = server ? server.total : computed.total;
+  box.innerHTML = `<h3>Miss taxonomy — scored misses, by code</h3>${taxonomyCountsHtml(counts, total)}`;
+  const missBlock = $('missBlock');
+  if (missBlock && computed.misses.length > 0) {
+    const lines = computed.misses.map((m) => `${esc(m.arm)} picked “${esc(m.pick)}” — ${esc(m.code)} (${esc(m.detail)})`).join('; ');
+    missBlock.innerHTML = `<p>Where the gut pick was wrong: ${lines}.</p>`;
+  }
+}
+function renderTallyTaxonomy(runs) {
+  const box = $('tallyTaxonomy');
+  if (!box) return;
+  // Recorded trials carry no candidate/ranked sets, so every recorded
+  // miss classifies UNCLASSIFIED by rule — the label says why.
+  const all = (runs || []).flatMap((r) => r.misses || []);
+  const classified = classifyMisses(all, { setsRecorded: false });
+  box.innerHTML = `<h3>Recorded miss taxonomy</h3>${taxonomyCountsHtml(classified.counts, classified.total)}<p class="label">Recorded trials carry no candidate or ranked set, so every recorded miss is UNCLASSIFIED (${esc(UNRECORDED_SET_DETAIL_W2)}) — never guessed.</p>`;
+}
+
+// B. Proof pack: the SAME verdict object the page already holds,
+// serialized client-side with no new server call. Receipt entries carry
+// exactly operation, hash, requestId, result count, and replay payload.
+// Replay payloads pass through the step log's key-like-field filter
+// (KEY_LIKE_ARG, same regex — never a second loose filter); REST replay
+// params are filtered with that same regex. The pack hash is SHA-256 of
+// the canonical JSON of the pack WITHOUT the hash field, computed by the
+// caller (downloadProofPack) so this builder stays synchronous and
+// testable. The receipt hash field is a SHA-256 of request arguments,
+// not a secret, and is pack content by design.
+function sanitizedReplayPayload(replay) {
+  if (!replay || typeof replay !== 'object') return null;
+  if (replay.kind === 'mcp') return { kind: 'mcp', tool: replay.tool, args: sanitizedReplayArgs(replay) };
+  if (replay.kind === 'rest') {
+    const params = replay.params && typeof replay.params === 'object' && !Array.isArray(replay.params) ? replay.params : null;
+    if (!params) return { kind: 'rest', path: replay.path, params: null };
+    const out = {};
+    for (const [k, val] of Object.entries(params)) {
+      if (KEY_LIKE_ARG.test(k)) continue;
+      out[k] = val;
+    }
+    return { kind: 'rest', path: replay.path, params: out };
+  }
+  return null;
+}
+function canonicalStringify(v) {
+  if (v === null || typeof v !== 'object') return JSON.stringify(v);
+  if (Array.isArray(v)) return '[' + v.map(canonicalStringify).join(',') + ']';
+  return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canonicalStringify(v[k])).join(',') + '}';
+}
+function buildProofPackObject(v) {
+  const be = v.breakEven || {};
+  const coded = classifyMisses(v.missTrial?.misses || [], {
+    artist: v.artist,
+    ranked: v.openers?.ranked || [],
+    candidates: v.openers?.candidates || [],
+  });
+  const confidence = computeConfidence(v);
+  return {
+    format: 'offersheet-proof-pack-1',
+    note: 'Serialized from the verdict object already held on the page — no new server call, no new data, no new computation beyond the pack hash.',
+    inputs: {
+      artist: v.artist || null,
+      city: v.city || null,
+      guarantee: v.guarantee ?? null,
+      ticketPrice: { value: be.price?.value ?? null, source: be.price?.source ?? null },
+      variableCost: { value: be.variableCost?.value ?? null, provided: be.variableCost?.provided ?? null },
+    },
+    breakEven: {
+      tickets: be.tickets ?? null,
+      net: be.net ?? null,
+      formula: 'ceil(guarantee ÷ net per ticket)',
+      arithmetic: { guarantee: v.guarantee ?? null, net: be.net ?? null },
+    },
+    rankedPick: v.openers?.topPick || null,
+    ranked: v.openers?.ranked || [],
+    candidates: v.openers?.candidates || [],
+    missLedger: coded.misses,
+    missTaxonomy: { counts: coded.counts, total: coded.total },
+    receipts: (v.receipts || []).map((r) => ({
+      operation: r.operation,
+      hash: r.requestHash ?? null,
+      requestId: r.requestId ?? null,
+      resultCount: r.resultCount ?? null,
+      replay: sanitizedReplayPayload(r.replay),
+    })),
+    legSummary: Object.fromEntries(Object.entries(v.legs || {}).map(([k, l]) => [k, l?.status ?? null])),
+    confidence: { level: confidence.level, reasons: confidence.reasons },
+  };
+}
+function csvCell(val) {
+  const s = val === null || val === undefined ? '' : String(val);
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+// L. CSV: the SAME proof-pack object, second rendering — no new data, no
+// new computation. One header row (inputs + break-even + receipt columns),
+// then one row per receipt with the inputs repeated so every row parses
+// standalone; the break-even cell on every row recomputes to the on-screen
+// number. A verdict with no receipts still yields its inputs row.
+function buildVerdictCsv(pack) {
+  const header = ['artist', 'city', 'guarantee', 'ticketPrice', 'netPerTicket', 'breakEvenTickets', 'graphPick', 'receiptOperation', 'receiptHash', 'receiptRequestId', 'receiptResultCount'];
+  const inp = pack.inputs || {};
+  const be = pack.breakEven || {};
+  const base = [inp.artist, inp.city, inp.guarantee, inp.ticketPrice?.value, be.net, be.tickets, pack.rankedPick];
+  const rows = [];
+  const receipts = Array.isArray(pack.receipts) ? pack.receipts : [];
+  if (receipts.length === 0) rows.push([...base, '', '', '', '']);
+  for (const r of receipts) rows.push([...base, r.operation, r.hash, r.requestId, r.resultCount]);
+  return [header.join(','), ...rows.map((row) => row.map(csvCell).join(','))].join('\n') + '\n';
+}
+function downloadFile(filename, text, mime) {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function safeFilename(v, ext) {
+  const slug = `${v.artist || 'artist'}-${v.city || 'city'}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'verdict';
+  return `offersheet-proof-pack-${slug}.${ext}`;
+}
+async function downloadProofPack(v) {
+  const note = $('proofPackNote');
+  const pack = buildProofPackObject(v);
+  if (!window.crypto || !window.crypto.subtle) {
+    if (note) note.textContent = 'Proof pack hash unavailable in this browser — no file is offered.';
+    return;
+  }
+  const hashBuf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalStringify(pack)));
+  pack.packSha256 = Array.from(new Uint8Array(hashBuf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  downloadFile(safeFilename(v, 'json'), JSON.stringify(pack, null, 2), 'application/json');
+  if (note) note.textContent = 'Proof pack downloaded — parse it and recompute ceil(guarantee ÷ net) and the pack hash; both match the on-screen verdict.';
+}
+function downloadVerdictCsv(v) {
+  const pack = buildProofPackObject(v);
+  downloadFile(safeFilename(v, 'csv'), buildVerdictCsv(pack), 'text/csv');
+  const note = $('proofPackNote');
+  if (note) note.textContent = 'Verdict CSV downloaded — same proof-pack object, second rendering.';
+}
+
+// I. Re-rank section: rendered SEPARATELY from the original verdict, which
+// is never overwritten. A failed run shows the EXACT failure label and
+// renders NO number from the failed run. A derived result (replay of the
+// recorded fixture, never a live run) is labelled derived, never live.
+function renderRerankSection(result, opts) {
+  const out = $('rerankOut');
+  if (!out) return;
+  opts = opts || {};
+  if (result && result.status === 'ok' && result.newPick) {
+    const r = result.receipt || {};
+    out.innerHTML = `<p><strong>Re-ranked pick (without “${esc(result.excludedPick || '')}”): ${esc(result.newPick.name || result.newPick.id || '')}</strong></p>`
+      + `<p class="label">New receipt: ${esc(r.operation || 'qloo_rank')} · requestId ${esc(r.requestId ?? '—')} · results: ${esc(r.resultCount ?? '—')}</p>`
+      + (opts.derived ? '<p class="label">Derived from the recorded fixture — not a live re-rank run.</p>' : '<p class="label">Live re-rank — the original verdict, pick, and receipts above are unchanged.</p>');
+    return;
+  }
+  out.innerHTML = `<p><strong>Re-rank failed: ${esc(result?.code || 'RERANK_FAILED')}</strong> — ${esc(result?.message || 'No new pick is shown from this run.')}</p><p class="label">The original verdict above is unchanged; no number from the failed run is shown.</p>`;
+}
+async function runRerank(v) {
+  const btn = $('rerankBtn');
+  const out = $('rerankOut');
+  if (!btn || !out) return;
+  btn.disabled = true;
+  out.textContent = 'Re-ranking without the top pick…';
+  try {
+    const res = await fetch('/api/verdict/rerank', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        artist: v.artist,
+        city: v.city,
+        candidates: v.openers?.candidates || [],
+        ranked: v.openers?.ranked || [],
+        excludedPick: v.openers?.topPick || null,
+        headlinerId: v.legs?.describe?.headliner?.id || null,
+      }),
+    });
+    const out2 = await res.json();
+    if (!res.ok) {
+      renderRerankSection({ code: out2.error?.code || res.status, message: out2.error?.message || 'Request failed' });
+    } else {
+      renderRerankSection(out2);
+    }
+  } catch (e) {
+    renderRerankSection({ code: 'REQUEST_FAILED', message: e.message });
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// D. Source tags. A tag names exactly one source class and, for
+// receipt-backed claims, the receipt index it traces to — never a
+// receipt index that does not exist in this run's receipts. Tags are
+// derived from source labels already in the verdict object
+// (breakEven.price.source, capacity.source, ticketmaster status, leg
+// statuses); nothing here upgrades a display-only or arm output into a
+// receipt-backed claim.
+function sourceTagHtml(label, receiptIdx) {
+  if (typeof receiptIdx === 'number' && receiptIdx >= 0) {
+    return `<span class="source-tag">Source: ${esc(label)} <button type="button" class="source-tag-chip" data-receipt-idx="${receiptIdx}">receipt ${receiptIdx}</button></span>`;
+  }
+  return `<span class="source-tag">Source: ${esc(label)}</span>`;
+}
+function wireSourceTagChips() {
+  if (!document.querySelectorAll) return;
+  document.querySelectorAll('.source-tag-chip').forEach((b) => {
+    b.addEventListener('click', () => scrollToReceipt(Number(b.getAttribute('data-receipt-idx'))));
+  });
+}
+function mappedPriceSource(v) {
+  const s = String(v.breakEven?.price?.source || '');
+  if (/ticketmaster/i.test(s)) return 'venue-history-sourced';
+  if (/user/i.test(s)) return 'user-supplied';
+  return s || 'user-supplied';
+}
+function arithmeticTagsHtml(v) {
+  // Guarantee is user input; price follows its recorded source label;
+  // venue history joins only when Ticketmaster history actually fed the
+  // verdict (a resolved venue or a Ticketmaster-sourced capacity). The
+  // arithmetic line NEVER gets a receipt tag: no receipt backs it.
+  const tags = ['user-supplied'];
+  const priceTag = mappedPriceSource(v);
+  if (!tags.includes(priceTag)) tags.push(priceTag);
+  const tm = v.ticketmaster || {};
+  const capSrc = String(v.capacity?.source || '');
+  if (tm.venueName || tm.status === 'ok' || /ticketmaster/i.test(capSrc)) {
+    if (!tags.includes('venue-history-sourced')) tags.push('venue-history-sourced');
+  }
+  return tags.map((t) => sourceTagHtml(t)).join(' ');
+}
+function receiptTagFor(v, operations) {
+  const idx = findReceiptIndex(v.receipts || [], operations);
+  return idx >= 0 ? sourceTagHtml('receipt-backed', idx) : sourceTagHtml('not receipt-backed this run');
+}
+
+// C. Guarded sheet: one backing rule, shared by sheet + brief. The Graph
+// pick (and every miss/refusal built on it) is backed only when the
+// opener-shortlist leg actually returned ok this run — recommend OR
+// rank. Anything else (empty/error/skipped) strikes the line. The
+// arithmetic lines are NOT receipt-backed and are never struck for
+// lacking a receipt: their inputs stay labelled by source instead.
+function graphBacked(v) {
+  const legs = v.legs || {};
+  return legs.recommend?.status === 'ok' || legs.rank?.status === 'ok';
+}
+function buildSheetLines(v) {
+  const be = v.breakEven || {};
+  const cap = v.capacity || {};
+  const known = cap.state === 'known' && typeof cap.value === 'number';
+  const backed = graphBacked(v);
+  const lines = [];
+  lines.push({ kind: 'header', text: `OfferSheet verdict — ${v.artist || 'artist'} in ${v.city || 'city'}`, struck: false });
+  lines.push({ kind: 'terms', text: `Guarantee ${money(v.guarantee ?? 0)} · ticket price ${money(be.price?.value ?? 0)} (${be.price?.source ?? 'unknown source'}) · net per ticket ${money(be.net ?? 0)}${be.variableCost?.provided === false ? ' (before variable costs)' : ''}`, struck: false });
+  lines.push({ kind: 'breakeven', text: `Break-even: ${fmt(be.tickets ?? 0)} tickets${known ? ` (${((be.tickets / cap.value) * 100).toFixed(1)}% of room capacity ${fmt(cap.value)}, ${cap.source})` : ' (capacity unknown — no sellout percentage)'}`, struck: false });
+  if (v.openers?.topPick) lines.push({ kind: 'graphPick', text: `Graph pick: ${v.openers.topPick}`, struck: !backed });
+  for (const m of v.missTrial?.misses || []) lines.push({ kind: 'miss', text: `Miss: ${m.arm} picked ${m.pick}; Qloo picked ${m.graphPick}.`, struck: !backed });
+  const unknowns = buildSignChecklist(v).unknowns;
+  if (unknowns.length) lines.push({ kind: 'unknowns', text: `Unknowns: ${unknowns.join(', ')}.`, struck: false });
+  lines.push({ kind: 'disclaimer', text: 'Aggregate taste signals only — not a sellout prediction, not a signing recommendation. The promoter decides.', struck: false });
+  return lines;
+}
+
 function renderReceipts(v) {
   const list = $('receiptList');
   list.innerHTML = '';
@@ -149,9 +568,11 @@ function renderReceipts(v) {
     const replayBtn = r.replay
       ? `<button class="btn btn-sm" data-replay='${esc(JSON.stringify(r.replay))}' data-receipt-idx="${idx}">Replay</button>`
       : '<em>No replay for this receipt</em>';
-    div.innerHTML = `<div><div class="claim">${esc(r.claim)}</div><div class="meta">${esc(r.operation)} · requestId: ${esc(r.requestId ?? '—')} · results: ${esc(r.resultCount ?? '—')}</div></div>${replayBtn}`;
+    div.innerHTML = `<div><div class="claim">${esc(r.claim)}</div><div class="meta">${esc(r.operation)} · requestId: ${esc(r.requestId ?? '—')} · results: ${esc(r.resultCount ?? '—')}</div></div>${replayBtn}${stepLogHtml(r, v)}`;
     list.appendChild(div);
   });
+  const receiptTag = $('receiptSourceTag');
+  if (receiptTag) receiptTag.innerHTML = sourceTagHtml('receipt-backed — each row below is its own receipt');
   list.querySelectorAll('[data-replay]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const replay = JSON.parse(btn.getAttribute('data-replay'));
@@ -257,6 +678,7 @@ function plainLegRows(legs, tm, osm, wd) {
 
 function renderLegs(v) {
   $('legsBlock').innerHTML = `<dl class="kv">${plainLegRows(v.legs, v.ticketmaster, v.osm, v.wikidata)}</dl>`;
+  renderLegsTag(v);
 }
 
 function renderPartial(v) {
@@ -316,12 +738,14 @@ function renderProofSummary(v) {
   const trend = trendArrow(v.trends) || (typeof v.trends === 'string' ? v.trends : null);
   const tag = Array.isArray(v.sharedTags) ? firstName(v.sharedTags[0]) : firstName(v.sharedTags);
   const overlap = Array.isArray(v.overlap) ? firstSummary(v.overlap[0]) : firstSummary(v.overlap);
-  const line = (label, value) => `<li><strong>${label}:</strong> ${value ? esc(value) : 'not returned this run'}</li>`;
+  // Phase 3 D: each summary line carries its own source tag. A line with
+  // no value this run is tagged as not backed, never receipt-backed.
+  const line = (label, value, tagHtml) => `<li><strong>${label}:</strong> ${value ? esc(value) : 'not returned this run'} ${value ? tagHtml : sourceTagHtml('not receipt-backed this run')}</li>`;
   $('proofSummary').innerHTML =
-    line('Top audience band', band)
-    + line('Trend', trend)
-    + line('Top shared tag', tag)
-    + line('Overlap', overlap);
+    line('Top audience band', band, receiptTagFor(v, ['qloo_audience_demographics']))
+    + line('Trend', trend, receiptTagFor(v, ['qloo_trends']))
+    + line('Top shared tag', tag, receiptTagFor(v, ['qloo_entity_tags']))
+    + line('Overlap', overlap, receiptTagFor(v, ['qloo_compare_audiences']));
 }
 
 // Motion hook (v2): the verdict number counts up to its REAL value
@@ -403,10 +827,10 @@ function renderCiteChips(v) {
     }
   }
   if (chips.length === 0) {
-    box.innerHTML = '<p class="label">No Qloo-backed citation chip this run — the receipts below still carry every claim.</p>';
+    box.innerHTML = `<p>${sourceTagHtml('not receipt-backed this run')}</p><p class="label">No Qloo-backed citation chip this run — the receipts below still carry every claim.</p>`;
     return;
   }
-  box.innerHTML = chips.map((c, i) => `<button type="button" class="cite-chip" data-receipt-idx="${c.idx}" data-chip="${i}">${c.label}</button>`).join('');
+  box.innerHTML = `<p>${sourceTagHtml('receipt-backed', graphIdx)}</p>` + chips.map((c, i) => `<button type="button" class="cite-chip" data-receipt-idx="${c.idx}" data-chip="${i}">${c.label}</button>`).join('');
   box.querySelectorAll('[data-receipt-idx]').forEach((b) => {
     b.addEventListener('click', () => scrollToReceipt(Number(b.getAttribute('data-receipt-idx'))));
   });
@@ -452,11 +876,17 @@ function renderConfidence(v) {
   const box = $('confidenceBox');
   if (!box) return;
   const c = computeConfidence(v);
-  box.innerHTML = `<p><strong>${c.level}</strong> · evidence strength, not probability</p><ul>${c.reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>`;
+  // Phase 3 D: the confidence label is code-set from leg statuses, so its
+  // tag names the leg statuses, not a receipt.
+  box.innerHTML = `<p><strong>${c.level}</strong> · evidence strength, not probability</p><ul>${c.reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul><p>${sourceTagHtml('leg statuses — see Sources checked')}</p>`;
 }
 
 // Item 8: leg summary + rejected-evidence counts next to the verdict.
 // Labels derive from existing leg status only; a leg counts ONLY at ok.
+function renderLegsTag(v) {
+  const tag = $('legsSourceTag');
+  if (tag) tag.innerHTML = sourceTagHtml('Qloo legs — receipt-backed legs carry a receipt below; empty/error legs carry none');
+}
 function renderLegSummary(v) {
   const box = $('legSummary');
   if (!box) return;
@@ -517,7 +947,24 @@ function renderSignChecklist(v) {
   const box = $('signChecklist');
   if (!box) return;
   const { rows, unknowns } = buildSignChecklist(v);
-  box.innerHTML = `<p class="label">Before you sign — check each line against the offer:</p><ul>${rows.map(([k, val]) => `<li><strong>${esc(k)}:</strong> ${esc(val)}</li>`).join('')}</ul>${unknowns.length ? `<p class="label">Unknowns: ${esc(unknowns.join(', '))}.</p>` : ''}`;
+  // Phase 3 D: each checklist row carries its own source tag. The opener
+  // row is receipt-backed only via the Graph receipt; venue rows trace
+  // to venue history; price/cost rows to the recorded input source.
+  const rowTag = (k) => {
+    if (k === 'Opener') return receiptTagFor(v, ['qloo_rank', 'qloo_recommend']);
+    if (k === 'Venue') return (v.ticketmaster || {}).venueName ? sourceTagHtml('venue-history-sourced') : sourceTagHtml('not resolved this run');
+    if (k === 'Ticket price') return sourceTagHtml(mappedPriceSource(v));
+    if (k === 'Capacity') {
+      const cap = v.capacity || {};
+      if (cap.state === 'known' && typeof cap.value === 'number') {
+        return /ticketmaster/i.test(String(cap.source || '')) ? sourceTagHtml('venue-history-sourced') : sourceTagHtml(String(cap.source || 'user-supplied'));
+      }
+      return sourceTagHtml('unknown — no source');
+    }
+    if (k === 'Variable cost') return sourceTagHtml('user-supplied');
+    return sourceTagHtml('not receipt-backed this run');
+  };
+  box.innerHTML = `<p class="label">Before you sign — check each line against the offer:</p><ul>${rows.map(([k, val]) => `<li><strong>${esc(k)}:</strong> ${esc(val)} ${rowTag(k)}</li>`).join('')}</ul>${unknowns.length ? `<p class="label">Unknowns: ${esc(unknowns.join(', '))}.</p>` : ''}`;
 }
 
 // Items 7 + 11: one-page verdict sheet + copy-ready promoter brief,
@@ -526,19 +973,11 @@ function renderSignChecklist(v) {
 // refusing rule is the miss ledger (the LLM pick contradicted by the
 // Qloo Graph pick).
 function sheetBriefText(v) {
-  const be = v.breakEven || {};
-  const cap = v.capacity || {};
-  const known = cap.state === 'known' && typeof cap.value === 'number';
-  const lines = [];
-  lines.push(`OfferSheet verdict — ${v.artist || 'artist'} in ${v.city || 'city'}`);
-  lines.push(`Guarantee ${money(v.guarantee ?? 0)} · ticket price ${money(be.price?.value ?? 0)} (${be.price?.source ?? 'unknown source'}) · net per ticket ${money(be.net ?? 0)}${be.variableCost?.provided === false ? ' (before variable costs)' : ''}`);
-  lines.push(`Break-even: ${fmt(be.tickets ?? 0)} tickets${known ? ` (${((be.tickets / cap.value) * 100).toFixed(1)}% of room capacity ${fmt(cap.value)}, ${cap.source})` : ' (capacity unknown — no sellout percentage)'}`);
-  if (v.openers?.topPick) lines.push(`Graph pick: ${v.openers.topPick}`);
-  for (const m of v.missTrial?.misses || []) lines.push(`Miss: ${m.arm} picked ${m.pick}; Qloo picked ${m.graphPick}.`);
-  const unknowns = buildSignChecklist(v).unknowns;
-  if (unknowns.length) lines.push(`Unknowns: ${unknowns.join(', ')}.`);
-  lines.push('Aggregate taste signals only — not a sellout prediction, not a signing recommendation. The promoter decides.');
-  return lines.join('\n');
+  // Phase 3 C: the brief is built from the SAME filtered line list the
+  // sheet renders from — struck lines are omitted here, never kept in a
+  // diverging copy. For a verdict whose backing legs are all ok, the
+  // filtered list is the full list, so this output is unchanged.
+  return buildSheetLines(v).filter((l) => !l.struck).map((l) => l.text).join('\n');
 }
 
 function renderVerdictSheet(v) {
@@ -550,21 +989,39 @@ function renderVerdictSheet(v) {
   const known = cap.state === 'known' && typeof cap.value === 'number';
   const receiptsHtml = (v.receipts || []).map((r) => `<li>${esc(r.claim || r.operation)} — ${esc(r.operation)} · requestId ${esc(r.requestId ?? '—')} · ${esc(String(r.resultCount ?? '—'))} results</li>`).join('');
   const unknowns = buildSignChecklist(v).unknowns;
+  // Phase 3 C: the sheet strikes exactly the lines buildSheetLines flags
+  // (same backing rule as the brief) — Graph pick and miss ledger when
+  // the opener-shortlist leg is not ok. Arithmetic, unknowns, receipts,
+  // and disclaimer lines are never struck for lacking a receipt. When
+  // nothing is struck, every paragraph below is byte-identical to the
+  // pre-Phase-3 sheet.
+  const backed = graphBacked(v);
+  const strike = (text) => `<p><s>${esc(text)}</s> — not backed — omitted from brief</p>`;
   body.innerHTML = [
     `<h3>${esc(v.artist || '')} in ${esc(v.city || '')}</h3>`,
     `<p><strong>${fmt(be.tickets ?? 0)} tickets to break even</strong>${known ? ` — ${((be.tickets / cap.value) * 100).toFixed(1)}% of room capacity ${fmt(cap.value)} (${esc(cap.source)})` : ' — capacity unknown, no sellout percentage'}</p>`,
     `<p>Guarantee ${money(v.guarantee ?? 0)} · ticket price ${money(be.price?.value ?? 0)} (${esc(be.price?.source ?? 'unknown source')}) · net per ticket ${money(be.net ?? 0)}${be.variableCost?.provided === false ? ' (before variable costs)' : ''}</p>`,
-    v.openers?.topPick ? `<p>Graph pick: ${esc(v.openers.topPick)}</p>` : '',
-    (v.missTrial?.misses || []).length ? `<p>Miss ledger: ${(v.missTrial.misses || []).map((m) => `${esc(m.arm)} picked ${esc(m.pick)}; Qloo picked ${esc(m.graphPick)}`).join(' ')}</p>` : '',
+    v.openers?.topPick ? (backed ? `<p>Graph pick: ${esc(v.openers.topPick)}</p>` : strike(`Graph pick: ${v.openers.topPick}`)) : '',
+    (v.missTrial?.misses || []).length ? (backed ? `<p>Miss ledger: ${(v.missTrial.misses || []).map((m) => `${esc(m.arm)} picked ${esc(m.pick)}; Qloo picked ${esc(m.graphPick)}`).join(' ')}</p>` : strike(`Miss ledger: ${(v.missTrial.misses || []).map((m) => `${m.arm} picked ${m.pick}; Qloo picked ${m.graphPick}`).join(' ')}`)) : '',
     unknowns.length ? `<p>Unknowns: ${esc(unknowns.join(', '))}.</p>` : '',
     receiptsHtml ? `<p>Key receipts:</p><ul>${receiptsHtml}</ul>` : '',
     `<p class="label">Aggregate taste signals only — not a sellout prediction, not a signing recommendation. The promoter decides.</p>`,
   ].filter(Boolean).join('');
+  const sheetTag = $('sheetSourceTag');
+  if (sheetTag) {
+    // The sheet tag claims receipt backing ONLY when a Graph receipt
+    // index exists this run; a backed leg with no receipt still gets no
+    // receipt tag — the struck/unstruck state already says the rest.
+    const graphIdx = findReceiptIndex(v.receipts || [], ['qloo_rank', 'qloo_recommend']);
+    sheetTag.innerHTML = (backed && graphIdx >= 0)
+      ? `${sourceTagHtml('receipt-backed', graphIdx)} ${arithmeticTagsHtml(v)}`
+      : `${sourceTagHtml('not receipt-backed this run')} ${arithmeticTagsHtml(v)}`;
+  }
   const refused = $('refusedBlock');
   if (refused) {
     const misses = v.missTrial?.misses || [];
     refused.innerHTML = misses.length
-      ? `<h3>Refused picks</h3><ul>${misses.map((m) => `<li><s>${esc(m.pick)}</s> — refused: ${esc(m.arm)} pick contradicted by the Qloo Graph pick ${esc(m.graphPick)}.</li>`).join('')}</ul>`
+      ? `<h3>Refused picks</h3><ul>${misses.map((m) => `<li><s>${esc(m.pick)}</s> — refused: ${esc(m.arm)} pick contradicted by the Qloo Graph pick ${esc(m.graphPick)}.${backed ? '' : ' — not backed — omitted from brief'}</li>`).join('')}</ul>`
       : '<p class="label">No refused picks this run.</p>';
   }
   const printBtn = $('printSheetBtn');
@@ -685,6 +1142,8 @@ function renderTrialTally(runs) {
     b.addEventListener('click', () => { try { prefillForm(JSON.parse(b.getAttribute('data-rerun'))); } catch {} });
   });
   line.textContent = `Qloo changed the pick in ${t.changed}/${t.n} trials (Gut agreed ${t.gutSame}/${t.n}; Web agreed ${t.webSame}/${t.n}). Recorded, not live.`;
+  // Phase 3 Wave 2 (E): the recorded-trials tally carries the taxonomy too.
+  renderTallyTaxonomy(runs);
 }
 
 function renderVerdict(v, race) {
@@ -706,6 +1165,13 @@ function renderVerdict(v, race) {
   $('verdictSubject').textContent = `${v.artist} in ${v.city} · guarantee ${money(v.guarantee)}`;
   // SHIP item 10: checklist above the number.
   renderSignChecklist(v);
+  // Phase 3 D: the arithmetic line (number + worked example) carries its
+  // input-source tags — user-supplied + venue-history-sourced when
+  // Ticketmaster history fed the verdict — never a receipt tag.
+  const arithTag = $('arithmeticSourceTag');
+  if (arithTag) arithTag.innerHTML = arithmeticTagsHtml(v);
+  const formulaTag = $('formulaSourceTag');
+  if (formulaTag) formulaTag.innerHTML = arithmeticTagsHtml(v);
   animateTickets(be.tickets);
   // SHIP item 4: confidence label next to the verdict. Item 9: thin badge.
   renderConfidence(v);
@@ -770,12 +1236,45 @@ function renderVerdict(v, race) {
   $('trendBlock').innerHTML = kvOrList(v.trends, 'Whether the artist is rising');
   $('tagsBlock').innerHTML = kvOrList(v.sharedTags, 'Shared tags');
   $('overlapBlock').innerHTML = kvOrList(v.overlap, 'How the fan bases overlap');
+  // Phase 3 D: one tag per verdict section, set after the section renders.
+  // Audience areas trace to the where-popular receipt when present;
+  // the opener shortlist to the Graph receipt; evidence details to the
+  // demographics/entity-tags receipts where present. A section with no
+  // backing receipt is tagged as not backed, never upgraded.
+  const audienceTag = $('audienceSourceTag');
+  if (audienceTag) audienceTag.innerHTML = (v.audience?.areas?.length) ? receiptTagFor(v, ['qloo_where_popular']) : sourceTagHtml('not receipt-backed this run');
+  const openerTag = $('openerSourceTag');
+  if (openerTag) openerTag.innerHTML = v.openers?.topPick ? receiptTagFor(v, ['qloo_rank', 'qloo_recommend']) : sourceTagHtml('not receipt-backed this run');
+  const evidenceTag = $('evidenceSourceTag');
+  if (evidenceTag) evidenceTag.innerHTML = `${receiptTagFor(v, ['qloo_audience_demographics'])} ${receiptTagFor(v, ['qloo_entity_tags'])}`;
   renderArms(v);
+  // Phase 3 Wave 2 (E): miss taxonomy on the verdict, next to the arms.
+  renderMissTaxonomy(v);
   renderReceipts(v);
   renderLegs(v);
   // SHIP items 8 + 7: leg summary next to the verdict, then the sheet.
   renderLegSummary(v);
   renderVerdictSheet(v);
+  // Phase 3 Wave 2 (I, B, L): re-rank action + proof-pack/CSV exports.
+  // The original verdict, pick, and receipts above are never overwritten
+  // by a re-rank; exports serialize this same verdict object only.
+  const rerankSection = $('rerankSection');
+  if (rerankSection) {
+    rerankSection.hidden = false;
+    const out = $('rerankOut'); if (out) out.textContent = '';
+    const btn = $('rerankBtn');
+    if (btn) btn.onclick = () => runRerank(v);
+  }
+  const proofWrap = $('proofPackWrap');
+  if (proofWrap) {
+    proofWrap.hidden = false;
+    const note = $('proofPackNote'); if (note) note.textContent = '';
+    const packBtn = $('proofPackBtn');
+    if (packBtn) packBtn.onclick = () => downloadProofPack(v);
+    const csvBtn = $('verdictCsvBtn');
+    if (csvBtn) csvBtn.onclick = () => downloadVerdictCsv(v);
+  }
+  wireSourceTagChips();
   setBadge('Qloo live — verdict computed from live calls', 'green');
 }
 

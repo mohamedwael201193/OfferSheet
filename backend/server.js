@@ -18,7 +18,9 @@ import { geocode } from './src/osm.js';
 import { searchEntities } from './src/wikidata.js';
 import { runGutArm, runWebArm, llmConfigured } from './src/arms.js';
 import { runVerdict } from './src/pipeline.js';
-import { OfferError, notConfigured } from './src/errors.js';
+import { OfferError, notConfigured, invalidInput } from './src/errors.js';
+import { buildRerankArgs, formatRerankResult } from './src/rerank.js';
+import { argsHashFor } from './src/receipts.js';
 import {
   verifyWorkspace,
   computeRenegotiation,
@@ -391,6 +393,79 @@ async function handleComparison(req, res) {
   }
 }
 
+// POST /api/verdict/rerank (Phase 3, Wave 2, item I): opener re-rank with
+// exclusion. The client sends the verdict's own candidate/ranked sets
+// plus the top pick to exclude; the server re-runs ONLY the qloo_rank leg
+// with the same candidate set minus that pick. The original verdict is
+// never touched — this endpoint returns a separate result, and the
+// frontend renders it as a separate section. Guarded like a verdict leg
+// (key gate, per-visitor cap, call budget); a keyless backend refuses
+// 503 NOT_CONFIGURED with the exact label, and the frontend renders that
+// label with no number from the failed run. An ok-but-empty rank
+// envelope refuses 502 RERANK_EMPTY, never an invented pick.
+async function handleRerank(req, res) {
+  let close = () => {};
+  try {
+    const body = await readJsonBody(req);
+    const artist = typeof body.artist === 'string' ? body.artist.trim() : '';
+    const city = typeof body.city === 'string' ? body.city.trim() : '';
+    if (!artist) throw invalidInput('artist is required');
+    if (!city) throw invalidInput('city is required');
+    if (!Array.isArray(body.candidates) && !Array.isArray(body.ranked)) {
+      throw invalidInput('candidates or ranked must be an array');
+    }
+    if (body.excludedPick === undefined || body.excludedPick === null || body.excludedPick === '') {
+      throw invalidInput('excludedPick is required');
+    }
+    if (!config.qlooKeyConfigured) throw notConfigured();
+    const visitorIp = req.socket?.remoteAddress || 'unknown';
+    guards.resetRun();
+    guards.checkVisitor(visitorIp);
+    guards.checkCall();
+    const built = await buildDeps({ isCancelled: () => req.socket?.destroyed === true });
+    close = built.close;
+    let args;
+    try {
+      args = buildRerankArgs({
+        artist,
+        city,
+        candidates: body.candidates || [],
+        ranked: body.ranked || [],
+        excludedPick: body.excludedPick,
+        headlinerId: typeof body.headlinerId === 'string' ? body.headlinerId : null,
+      });
+    } catch (e) {
+      throw invalidInput(e.message);
+    }
+    // `remaining` is the server-side candidate list for display only — it
+    // is never sent as a rank argument; only the rank-leg shape goes out.
+    const { remaining: _remaining, ...rankArgs } = args;
+    const envelope = await built.deps.mcpCall('qloo_rank', rankArgs);
+    const results = Array.isArray(envelope?.results) ? envelope.results : [];
+    const receipt = (envelope?.status === 'ok' && results.length > 0)
+      ? {
+          claim: 'opener shortlist re-ranked without the top pick',
+          operation: 'qloo_rank',
+          hashKind: 'args',
+          requestHash: argsHashFor('qloo_rank', rankArgs),
+          requestId: envelope?.requestId ?? null,
+          resultCount: envelope?.result_count ?? results.length,
+          replay: { kind: 'mcp', tool: 'qloo_rank', args: rankArgs },
+        }
+      : null;
+    const out = formatRerankResult(envelope, { excludedPick: body.excludedPick, receipt });
+    if (out.status !== 'ok') {
+      throw new OfferError('RERANK_EMPTY', 502, `Re-rank returned no pick: ${out.label}. No new pick is shown from this run.`);
+    }
+    send(res, 200, out);
+  } catch (e) {
+    if (e instanceof OfferError) { sendError(res, e); return; }
+    sendError(res, new OfferError('QLOO_ERROR', 502, `Re-rank failed: ${e.message}`));
+  } finally {
+    close();
+  }
+}
+
 // GET /api/verdict/stream (SSE): same inputs as POST /api/verdict via
 // query params. Each emitted `leg` event corresponds to one real completed
 // dependency call (tool/path + status + elapsed ms) — never a staged label.
@@ -545,6 +620,8 @@ const server = http.createServer(async (req, res) => {
       await handleVerdict(req, res, { race: true });
     } else if (req.method === 'POST' && path === '/api/replay') {
       await handleReplay(req, res);
+    } else if (req.method === 'POST' && path === '/api/verdict/rerank') {
+      await handleRerank(req, res);
     } else if (req.method === 'POST' && path === '/api/workspace/verify') {
       await handleWorkspaceVerify(req, res);
     } else if (req.method === 'POST' && path === '/api/workspace/replacement') {

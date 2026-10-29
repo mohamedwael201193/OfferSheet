@@ -101,6 +101,8 @@
 #workspace .ws-receipts { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 8px; }
 #workspace .ws-receipt { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 #workspace .ws-table-wrap { overflow-x: auto; margin: 16px 0; }
+#workspace .ws-why-not { min-width: 180px; }
+#workspace .ws-season-ledger { font-weight: 500; }
 #workspace .ws-table { border-collapse: collapse; min-width: 640px; width: 100%; }
 #workspace .ws-table th, #workspace .ws-table td {
   text-align: left;

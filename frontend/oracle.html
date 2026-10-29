@@ -13,6 +13,7 @@
     <div class="wordmark">OfferSheet <span class="app-kicker">Oracle</span></div>
     <nav class="nav-links" aria-label="Sections">
       <a href="index.html">Landing</a>
+      <a href="trial-protocol.html">Trial protocol</a>
     </nav>
   </div>
 </header>
@@ -44,6 +45,14 @@
     <h3>Coverage</h3>
     <p class="label">For each recorded trial, which evidence fields are present and which are absent, as counts only.</p>
     <div id="evalCoverage" class="results"></div>
+  </section>
+
+  <!-- Bench panel: wall time from the recorded trials -->
+  <section class="card" id="bench" aria-label="Bench panel">
+    <h2>Bench panel</h2>
+    <p class="source-label">Computed in your browser from trial-pack.json — the frozen copy of bench/results.json. No model grades itself.</p>
+    <p>Wall time per recorded trial, with the median and the range across trials. With so few trials, no percentile is shown: a percentile on a tiny n would imply precision the data does not carry.</p>
+    <div id="benchPanel" class="results"><p class="status-line">Loading bench panel…</p></div>
   </section>
 
   <!-- Panel 2: Verdict history -->

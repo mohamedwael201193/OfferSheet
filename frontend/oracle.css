@@ -148,6 +148,15 @@ p { margin: 8px 0; }
 
 .status-line { font-weight: 500; }
 
+.bench-n { font-size: 20px; line-height: 26px; }
+
+.protocol-banner {
+  border: 2px solid var(--orange);
+  border-radius: 16px;
+  padding: 16px;
+  font-weight: 600;
+}
+
 .results { display: grid; gap: 8px; }
 
 .check {
