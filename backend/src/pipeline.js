@@ -30,7 +30,7 @@
 import { notConfigured, invalidInput, isGuardTrip } from './errors.js';
 import { breakEven } from './breakeven.js';
 import { argsHashFor } from './receipts.js';
-import { extractCapacity, extractPrice, extractFirstVenue, extractFirstVenueResult } from './ticketmaster.js';
+import { extractCapacity, extractPrice, extractFirstVenue, extractVenueForCity, venueCityOf } from './ticketmaster.js';
 import { classifyMisses } from './rerank.js';
 
 function itemId(item) {
@@ -460,7 +460,7 @@ export async function runVerdict(input, deps) {
         try {
           const vs = await deps.tmVenues({ keyword: venueQuery });
           if (vs.ok) {
-            resolvedVenue = extractFirstVenueResult(vs.body);
+            resolvedVenue = extractVenueForCity(vs.body, city);
             if (resolvedVenue) {
               tmVenueResolved = true;
               venueId = resolvedVenue.id ?? resolvedVenue.venueId ?? null;
@@ -488,10 +488,11 @@ export async function runVerdict(input, deps) {
           ? (extractCapacity(resolvedVenue) ?? extractCapacity(venue))
           : extractCapacity(venue);
         tmPrice = extractPrice(ev.body);
+        const resolvedCity = tmVenueResolved ? venueCityOf(resolvedVenue) : null;
         const grounding = tmVenueResolved
-          ? 'named room — venue resolved by Ticketmaster venue search'
+          ? `named room — venue resolved by Ticketmaster venue search${resolvedCity ? ` (venue city: ${resolvedCity})` : ''}`
           : `first matching Ticketmaster event's venue, not the offer room${venueSearchNote ? ` (${venueSearchNote})` : ''}`;
-        tmState = { status: 'ok', eventsFound: tmEventsCount, venueName: (tmVenueResolved ? resolvedVenue?.name : venue?.name) ?? null, capacityReported: tmCapacity !== null, venueQuery: venueQuery || null, venueResolved: tmVenueResolved, grounding };
+        tmState = { status: 'ok', eventsFound: tmEventsCount, venueName: (tmVenueResolved ? resolvedVenue?.name : venue?.name) ?? null, venueCity: (tmVenueResolved ? venueCityOf(resolvedVenue) : venueCityOf(venue)) ?? null, capacityReported: tmCapacity !== null, venueQuery: venueQuery || null, venueResolved: tmVenueResolved, grounding };
       } else {
         tmState = { status: 'error', cause: 'error', reason: `Ticketmaster returned ${ev.status}` };
       }
@@ -616,6 +617,13 @@ export async function runVerdict(input, deps) {
       : `Ticketmaster-reported — first matching Ticketmaster event's venue, not the offer room`;
   }
 
+  // J3 B3: breakEven throws a plain Error for net <= 0, which server.js
+  // maps to HTTP 500. Pre-validate here (after price resolution, so a
+  // Ticketmaster-supplied price is covered too) and throw the codebase's
+  // invalidInput OfferError instead, so cost >= price is a 400 input error.
+  if (variableCostProvided && price <= variableCost) {
+    throw invalidInput('variable cost must be below the ticket price for a break-even count');
+  }
   const be = breakEven({ guarantee, ticketPrice: price, variableCost, capacity });
   const graphPick = topOpener?.name || null;
 

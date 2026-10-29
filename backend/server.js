@@ -9,7 +9,7 @@ import { readFile } from 'node:fs/promises';
 import { join, normalize, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './src/config.js';
-import { Guards } from './src/guards.js';
+import { Guards, visitorIpFor } from './src/guards.js';
 import { ReceiptStore } from './src/receipts.js';
 import { McpSession, MCP_TOOLS, validateMcpReplayArgs } from './src/mcp.js';
 import { qlooRest, REST_PATHS, REST_PARAM_ALLOWLIST } from './src/rest.js';
@@ -163,7 +163,7 @@ async function buildDeps({ gutArm, webArm, isCancelled } = {}) {
 
 async function handleVerdict(req, res, { race = false } = {}) {
   const input = await readJsonBody(req);
-  const visitorIp = req.socket?.remoteAddress || 'unknown';
+  const visitorIp = visitorIpFor(req);
   // G47: abort the pipeline when the client request closes. The flag is
   // checked between legs; a run aborted this way ends withheld, never
   // presented as a partial verdict.
@@ -217,7 +217,7 @@ async function handleReplay(req, res) {
   // (per-visitor cap + call budget) — an unguarded replay would be an
   // unbounded key-spending hole. The key gate above precedes validation:
   // a keyless bogus replay still fails closed, never replays.
-  const visitorIp = req.socket?.remoteAddress || 'unknown';
+  const visitorIp = visitorIpFor(req);
   if (body.kind === 'mcp' && typeof body.tool === 'string') {
     if (!MCP_TOOLS.includes(body.tool)) {
       throw new OfferError('INVALID_INPUT', 400, `Replay tool not allowlisted: ${body.tool}`);
@@ -360,7 +360,7 @@ async function handleReplacement(req, res) {
   try {
     const body = await readJsonBody(req);
     const { workspace, stepInput } = workspaceAndInput(body);
-    const visitorIp = req.socket?.remoteAddress || 'unknown';
+    const visitorIp = visitorIpFor(req);
     const built = await buildDeps({ isCancelled: () => req.socket?.destroyed === true });
     close = built.close;
     const out = await runReplacement(workspace, stepInput, built.deps, { visitorIp });
@@ -383,7 +383,7 @@ async function handleRouting(req, res) {
     // so the key gate is explicit here: unconfigured Qloo refuses closed
     // instead of surfacing a transport spawn error.
     if (!config.qlooKeyConfigured) throw notConfigured();
-    const visitorIp = req.socket?.remoteAddress || 'unknown';
+    const visitorIp = visitorIpFor(req);
     const built = await buildDeps({ isCancelled: () => req.socket?.destroyed === true });
     close = built.close;
     const out = await runRouting(workspace, stepInput, built.deps, { visitorIp });
@@ -403,7 +403,7 @@ async function handleComparison(req, res) {
   try {
     const body = await readJsonBody(req);
     const { workspace, stepInput } = workspaceAndInput(body);
-    const visitorIp = req.socket?.remoteAddress || 'unknown';
+    const visitorIp = visitorIpFor(req);
     const sessions = [];
     closeAll = () => { for (const c of sessions) { try { c(); } catch { /* already closed */ } } };
     const makeDeps = async () => {
@@ -451,7 +451,7 @@ async function handleRerank(req, res) {
       throw invalidInput('excludedPick is required');
     }
     if (!config.qlooKeyConfigured) throw notConfigured();
-    const visitorIp = req.socket?.remoteAddress || 'unknown';
+    const visitorIp = visitorIpFor(req);
     guards.resetRun();
     guards.checkVisitor(visitorIp);
     guards.checkCall();
@@ -533,7 +533,7 @@ async function handleVerdictStream(req, res, url) {
     capacity: num(q.get('capacity')),
     venue: q.get('venue') ?? undefined,
     entityHint: q.get('entityHint') ?? undefined,
-    visitorIp: req.socket?.remoteAddress || 'unknown',
+    visitorIp: visitorIpFor(req),
   };
   // Socket-destroyed, NOT req 'close': the request stream's 'close'
   // fires as soon as the body is consumed (proven in testing), which

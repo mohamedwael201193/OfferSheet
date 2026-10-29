@@ -18,7 +18,7 @@ import { ReceiptStore, argsHashFor, requestHashFor, sha256 } from './src/receipt
 import { OfferError, notConfigured, invalidInput } from './src/errors.js';
 import { McpSession, MCP_TOOLS } from './src/mcp.js';
 import { qlooRest, REST_PATHS } from './src/rest.js';
-import { searchEvents, searchVenues, extractCapacity, extractPrice, extractFirstVenue, extractFirstVenueResult } from './src/ticketmaster.js';
+import { searchEvents, searchVenues, extractCapacity, extractPrice, extractFirstVenue, extractFirstVenueResult, extractVenueForCity, venueCityOf } from './src/ticketmaster.js';
 import { geocode } from './src/osm.js';
 import { searchEntities } from './src/wikidata.js';
 import { runGutArm, runWebArm, llmConfigured } from './src/arms.js';
@@ -526,7 +526,7 @@ export function createMcpApp(deps = {}) {
         try {
           const vs = await tmVenuesFn({ keyword: venueQuery });
           if (vs.ok) {
-            resolvedVenue = extractFirstVenueResult(vs.body);
+            resolvedVenue = extractVenueForCity(vs.body, a.city);
             if (resolvedVenue) {
               venueResolved = true;
               venueId = resolvedVenue.id ?? resolvedVenue.venueId ?? null;
@@ -550,13 +550,15 @@ export function createMcpApp(deps = {}) {
         value: priceRaw.price,
         source: venueResolved ? `${priceRaw.source} — events at the named room` : `${priceRaw.source} — first matching Ticketmaster event's venue, not the offer room`,
       } : null;
+      const resolvedCity = venueResolved ? venueCityOf(resolvedVenue) : null;
       const grounding = venueResolved
-        ? 'named room — venue resolved by Ticketmaster venue search'
+        ? `named room — venue resolved by Ticketmaster venue search${resolvedCity ? ` (venue city: ${resolvedCity})` : ''}`
         : `first matching Ticketmaster event's venue, not the offer room${venueSearchNote ? ` (${venueSearchNote})` : ''}`;
       return {
         status: 'ok',
         eventsFound,
         venueName: (venueResolved ? resolvedVenue?.name : venue?.name) ?? null,
+        venueCity: (venueResolved ? venueCityOf(resolvedVenue) : venueCityOf(venue)) ?? null,
         capacity: capacityValue !== null ? { value: capacityValue, state: 'known', source: venueResolved ? 'Ticketmaster-reported' : 'Ticketmaster-reported — first matching Ticketmaster event\'s venue, not the offer room' } : { value: null, state: 'unknown', cause: 'no_field', message: 'Venue capacity unknown — Ticketmaster returned no capacity for this room. Break-even is shown as tickets needed, not as a sellout percentage. Verify room size before signing.' },
         price,
         grounding,

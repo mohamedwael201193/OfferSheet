@@ -62,15 +62,53 @@ export function extractPrice(eventsBody) {
     const ranges = ev?.priceRanges;
     if (Array.isArray(ranges) && ranges.length > 0) {
       const r = ranges[0];
-      if (typeof r.min === 'number' && typeof r.max === 'number') {
+      // J3 minor (negative price): a non-finite or negative range bound is
+      // treated as absent, never as a price — a negative price reaching the
+      // pipeline would make breakEven throw a plain Error (HTTP 500). Skip
+      // to the next event instead of returning a corrupting price.
+      const minOk = typeof r.min === 'number' && Number.isFinite(r.min) && r.min >= 0;
+      const maxOk = typeof r.max === 'number' && Number.isFinite(r.max) && r.max >= 0;
+      if (minOk && maxOk) {
         return { price: (r.min + r.max) / 2, source: 'average of Ticketmaster price range', currency: r.currency || null };
       }
-      if (typeof r.min === 'number') {
+      if (minOk) {
         return { price: r.min, source: 'Ticketmaster price range minimum', currency: r.currency || null };
       }
     }
   }
   return null;
+}
+
+// City of a venue record, across the shapes the API returns (city as an
+// object with a name, or as a plain string). Null when the record carries
+// no city — never a guessed city.
+export function venueCityOf(venue) {
+  if (!venue || typeof venue !== 'object') return null;
+  const c = venue.city ?? venue.address?.city ?? null;
+  if (typeof c === 'string' && c.trim() !== '') return c.trim();
+  if (c && typeof c === 'object' && typeof c.name === 'string' && c.name.trim() !== '') return c.name.trim();
+  return null;
+}
+
+// J3 M7: named-room venue search previously took the first result with no
+// city filter, so a same-named venue in another city could ground the
+// verdict. Prefer a returned venue whose city matches the offer city
+// (case-insensitive); fall back to the first result exactly as before when
+// no returned venue matches, so an unmatched city shape can never regress
+// a resolved room to unresolved. The server-side city query parameter was
+// NOT added: its filtering behaviour is unverified live, while this
+// client-side preference is fully unit-testable and cannot regress.
+export function extractVenueForCity(venuesBody, city) {
+  const venues = venuesBody?._embedded?.venues;
+  if (!Array.isArray(venues) || venues.length === 0) return null;
+  const want = typeof city === 'string' ? city.trim().toLowerCase() : '';
+  if (want !== '') {
+    for (const v of venues) {
+      const vc = venueCityOf(v);
+      if (vc && vc.toLowerCase() === want) return v;
+    }
+  }
+  return venues[0] ?? null;
 }
 
 export function extractFirstVenue(eventsBody) {

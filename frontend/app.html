@@ -135,6 +135,7 @@
         <label for="variableCost">Variable cost per ticket (USD, optional)</label>
         <input id="variableCost" name="variableCost" type="number" min="0" step="0.01" inputmode="decimal">
         <span class="field-hint">Blank = net is before variable costs.</span>
+        <span class="field-hint">Must stay below the ticket price, or no break-even count exists.</span>
         <details class="field-more">
           <summary>About this field</summary>
           <span class="field-hint">Fees, splits, or other per-ticket costs. Leave blank and the net renders as before variable costs — never as if costs were zero.</span>
@@ -544,7 +545,7 @@
     <div class="disc-head-row"><div>
     <p class="eyebrow">No. 11 — The proof</p>
     <h2>How deep does OfferSheet's Qloo integration go?</h2>
-    <p><strong>10 of 10 official Qloo tools, wired into the verdict — 8 of them receipted live.</strong></p>
+    <p><strong>10 of 10 official Qloo tools wired into the verdict — each invoked when its precondition holds, receipted only when it returns data. 8 receipted live across the 3 recorded trials (collective, not per verdict).</strong></p>
     </div><button class="btn disc-toggle" type="button" aria-expanded="false" aria-controls="disc-depth-body">Show depth</button></div>
     <div class="disc-body" id="disc-depth-body"><figure class="fig">
       <img src="assets/depth-bowl-detail.webp" alt="Seating bowl, detail: amphitheater seating rows drawn on proof paper" width="1920" height="1280" loading="lazy" data-fallback="bowlFallback">
@@ -571,7 +572,7 @@
       <p>Status, stated plainly: REST restSearch and restEntities receipted live in the 29 Oct 2026 trials; back-to-back runs returned REST 429s, shown as exact failure labels; trends/compare remain wired and empty on live runs so far.</p>
     </details>
     <details class="proof-note-details" id="depthReceiptNote">
-      <summary>Every Qloo-backed claim carries a receipt — and every receipt re-runs</summary>
+      <summary>Every Qloo-backed claim carries a receipt — and every receipt re-runs (arithmetic and price lines excepted — see below)</summary>
       <p><strong>Every Qloo-backed claim carries a receipt — and every receipt re-runs.</strong> Each Qloo-backed verdict row shows its SHA-256 request hash, its response requestId when the upstream returns one (shown as — when it does not; the live MCP legs returned none), its result count, and its ordered entity IDs where the leg returns any (legs whose results carry no IDs replay as not comparable, never as a match). Arithmetic and price lines carry no receipt by design — their inputs are labelled by source instead. Click any receipt to re-run the exact call: a match stamps "same IDs in the same order" (proven live: a describe receipt replayed through the deployed backend returned the same ID list in the same order — see the round-trip record on the tool catalogue page); a mismatch surfaces as "count matches but order/IDs differ" — never hidden, never counts-only.</p>
     </details>
     <details class="proof-note-details">

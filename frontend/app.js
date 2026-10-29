@@ -45,12 +45,14 @@ async function loadHealth() {
       $('configBanner').hidden = false;
       $('formDisabledNote').hidden = false;
       document.querySelectorAll('#offerForm input, #offerForm button').forEach((el) => { el.disabled = true; });
+      document.querySelectorAll('.glass-toolbar button[type=submit]').forEach((el) => { el.disabled = true; });
     } else {
       // "Configured" alone is amber, never green: green requires a live verdict.
       setBadge('Qloo configured — awaiting first live call', 'amber');
       $('configBanner').hidden = true;
       $('formDisabledNote').hidden = true;
       document.querySelectorAll('#offerForm input, #offerForm button').forEach((el) => { el.disabled = false; });
+      document.querySelectorAll('.glass-toolbar button[type=submit]').forEach((el) => { el.disabled = false; });
     }
   } catch {
     setBadge('Backend unreachable', 'red');
@@ -124,6 +126,12 @@ function hideVerdict() {
 }
 function setRunning(on) {
   document.querySelectorAll('#offerForm button').forEach((b) => { b.disabled = on; });
+  // J3 M2: the floating toolbar Run button is type=submit form=offerForm
+  // but sits OUTSIDE the form, so the selector above never reached it and
+  // a second tap started a second live verdict. Toggling it here, inside
+  // setRunning itself, covers every existing setRunning(true/false) call
+  // site with no per-site change.
+  document.querySelectorAll('.glass-toolbar button[type=submit]').forEach((b) => { b.disabled = on; });
   const rt = $('raceToggleBtn');
   if (rt) rt.disabled = on;
 }
@@ -1767,7 +1775,7 @@ async function submitVerdict(race, entityHint) {
   setRunning(true);
   const t0 = Date.now();
   const timer = setInterval(() => {
-    $('raceTimer').textContent = race ? `Running live… ${((Date.now() - t0) / 1000).toFixed(1)}s elapsed` : '';
+    $('raceTimer').textContent = `Running live… ${((Date.now() - t0) / 1000).toFixed(1)}s elapsed`;
   }, 100);
   showStatus('<p><span class="spinner" aria-hidden="true"></span>Running live…</p><div class="progress" aria-hidden="true"></div><p class="label">Every number below will come from a live call, or nothing will render.</p>', '');
   const body = {
@@ -1797,6 +1805,12 @@ async function submitVerdict(race, entityHint) {
       if (v) { resOk = true; resStatus = 200; }
     }
     if (!v) {
+      // J3 M1: a stream failure used to fall back to the POST path silently
+      // (progress cleared, second live run, no note). Say so visibly before
+      // retrying — once, and only when a stream was actually attempted
+      // (non-race). No verdict has been delivered at this point, so this is
+      // a single retry of an undelivered run, never a second verdict.
+      if (!race) showStatus('<p><span class="spinner" aria-hidden="true"></span>Running live…</p><div class="progress" aria-hidden="true"></div><p class="label">The live-progress stream failed before delivering a verdict, so this run is retrying once via the standard path. Every number below will come from a live call, or nothing will render.</p>', '');
       // T3: a failed stream leaves its first-attempt leg lines in #status;
       // clear them before the POST fallback run so the progress display
       // never mixes two attempts. (On success/failure of the POST path the
@@ -1821,6 +1835,7 @@ async function submitVerdict(race, entityHint) {
         $('configBanner').hidden = false;
         $('formDisabledNote').hidden = false;
         document.querySelectorAll('#offerForm input, #offerForm button').forEach((el) => { el.disabled = true; });
+      document.querySelectorAll('.glass-toolbar button[type=submit]').forEach((el) => { el.disabled = true; });
       } else {
         showStatus(`<p class="big">${esc(v.error?.code || res.status)}</p><p>${esc(v.error?.message || 'Request failed')}</p><p>No verdict numbers are shown in this state. Nothing is mocked or invented.</p>`, 'red');
       }
