@@ -65,7 +65,6 @@ function hideVerdict() {
   $('verdict').hidden = true;
   $('raceSection').hidden = true;
   $('receiptSection').hidden = true;
-  $('formulaSection').hidden = true;
   $('raceToggleWrap').hidden = true;
   $('partialSection').hidden = true;
 }
@@ -349,7 +348,7 @@ function renderVerdict(v, race) {
   // G21: the race section shows only when the secondary toggle ran a race.
   $('raceSection').hidden = !race;
   $('receiptSection').hidden = false;
-  $('formulaSection').hidden = false;
+  $('formula').hidden = false;
   $('raceToggleWrap').hidden = false;
 
   $('verdictSubject').textContent = `${v.artist} in ${v.city} · guarantee ${money(v.guarantee)}`;
@@ -419,12 +418,28 @@ function renderNeedsInput(v) {
   // Badge rule: green ONLY while a live verdict stands. A needs_input run
   // shows no verdict, so a stale green from an earlier run must not survive.
   setBadge('Qloo configured — awaiting your pick', 'amber');
-  const btns = (v.candidates || []).map((c) => `<button class="btn btn-sm" data-entity="${esc(c.id || c.name || '')}">${esc(c.name || c.id || '')}</button>`).join(' ');
-  showStatus(`<p class="big">More than one match — pick the one you mean.</p><p>${esc(v.message)}</p><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">${btns}</div>`, 'amber');
+  const candidates = Array.isArray(v.candidates) ? v.candidates : [];
+  const btns = candidates.map((c) => `<button class="btn btn-sm" data-entity="${esc(c.id || c.name || '')}">${esc(c.name || c.id || '')}</button>`).join(' ');
+  // A needs_input card must never be a dead end. Candidates render as
+  // pickable options, and Try again always offers a way forward: it focuses
+  // the artist field for an edited name, since re-running the same name
+  // would just return this same card. When the payload carries zero
+  // candidates, the card says so honestly instead of asking the user to
+  // pick from nothing.
+  const body = candidates.length > 0
+    ? `<p class="big">More than one match — pick the one you mean.</p><p>${esc(v.message)}</p><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">${btns}</div>`
+    : `<p class="big">No candidates to pick from.</p><p>Qloo returned no candidate entities for this name. Try a more specific or correctly spelled headliner name.</p>`;
+  showStatus(`${body}<div style="margin-top:12px"><button class="btn" type="button" id="needsTryAgainBtn">Try again</button></div>`, 'amber');
   document.querySelectorAll('[data-entity]').forEach((btn) => {
     btn.addEventListener('click', () => {
       submitVerdict(false, btn.getAttribute('data-entity'));
     });
+  });
+  const tryAgain = $('needsTryAgainBtn');
+  if (tryAgain) tryAgain.addEventListener('click', () => {
+    const f = $('artist');
+    f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    f.focus();
   });
 }
 
