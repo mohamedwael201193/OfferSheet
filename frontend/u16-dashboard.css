@@ -184,3 +184,4 @@ label[for=sponsorOffset]{--i:var(--ic-guarantee)}
 .app-shell .trial-card--blank{border-style:dashed!important}
 @media (max-width:820px){.app-shell .trial-cards-row{grid-template-columns:minmax(0,1fr)!important}}
 .app-shell .evmini-h{font-size:15px;font-weight:500;margin:0 0 4px}
+@media (min-width:821px){.app-shell main.wrap>.u16-preview{margin-top:32px}}
