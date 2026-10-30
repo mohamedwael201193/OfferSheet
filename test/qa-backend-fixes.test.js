@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { spawn } from 'node:child_process';
+import { spawnEphemeralBackend } from './ephemeral-backend.js';
 import { runVerdict } from '../backend/src/pipeline.js';
 import { baseDeps, baseInput, mcpFixture, restFixture } from './fixtures.js';
 import { Guards } from '../backend/src/guards.js';
@@ -260,20 +260,14 @@ function stubServer(getBody) {
   });
 }
 
-function spawnBackend(port, extraEnv) {
+function spawnBackend(extraEnv) {
   const env = {
     ...process.env,
     QLOO_API_KEY: 'test-only-not-a-real-key',
-    PORT: String(port),
     ...extraEnv,
   };
   delete env.TICKETMASTER_API_KEY;
-  const child = spawn('node', ['backend/server.js'], {
-    cwd: new URL('..', import.meta.url).pathname,
-    env,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  return child;
+  return spawnEphemeralBackend(env);
 }
 
 async function waitHealthy(port) {
@@ -291,16 +285,16 @@ test('G6+G7: replay rejects absolute URLs and non-allowlisted paths/tools, retur
   const stub = await stubServer(() => ({ entities: [
     { entity_id: 'a', name: 'Alpha' }, { entity_id: 'b', name: 'Beta' }, { entity_id: 'c', name: 'Gamma' },
   ] }));
-  const child = spawnBackend(3461, { QLOO_BASE_URL: `http://127.0.0.1:${stub.port}` });
+  const { child, port } = await spawnBackend({ QLOO_BASE_URL: `http://127.0.0.1:${stub.port}` });
   try {
-    await waitHealthy(3461);
-    const abs = await httpCall(3461, '/api/replay', 'POST', { kind: 'rest', path: 'https://evil.example/search', params: {} });
+    await waitHealthy(port);
+    const abs = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: 'https://evil.example/search', params: {} });
     assert.equal(abs.status, 400);
-    const badPath = await httpCall(3461, '/api/replay', 'POST', { kind: 'rest', path: '/v2/tags', params: {} });
+    const badPath = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/v2/tags', params: {} });
     assert.equal(badPath.status, 400);
-    const badTool = await httpCall(3461, '/api/replay', 'POST', { kind: 'mcp', tool: 'qloo_taste_profile', args: {} });
+    const badTool = await httpCall(port, '/api/replay', 'POST', { kind: 'mcp', tool: 'qloo_taste_profile', args: {} });
     assert.equal(badTool.status, 400);
-    const ok = await httpCall(3461, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz', take: 5 } });
+    const ok = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz', take: 5 } });
     assert.equal(ok.status, 200);
     const body = JSON.parse(ok.body);
     assert.equal(body.kind, 'rest');
@@ -316,12 +310,12 @@ test('G6+G7: replay rejects absolute URLs and non-allowlisted paths/tools, retur
 
 test('G6: replay counts against the monthly guard (second replay trips QUOTA_FLOOR)', { timeout: 30000 }, async () => {
   const stub = await stubServer(() => ({ entities: [{ entity_id: 'a', name: 'Alpha' }] }));
-  const child = spawnBackend(3462, { QLOO_BASE_URL: `http://127.0.0.1:${stub.port}`, MONTHLY_CALL_BUDGET: '1' });
+  const { child, port } = await spawnBackend({ QLOO_BASE_URL: `http://127.0.0.1:${stub.port}`, MONTHLY_CALL_BUDGET: '1' });
   try {
-    await waitHealthy(3462);
-    const first = await httpCall(3462, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz' } });
+    await waitHealthy(port);
+    const first = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz' } });
     assert.equal(first.status, 200);
-    const second = await httpCall(3462, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz' } });
+    const second = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz' } });
     assert.equal(second.status, 503);
     assert.equal(JSON.parse(second.body).error.code, 'QUOTA_FLOOR');
   } finally {
@@ -332,12 +326,12 @@ test('G6: replay counts against the monthly guard (second replay trips QUOTA_FLO
 
 test('G6: replay counts against the per-visitor guard (second replay trips VISITOR_CAP)', { timeout: 30000 }, async () => {
   const stub = await stubServer(() => ({ entities: [{ entity_id: 'a', name: 'Alpha' }] }));
-  const child = spawnBackend(3463, { QLOO_BASE_URL: `http://127.0.0.1:${stub.port}`, PER_VISITOR_DAILY_CAP: '1' });
+  const { child, port } = await spawnBackend({ QLOO_BASE_URL: `http://127.0.0.1:${stub.port}`, PER_VISITOR_DAILY_CAP: '1' });
   try {
-    await waitHealthy(3463);
-    const first = await httpCall(3463, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz' } });
+    await waitHealthy(port);
+    const first = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz' } });
     assert.equal(first.status, 200);
-    const second = await httpCall(3463, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz' } });
+    const second = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz' } });
     assert.equal(second.status, 429);
     assert.equal(JSON.parse(second.body).error.code, 'VISITOR_CAP');
   } finally {
@@ -361,9 +355,9 @@ test('G7-alignment: verdict receipts carry the original ordered ID list for enti
 });
 
 test('G10+G18: health exposes qlooConfigured only — no tool count, no guard counts', { timeout: 30000 }, async () => {
-  const child = spawnBackend(3464, {});
+  const { child, port } = await spawnBackend({});
   try {
-    const h = await waitHealthy(3464);
+    const h = await waitHealthy(port);
     assert.equal(h.qlooConfigured, true);
     assert.ok(!('tools' in h), 'health must not hardcode a tools count');
     assert.ok(!('guards' in h), 'health must not expose guard counts');

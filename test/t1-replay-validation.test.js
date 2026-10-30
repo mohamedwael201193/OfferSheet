@@ -1,12 +1,12 @@
 // T1 (provenance) — replay validation + replay response fidelity.
 // Backend-only. No live Qloo: MCP validation is a pure unit check, and the
 // REST replay path runs against a local stub through a spawned backend
-// (QLOO_BASE_URL override + a test-only key). Ports 3477/3478 are unused
-// by the rest of the suite (existing spawned backends use 3457–3464, 3499).
+// (QLOO_BASE_URL override + a test-only key). The stub and the backend
+// each bind an ephemeral port so parallel test files cannot collide.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { spawn } from 'node:child_process';
+import { spawnEphemeralBackend } from './ephemeral-backend.js';
 import { validateMcpReplayArgs } from '../backend/src/mcp.js';
 
 // Every argument shape the verdict pipeline, the re-rank path, and the
@@ -83,28 +83,24 @@ function stubServer() {
     }
   });
   return new Promise((resolve) => {
-    server.listen(3477, '127.0.0.1', () => resolve({ hits, close: () => server.close() }));
+    server.listen(0, '127.0.0.1', () => resolve({ port: server.address().port, hits, close: () => server.close() }));
   });
 }
 
-function spawnBackend() {
+function spawnBackend(stubPort) {
   const env = { ...process.env };
   env.QLOO_API_KEY = 'test-only-not-a-real-key';
-  env.QLOO_BASE_URL = 'http://127.0.0.1:3477';
+  // No stub: keep REST pointed at a closed local port so a stray replay
+  // cannot leave the machine. Callers that start a stub pass its port.
+  env.QLOO_BASE_URL = stubPort ? `http://127.0.0.1:${stubPort}` : 'http://127.0.0.1:1';
   delete env.TICKETMASTER_API_KEY;
-  env.PORT = '3478';
-  const child = spawn('node', ['backend/server.js'], {
-    cwd: new URL('..', import.meta.url).pathname,
-    env,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  return child;
+  return spawnEphemeralBackend(env);
 }
 
-async function waitHealthy() {
+async function waitHealthy(port) {
   for (let i = 0; i < 50; i += 1) {
     try {
-      const h = await httpCall(3478, '/api/health');
+      const h = await httpCall(port, '/api/health');
       if (h.status === 200) return;
     } catch { /* not listening yet */ }
     await new Promise((r) => setTimeout(r, 100));
@@ -114,13 +110,13 @@ async function waitHealthy() {
 
 test('T1: spawned REST replay — unallowlisted param and missing filter.type fail 400 before any Qloo call', { timeout: 30000 }, async () => {
   const stub = await stubServer();
-  const child = spawnBackend();
+  const { child, port } = await spawnBackend(stub.port);
   try {
-    await waitHealthy();
-    const badParam = await httpCall(3478, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz', take: 5, bogus: 1 } });
+    await waitHealthy(port);
+    const badParam = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz', take: 5, bogus: 1 } });
     assert.equal(badParam.status, 400);
     assert.match(JSON.parse(badParam.body).error.message, /not allowlisted/);
-    const noFilter = await httpCall(3478, '/api/replay', 'POST', { kind: 'rest', path: '/v2/insights', params: { 'signal.interests.tags': 'urn:tag:x', 'feature.explainability': 'true' } });
+    const noFilter = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/v2/insights', params: { 'signal.interests.tags': 'urn:tag:x', 'feature.explainability': 'true' } });
     assert.equal(noFilter.status, 400);
     assert.match(JSON.parse(noFilter.body).error.message, /filter\.type/);
     assert.equal(stub.hits.length, 0, 'invalid replays must never reach the upstream');
@@ -132,10 +128,10 @@ test('T1: spawned REST replay — unallowlisted param and missing filter.type fa
 
 test('T1: spawned REST replay — valid replay returns requestHash for call-fidelity comparison', { timeout: 30000 }, async () => {
   const stub = await stubServer();
-  const child = spawnBackend();
+  const { child, port } = await spawnBackend(stub.port);
   try {
-    await waitHealthy();
-    const ok = await httpCall(3478, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz', take: 5 } });
+    await waitHealthy(port);
+    const ok = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz', take: 5 } });
     assert.equal(ok.status, 200);
     const out = JSON.parse(ok.body);
     assert.match(out.requestHash, /^[0-9a-f]{64}$/);
@@ -149,15 +145,15 @@ test('T1: spawned REST replay — valid replay returns requestHash for call-fide
 });
 
 test('T1: spawned MCP replay — unknown arg key fails 400 before any session is spawned', { timeout: 30000 }, async () => {
-  const child = spawnBackend();
+  const { child, port } = await spawnBackend();
   try {
-    await waitHealthy();
-    const bad = await httpCall(3478, '/api/replay', 'POST', { kind: 'mcp', tool: 'qloo_rank', args: { options: ['a'], bogus: 1 } });
+    await waitHealthy(port);
+    const bad = await httpCall(port, '/api/replay', 'POST', { kind: 'mcp', tool: 'qloo_rank', args: { options: ['a'], bogus: 1 } });
     assert.equal(bad.status, 400);
     assert.match(JSON.parse(bad.body).error.message, /not allowlisted/);
     // A valid shape passes validation: without a harness binary it fails
     // downstream (spawn), but it must NOT fail validation with 400.
-    const valid = await httpCall(3478, '/api/replay', 'POST', { kind: 'mcp', tool: 'qloo_rank', args: { options: ['a'], option_type: 'artist', signals: ['e'], signal_location: 'New York' } });
+    const valid = await httpCall(port, '/api/replay', 'POST', { kind: 'mcp', tool: 'qloo_rank', args: { options: ['a'], option_type: 'artist', signals: ['e'], signal_location: 'New York' } });
     assert.notEqual(valid.status, 400);
   } finally {
     child.kill('SIGTERM');
