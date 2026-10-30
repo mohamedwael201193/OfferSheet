@@ -343,3 +343,38 @@ test('static: SHIP containers, links, and copy present on both pages', () => {
   assert.ok(tools.includes('node backend/mcp-server.js'), 'own server start command');
   assert.ok(tools.includes('Proven 29 Oct 2026'), 'own server proof dated');
 });
+
+// U20: ledger cards, sources-checked status list, grouped shared tags.
+test('U20: trial cards carry a tally computed from the data, three picks and a Why expander', () => {
+  const { sandbox, get } = loadApp();
+  sandbox.renderTrialTally(benchRuns());
+  const html = get('tallyTable').innerHTML;
+  assert.equal((html.match(/class="u20-trial"/g) || []).length, 3);
+  assert.match(html, /<b>3<\/b><span>recorded trials/);
+  assert.match(html, /<b>0\/3<\/b><span>Gut agreed with Graph/);
+  assert.match(html, /Gut pick[\s\S]*Qloo pick[\s\S]*Web pick/);
+  assert.match(html, /<summary>Why<\/summary>/);
+  assert.doesNotMatch(html, /<table/);
+});
+test('U20: sources checked is one row per check with a pill, method and summary', () => {
+  const { sandbox } = loadApp();
+  const html = sandbox.sourcesCheckedHtml({ legs: {
+    rank: { status: 'ok' }, demographics: { status: 'ok', retried429: true },
+    trends: { status: 'empty', envelopeSummary: 'no rows' }, compare: { status: 'error', reason: 'timeout' } } });
+  assert.match(html, /2 of 7<\/strong> core checks returned data\. 0 of 2 additional checks returned data/);
+  assert.equal((html.match(/class="u20-check"/g) || []).length, 9);
+  assert.match(html, /u20-pill--retry">rate-limited, retried · ok/);
+  assert.match(html, /u20-pill--none">no data/);
+  assert.match(html, /u20-pill--err">error/);
+  assert.match(html, /<code class="u20-check-m">demographics<\/code>/);
+});
+test('U20: shared tags are grouped by type, music first, the rest kept under Other tag types', () => {
+  const { sandbox } = loadApp();
+  const html = sandbox.tagsHtml([
+    { name: 'Indie Pop', id: 'a', type: 'urn:tag:genre:music' },
+    { name: 'Cod Fish', id: 'b', type: 'urn:tag:specialty_dish' },
+  ]);
+  assert.ok(html.indexOf('Indie Pop') < html.indexOf('Other tag types (1)'));
+  assert.match(html, /Cod Fish/, 'non-music tags are kept, not hidden');
+  assert.match(html, /raw shared tags/);
+});
