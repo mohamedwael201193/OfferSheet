@@ -214,3 +214,4 @@ html.u17-tabs #workspace .ws-label{font-size:13.5px!important;color:var(--u20-in
 html.u17-tabs main.wrap .flow-title,html.u17-tabs main.wrap .source-tag,html.u17-tabs main.wrap .source-tag-chip,html.u17-tabs main.wrap .u19-credit,
 html.u17-tabs main.wrap .ws-example,html.u17-tabs main.wrap .ws-example-k,html.u17-tabs main.wrap .u20-pill{font-size:13px!important}
 html.u17-tabs main.wrap .ws-example-k{text-transform:none!important;letter-spacing:0!important}
+@media (max-width:480px){html.u17-tabs main.wrap .flow-title{font-size:12px!important;letter-spacing:-.01em}}
