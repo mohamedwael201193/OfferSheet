@@ -179,6 +179,7 @@ form input:focus, .checker-field input:focus { border-color: var(--purple); outl
 .verdict-card.sheet { padding: 32px; }
 .verdict-number { font-family: var(--display); font-size: clamp(72px, 12vw, 128px); text-shadow: 0 0 32px rgba(245,158,11,.25); line-height: 1; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
 .verdict-unit { font-size: 19px; font-weight: 700; color: var(--ink); }
+.verdict-formula-line { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 8px 0 0; }
 .verdict-line { font-size: 18px; color: var(--ink); font-weight: 600; }
 .source-tag-line { font-size: 14px; color: var(--muted); }
 .confidence-box { background: #1E1E1E; border: 1px solid var(--hair); border-radius: 12px; padding: 16px; margin: 16px 0; }
@@ -548,7 +549,7 @@ form input:focus, .checker-field input:focus { border-color: var(--glow); outlin
    glowing, and app.js intercepts the click with an explanation
    instead of jumping to a hidden section. Live links are untouched. */
 .sidebar-panel .nav-verdict-link[aria-disabled="true"] {
-  opacity: 0.55; color: var(--muted); cursor: not-allowed;
+  opacity: 0.75; color: var(--muted); cursor: not-allowed;
 }
 .sidebar-panel .nav-verdict-link[aria-disabled="true"]:hover { background: transparent; color: var(--muted); }
 .sidebar-note { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 12px 0 0; }
@@ -559,10 +560,15 @@ form input:focus, .checker-field input:focus { border-color: var(--glow); outlin
 body.app-page { padding-bottom: 0; }
 @media (max-width: 820px) {
   .sidebar-panel {
-    transform: translateX(-105%); transition: transform 300ms ease-out;
+    transform: translateX(-105%);
+    /* Closed drawer must not be Tab-reachable: visibility hides it from
+       keyboard focus, delayed past the slide-out so the animation still
+       plays. The open rule below restores visibility immediately. */
+    visibility: hidden;
+    transition: transform 300ms ease-out, visibility 0s linear 300ms;
     width: min(320px, 86vw); box-shadow: 16px 0 32px rgba(0, 0, 0, 0.5);
   }
-  .sidebar-panel.is-open { transform: translateX(0); }
+  .sidebar-panel.is-open { transform: translateX(0); visibility: visible; transition: transform 300ms ease-out, visibility 0s; }
   .sidebar-panel .btn.nav-close { display: inline-flex; align-self: flex-end; }
   .sidebar-toggle.btn.nav-toggle {
     display: inline-flex; position: fixed; top: 12px; left: 12px; z-index: 85;

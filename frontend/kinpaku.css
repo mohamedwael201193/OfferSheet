@@ -38,7 +38,8 @@
   align-items: center;
   justify-content: center;
 }
-.btn--gold:focus-visible, .cta-gold:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 3px; }
+.v3 :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.btn--gold:focus-visible, .cta-gold:focus-visible { outline: 2px solid var(--champagne); outline-offset: 3px; }
 
 /* Radii: cards 14px, controls 7px, pills 999px. */
 .v3-card { border-radius: 14px; }

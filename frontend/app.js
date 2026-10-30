@@ -2243,8 +2243,8 @@ function syncVerdictNav() {
     const note = document.getElementById('verdictNavNote');
     if (note) {
       if (!anyLive) note.textContent = 'Verdict, Receipts, Sheet and Race are not shown yet — they appear with a verdict. Run a verdict first; these links will not jump to empty sections.';
-      else if (!raceLive) note.textContent = 'Verdict sections are open — Verdict, Receipts and Sheet jump to this verdict\u2019s content. The Race link opens only after you run the live Gut-vs-Graph race.';
-      else note.textContent = 'Verdict sections are open — Verdict, Receipts, Sheet and Race jump to this verdict\u2019s content.';
+      else if (!raceLive) note.textContent = 'Verdict sections are open — Verdict and Receipts jump to this verdict\u2019s content.';
+      else note.textContent = 'Verdict sections are open — Verdict and Receipts jump to this verdict\u2019s content.';
     }
   } catch { /* verdict-nav sync never breaks the page */ }
 }

@@ -180,7 +180,7 @@ test('sidebar CSS: persistent desktop, drawer at narrow widths, reduced-motion s
   assert.ok(css.includes('body.app-page { padding-bottom: 0; }') || /body\.app-page\s*\{[^}]*padding-bottom:\s*0/.test(css), 'toolbar body padding must go with the toolbar');
   assert.match(css, /\.nav-links a\s*\{[^}]*min-height:\s*48px/, 'sidebar links must keep 48px targets');
   assert.match(css, /\.sidebar-panel \.nav-verdict-link\[aria-disabled="true"\]/, 'inert links must have a muted style');
-  assert.match(css, /\.sidebar-panel \.nav-verdict-link\[aria-disabled="true"\]\s*\{[^}]*opacity:\s*0\.55/, 'inert links must be dimmed to exactly 0.55 like the f-a11y fix');
+  assert.match(css, /\.sidebar-panel \.nav-verdict-link\[aria-disabled="true"\]\s*\{[^}]*opacity:\s*0\.75/, 'inert links must be dimmed to 0.75, contrast-passing disabled treatment');
   const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
   assert.ok(reduced.includes('.sidebar-panel'), 'reduced-motion block must cover the sidebar panel');
   assert.ok(reduced.includes('.nav-links a::after'), 'reduced-motion block must still cover the nav underline slide');
@@ -210,7 +210,7 @@ test('live-inspection destination inventory: every drawer destination accounted 
   assert.ok(panel.includes('aria-label="Close navigation"'), 'collapse control must keep its accessible name');
 });
 
-test('all four drawer close paths return focus to the toggle (scrim fix)', () => {
+test('all five drawer close paths return focus to the toggle (scrim fix + nav-link companion)', () => {
   // Drawer contract: focus in on open, focus return on EVERY close.
   // The sidebar batch shipped the scrim path as a bare closeDrawer
   // reference (no focus return); this test pins the fix for all four
@@ -226,6 +226,6 @@ test('all four drawer close paths return focus to the toggle (scrim fix)', () =>
     'scrim must not pass closeDrawer bare (that drops focus on the off-canvas Close button)');
   assert.ok(html.includes("if (e.key === 'Escape' && panel.classList.contains('is-open')) { closeDrawer(); toggle.focus(); }"),
     'Escape close must return focus to the toggle');
-  assert.equal((html.match(/toggle\.focus\(\)/g) || []).length, 4,
-    'exactly four toggle.focus() calls: one per close path (toggle-click, Close, scrim, Escape)');
+  assert.equal((html.match(/toggle\.focus\(\)/g) || []).length, 5,
+    'exactly five toggle.focus() calls: one per close path (toggle-click, Close, scrim, Escape, nav-link)');
 });

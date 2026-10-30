@@ -183,6 +183,7 @@
     <div id="thinBadge" class="thin-badge" hidden></div>
     <p class="aggregate-note">Aggregate taste signals only — they show how much two audiences share, never a prediction about any individual, and never a promise this show will sell out.</p>
     <p id="beVerdict" class="verdict-line"></p>
+    <p class="verdict-formula-line">Break-even tickets = ceil(guarantee ÷ (ticket price − variable cost per ticket))</p>
     <div id="citeChips" class="cite-chips" aria-label="Citations for this verdict"></div>
     <ul id="proofSummary" class="proof-summary"></ul>
     <div id="cannotBox" class="cannot-box" hidden><p>Cannot break even in this room at this guarantee</p></div>
@@ -848,6 +849,11 @@
         if (scrim) scrim.classList.remove('is-open');
         toggle.setAttribute('aria-expanded', 'false');
         document.body.style.overflow = '';
+        // Companion to the closed-drawer visibility patch: the nav-link
+        // close path previously returned focus nowhere, leaving focus on
+        // a link inside the now-visibility:hidden drawer. Return it to
+        // the toggle, like every other close path.
+        toggle.focus();
       });
     });
   })();
