@@ -1679,17 +1679,7 @@ function wireVerdictAids(v) {
       if (old && old.parentNode && typeof old.parentNode.removeChild === 'function') old.parentNode.removeChild(old);
     } catch { /* aids never break a verdict */ }
   };
-  // G9: nav link to the receipts. The test shims' querySelector returns
-  // null, so this is a no-op in tests and live-verified by the judge.
-  try {
-    const nav = document.querySelector('.nav-links');
-    if (nav && !nav.querySelector('a[href="#receiptSection"]')) {
-      const a = document.createElement('a');
-      a.href = '#receiptSection';
-      a.textContent = 'Receipts';
-      nav.appendChild(a);
-    }
-  } catch { /* nav aid never breaks a verdict */ }
+  // U18: no separate sidebar "Receipts" link — receipts live in the Evidence view.
   // G9: verdict-card jump link to the receipts.
   try {
     removeIfAttached('verdictJumpLink');

@@ -105,13 +105,18 @@ function mcpLeg(env, build) {
 // so it earns a receipt; only a truly empty body stays 'empty'.
 function restLeg(out, build) {
   if (!out || typeof out !== 'object') return { status: 'error', reason: 'no REST result returned' };
-  if (!out.ok) return { status: 'error', reason: `Qloo REST returned ${out.status}`, httpStatus: out.status };
+  if (!out.ok) {
+    if (out.status === 429) {
+      return { status: 'error', reason: out.retried429 ? 'Qloo rate-limited this check (429); retried once, still no data' : 'Qloo rate-limited this check (429)', httpStatus: 429, retried429: !!out.retried429 };
+    }
+    return { status: 'error', reason: `Qloo REST returned ${out.status}`, httpStatus: out.status };
+  }
   const entities = Array.isArray(out.entities) ? out.entities : [];
   const count = out.resultCount ?? entities.length;
   if (entities.length === 0 && (count === null || count === 0) && !out.payloadPresent) {
     return { status: 'empty', reason: EMPTY_LABEL, httpStatus: out.status, resultCount: count, entities: [] };
   }
-  return { status: 'ok', httpStatus: out.status, resultCount: count, ...build(out) };
+  return { status: 'ok', httpStatus: out.status, resultCount: count, ...(out.retried429 ? { retried429: true, note: 'Qloo rate-limited this check once (429); the retry returned data' } : {}), ...build(out) };
 }
 
 function tagUrns(envelope, limit = 10) {
