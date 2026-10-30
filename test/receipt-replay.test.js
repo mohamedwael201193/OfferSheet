@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { spawn } from 'node:child_process';
+import { spawnEphemeralBackend } from './ephemeral-backend.js';
 import { runVerdict } from '../backend/src/pipeline.js';
 import { baseDeps, baseInput, mcpFixture, restFixture } from './fixtures.js';
 import { qlooRest } from '../backend/src/rest.js';
@@ -118,27 +118,22 @@ test('D8: replay without a key fails closed with 503 NOT_CONFIGURED (spawned ser
   const env = { ...process.env };
   delete env.QLOO_API_KEY;
   delete env.TICKETMASTER_API_KEY;
-  env.PORT = '3458';
-  const child = spawn('node', ['backend/server.js'], {
-    cwd: new URL('..', import.meta.url).pathname,
-    env,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const { child, port } = await spawnEphemeralBackend(env);
   try {
     let health = null;
     for (let i = 0; i < 50; i += 1) {
       try {
-        health = await httpCall(3458, '/api/health');
+        health = await httpCall(port, '/api/health');
         if (health.status === 200) break;
       } catch { /* not listening yet */ }
       await new Promise((r) => setTimeout(r, 100));
     }
     assert.equal(health.status, 200);
-    const replay = await httpCall(3458, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz', take: 5 } });
+    const replay = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz', take: 5 } });
     assert.equal(replay.status, 503);
     assert.equal(JSON.parse(replay.body).error.code, 'NOT_CONFIGURED');
     // The key gate precedes body validation: even a bogus kind fails closed, never replays.
-    const bogus = await httpCall(3458, '/api/replay', 'POST', { kind: 'bogus' });
+    const bogus = await httpCall(port, '/api/replay', 'POST', { kind: 'bogus' });
     assert.equal(bogus.status, 503);
     assert.equal(JSON.parse(bogus.body).error.code, 'NOT_CONFIGURED');
   } finally {

@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { spawn } from 'node:child_process';
+import { spawnEphemeralBackend } from './ephemeral-backend.js';
 import { qlooRest, REST_PARAM_ALLOWLIST } from '../backend/src/rest.js';
 
 function fetchSpy() {
@@ -112,19 +112,19 @@ async function waitHealthy(port) {
 
 test('G3: replay with an unallowlisted param returns 400, valid replay still 200', { timeout: 30000 }, async () => {
   const stub = await stubServer(() => ({ entities: [{ entity_id: 'a', name: 'Alpha' }] }));
-  const child = spawn('node', ['backend/server.js'], {
-    cwd: new URL('..', import.meta.url).pathname,
-    env: { ...process.env, QLOO_API_KEY: 'test-only-not-a-real-key', PORT: '3463', QLOO_BASE_URL: `http://127.0.0.1:${stub.port}` },
-    stdio: ['ignore', 'pipe', 'pipe'],
+  const { child, port } = await spawnEphemeralBackend({
+    ...process.env,
+    QLOO_API_KEY: 'test-only-not-a-real-key',
+    QLOO_BASE_URL: `http://127.0.0.1:${stub.port}`,
   });
   try {
-    await waitHealthy(3463);
-    const bad = await httpCall(3463, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz', tak: 5 } });
+    await waitHealthy(port);
+    const bad = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz', tak: 5 } });
     assert.equal(bad.status, 400);
     assert.match(JSON.parse(bad.body).error.message, /not allowlisted/);
-    const badInsights = await httpCall(3463, '/api/replay', 'POST', { kind: 'rest', path: '/v2/insights', params: { 'signal.interests.tags': 'urn:tag:x' } });
+    const badInsights = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/v2/insights', params: { 'signal.interests.tags': 'urn:tag:x' } });
     assert.equal(badInsights.status, 400);
-    const ok = await httpCall(3463, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz', take: 5 } });
+    const ok = await httpCall(port, '/api/replay', 'POST', { kind: 'rest', path: '/search', params: { query: 'jazz', take: 5 } });
     assert.equal(ok.status, 200);
   } finally {
     child.kill();

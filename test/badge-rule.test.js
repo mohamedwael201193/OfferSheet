@@ -9,7 +9,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { spawn } from 'node:child_process';
+import { spawnEphemeralBackend } from './ephemeral-backend.js';
 import { runVerdict } from '../backend/src/pipeline.js';
 import { baseDeps, baseInput, mcpFixture } from './fixtures.js';
 
@@ -30,17 +30,12 @@ test('D9: health never claims live/green/badge state (config flag only)', { time
   const env = { ...process.env };
   delete env.QLOO_API_KEY;
   delete env.TICKETMASTER_API_KEY;
-  env.PORT = '3459';
-  const child = spawn('node', ['backend/server.js'], {
-    cwd: new URL('..', import.meta.url).pathname,
-    env,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const { child, port } = await spawnEphemeralBackend(env);
   try {
     let health = null;
     for (let i = 0; i < 50; i += 1) {
       try {
-        health = await httpCall(3459, '/api/health');
+        health = await httpCall(port, '/api/health');
         if (health.status === 200) break;
       } catch { /* not listening yet */ }
       await new Promise((r) => setTimeout(r, 100));
