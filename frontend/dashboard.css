@@ -477,6 +477,9 @@ form input:focus, .checker-field input:focus { border-color: var(--glow); outlin
 .footer.band--deep { background: #0A0A0A; border-top: 1px solid var(--hair); overflow-x: clip; }
 .footer.band--deep p { color: var(--color-paper-2); max-width: 100%; }
 .footer.band--deep a { color: var(--color-paper-hi); }
+/* App-footer twin of the landing fix: without this, a footer .btn--primary
+   (amber pill) inherits white text — readable but poor contrast. */
+.footer.band--deep .footer-cta a.btn--primary { color: #0A0A0A; }
 
 @media (prefers-reduced-motion: reduce) {
   .btn--primary::after { display: none; }
@@ -538,6 +541,11 @@ form input:focus, .checker-field input:focus { border-color: var(--glow); outlin
   gap: 4px; margin: 0; padding: 16px; overflow-y: auto; overflow-x: hidden;
   position: static; transform: none; width: auto; background: transparent;
   box-shadow: none;
+  /* Base .nav-links sets flex-wrap: wrap; without this override the
+     drawer nav wraps into two columns at 390px and groups 2-3 clip past
+     the panel edge. The v3 app nav has a single group today, so this is
+     currently untriggered — it is a guard, not a visible change. */
+  flex-wrap: nowrap;
 }
 .sidebar-panel .nav-group { flex-direction: column; align-items: stretch; overflow-x: visible; overflow-y: visible; }
 .sidebar-panel .nav-group--proof { border-left: 0; padding-left: 0; margin-left: 0; border-top: 1px solid var(--hair); padding-top: 12px; margin-top: 8px; }

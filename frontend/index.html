@@ -105,12 +105,14 @@
     <div class="proof">
       <h3>Proof strip — real receipts, recorded 29 Oct 2026</h3>
       <p class="note">Three of the seven receipts from the recorded Billie Eilish / New York trial. Hashes are SHA-256 of the call arguments, shown truncated — the full hash travels in the downloadable proof pack. Qloo returns no requestId on this path, so it is shown as “—”, never invented.</p>
+      <div class="table-wrap" tabindex="0" aria-label="Proof strip receipts table, scrollable">
       <table>
         <tr><th scope="col">Claim</th><th scope="col">Argument hash</th><th scope="col">RequestId</th><th scope="col">Results</th></tr>
         <tr><td>headliner tags</td><td class="hash mono" title="affa6e35703be8f54ddeec84c42966a06093e94f21082f4cd446ada31f7f93f7">affa6e35…<b>f7f93f7</b></td><td>—</td><td>10</td></tr>
         <tr><td>opener candidates</td><td class="hash mono" title="ca25e61f063d761de30b8d2378b3fa94a15520e3f51f2d681fa78e98f5f3bc4b">ca25e61f…<b>f5f3bc4b</b></td><td>—</td><td>10</td></tr>
         <tr><td>city audience areas</td><td class="hash mono" title="300b829594a73e7e81960ee7a913b4e258610d8a1a70fe903fad57bff1a53cfc">300b8295…<b>1a53cfc</b></td><td>—</td><td>10</td></tr>
       </table>
+      </div>
     </div>
   </section>
 
@@ -121,7 +123,7 @@
     <div class="formula-big">
       <p class="line">Guarantee $250,000 ÷ Ticket $120 = <b>2,084 tickets</b></p>
       <p class="ceil">$250,000 ÷ $120 = 2,083.33 — <b>rounded up: 2,084</b></p>
-      <p class="quiet-lines">If break-even exceeds a known capacity, the verdict is “Cannot break even in this room at this guarantee.” If capacity is unknown, the page says: “Venue capacity unknown — Ticketmaster returned no capacity for this room. Break-even is shown as tickets needed, not as a sellout percentage. Verify room size before signing.” Never a made-up number, never a sellout percentage on unknown ground.</p>
+      <p class="quiet-lines">If break-even exceeds a known capacity, the verdict is “Cannot break even in this room at this guarantee.” If Ticketmaster returns a room record with no capacity field, the page says: “Venue capacity unknown — Ticketmaster returned no capacity for this room. Break-even is shown as tickets needed, not as a sellout percentage. Verify room size before signing.” Other unknown causes render their own sentences (key not configured, or Ticketmaster unavailable). Never a made-up number, never a sellout percentage on unknown ground.</p>
       <p class="quiet-lines">Illustrative arithmetic on the recorded trial. Being wrong by 100 tickets = $12,000 of guarantee exposure (100 × 120 = 12,000). That 100-ticket gap is hypothetical — not a measured outcome, not a real loss, and not a prediction.</p>
     </div>
   </section>
@@ -208,10 +210,12 @@
         <text x="840" y="102" text-anchor="middle" font-size="13" fill="oklch(72% 0 0)" stroke="none">Settle vs break-even</text>
       </svg>
     </div>
+    <div class="table-wrap" tabindex="0" aria-label="Season ledger table, scrollable">
     <table class="ledger">
       <tr><th scope="col">Offer</th><th scope="col">Break-even</th><th scope="col">Attendance</th><th scope="col">Status</th></tr>
       <tr><td>—</td><td>—</td><td>—</td><td>—</td></tr>
     </table>
+    </div>
     <div class="empty">No show has settled yet — the settle ledger is empty, and no settled figure is claimed anywhere.</div>
   </section>
 

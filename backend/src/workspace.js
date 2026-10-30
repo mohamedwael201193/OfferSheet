@@ -206,6 +206,9 @@ export function verifyWorkspace(workspace, { baseUrl = QLOO_DEFAULT_BASE_URL } =
   if (isObj(bv) && Array.isArray(bv.receipts)) {
     bv.receipts.forEach((r, i) => {
       const field = `baseVerdict.receipts[${i}]`;
+      if (r.requestId !== undefined && r.requestId !== null && typeof r.requestId !== 'string') {
+        receiptHashesOk = false; mismatch(`${field}.requestId`, 'string | null', r.requestId); return;
+      }
       if (!isObj(r) || typeof r.claim !== 'string' || typeof r.operation !== 'string' || typeof r.requestHash !== 'string') {
         receiptHashesOk = false; mismatch(field, 'receipt with claim, operation, requestHash strings', r); return;
       }
@@ -234,6 +237,25 @@ export function verifyWorkspace(workspace, { baseUrl = QLOO_DEFAULT_BASE_URL } =
     if (!idOk) mismatch('workspaceId', recomputedWorkspaceId, workspace.workspaceId);
   } else {
     mismatch('workspaceId', 'recomputable from baseOffer + base receipts', 'baseOffer or base receipts invalid');
+  }
+
+  // Step records: shape-checked only -- they carry no receipts, so the server
+  // cannot authenticate them; it can refuse malformed ones instead of
+  // silently ignoring them. A well-shaped invented step still verifies;
+  // only receipt-hash consistency plus live replay authenticates a call.
+  if (workspace.steps !== undefined && !isObj(workspace.steps)) {
+    schemaOk = false; mismatch('steps', 'object', workspace.steps);
+  } else if (isObj(workspace.steps) && workspace.steps.settlements !== undefined) {
+    if (!Array.isArray(workspace.steps.settlements)) {
+      schemaOk = false; mismatch('steps.settlements', 'array', workspace.steps.settlements);
+    } else {
+      workspace.steps.settlements.forEach((s, i) => {
+        if (!isObj(s) || !Number.isInteger(s.actualAttendance) || s.actualAttendance < 0
+            || typeof s.recordedAt !== 'string' || Number.isNaN(Date.parse(s.recordedAt))) {
+          schemaOk = false; mismatch(`steps.settlements[${i}]`, 'settlement record with integer actualAttendance >= 0 and ISO recordedAt', s);
+        }
+      });
+    }
   }
 
   const verified = schemaOk && arithmeticOk && receiptHashesOk && idOk;

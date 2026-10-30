@@ -6,7 +6,7 @@
 // tested, (c) ticket-price fields. Until a live call proves otherwise, capacity
 // field presence is UNKNOWN — a missing capacity always yields the
 // "unknown capacity" state, never an invented number.
-export async function searchEvents({ keyword, city, venueId, key, baseUrl, fetchImpl = fetch, size = 5 }) {
+export async function searchEvents({ keyword, city, venueId, key, baseUrl, fetchImpl = fetch, size = 5, timeoutMs = 25000 }) {
   const url = new URL(`${baseUrl}/events.json`);
   url.searchParams.set('apikey', key);
   if (keyword) url.searchParams.set('keyword', keyword);
@@ -18,6 +18,42 @@ export async function searchEvents({ keyword, city, venueId, key, baseUrl, fetch
   url.searchParams.set('size', String(size));
   url.searchParams.set('sort', 'date,asc');
   const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetchImpl(url.toString(), { headers: { Accept: 'application/json' }, signal: controller.signal });
+    const body = await res.json().catch(() => null);
+    return { ok: res.status >= 200 && res.status < 300, status: res.status, body };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function searchVenues({ keyword, key, baseUrl, fetchImpl = fetch, size = 5, timeoutMs = 25000 }) {
+  const url = new URL(`${baseUrl}/venues.json`);
+  url.searchParams.set('apikey', key);
+  if (keyword) url.searchParams.set('keyword', keyword);
+  url.searchParams.set('size', String(size));
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetchImpl(url.toString(), { headers: { Accept: 'application/json' }, signal: controller.signal });
+    const body = await res.json().catch(() => null);
+    return { ok: res.status >= 200 && res.status < 300, status: res.status, body };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Get Event Details (documented): re-fetch the single event whose price
+// grounds break-even, so a canceled/postponed event's stale price range
+// never grounds the verdict. A failed details call never upgrades the
+// search-payload price — the caller falls back to the next priced event
+// or to price-unknown. seatmap.staticUrl, when present, is a link only
+// and must never be treated as a seat count.
+export async function searchEventDetails({ id, key, baseUrl, fetchImpl = fetch }) {
+  const url = new URL(`${baseUrl}/events/${encodeURIComponent(id)}.json`);
+  url.searchParams.set('apikey', key);
+  const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 25000);
   try {
     const res = await fetchImpl(url.toString(), { headers: { Accept: 'application/json' } });
@@ -28,11 +64,13 @@ export async function searchEvents({ keyword, city, venueId, key, baseUrl, fetch
   }
 }
 
-export async function searchVenues({ keyword, key, baseUrl, fetchImpl = fetch, size = 5 }) {
-  const url = new URL(`${baseUrl}/venues.json`);
+// Get Venue Details (documented): confirm the resolved venue's identity
+// (display-only context: aliases, box-office, parking, accessible
+// seating). A failed details call keeps the search record and labels
+// details unavailable — it never blocks the verdict.
+export async function searchVenueDetails({ id, key, baseUrl, fetchImpl = fetch }) {
+  const url = new URL(`${baseUrl}/venues/${encodeURIComponent(id)}.json`);
   url.searchParams.set('apikey', key);
-  if (keyword) url.searchParams.set('keyword', keyword);
-  url.searchParams.set('size', String(size));
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 25000);
   try {
@@ -42,6 +80,13 @@ export async function searchVenues({ keyword, key, baseUrl, fetchImpl = fetch, s
   } finally {
     clearTimeout(timer);
   }
+}
+
+// Event status code from a search-payload or details event record.
+// UNWIRED: these detail helpers are exported but not yet called by the
+// pipeline — wiring needs event-ID plumbing + live-shape confirmation.
+export function eventStatusCode(ev) {
+  return ev?.dates?.status?.code ?? null;
 }
 
 // Capacity extraction — field presence is TO-VERIFY live. Any venue shape without
@@ -59,6 +104,11 @@ export function extractPrice(eventsBody) {
   const events = eventsBody?._embedded?.events;
   if (!Array.isArray(events)) return null;
   for (const ev of events) {
+    // A canceled or postponed event's stale price range never grounds
+    // break-even: skip it and move to the next priced event. Both
+    // spellings are matched (canceled/cancelled); rescheduled events
+    // are KEPT — a rescheduled event's price may still be live.
+    if (eventStatusCode(ev) === 'canceled' || eventStatusCode(ev) === 'cancelled' || eventStatusCode(ev) === 'postponed') continue;
     const ranges = ev?.priceRanges;
     if (Array.isArray(ranges) && ranges.length > 0) {
       const r = ranges[0];

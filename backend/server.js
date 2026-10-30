@@ -56,9 +56,9 @@ const CONTENT_TYPES = {
   '.webmanifest': 'application/manifest+json',
 };
 
-function send(res, status, body, contentType = 'application/json; charset=utf-8') {
+function send(res, status, body, contentType = 'application/json; charset=utf-8', extraHeaders = {}) {
   const payload = typeof body === 'string' ? body : JSON.stringify(body);
-  res.writeHead(status, { 'Content-Type': contentType });
+  res.writeHead(status, { 'Content-Type': contentType, ...extraHeaders });
   res.end(payload);
 }
 
@@ -142,8 +142,9 @@ async function buildDeps({ gutArm, webArm, isCancelled } = {}) {
       restCall: ({ path, params }) => qlooRest({
         path, params, key: config.qlooKey, baseUrl: config.qlooBaseUrl, timeoutMs: config.restTimeoutMs, logFn: restLog,
       }),
-      tmEvents: ({ keyword, city }) => searchEvents({
-        keyword, city, key: config.ticketmasterKey, baseUrl: config.ticketmasterBaseUrl,
+      tmEvents: ({ keyword, city, venueId }) => searchEvents({
+        keyword, city, ...(venueId ? { venueId } : {}),
+        key: config.ticketmasterKey, baseUrl: config.ticketmasterBaseUrl,
       }),
       // G11 production wiring: the pipeline resolves a named room first
       // (deps.tmVenues) and scopes events by that venue's ID. Without this
@@ -191,9 +192,13 @@ async function handleVerdict(req, res, { race = false } = {}) {
   try {
     const verdict = await runVerdict({ ...input, visitorIp }, deps);
     if (race) {
-      send(res, 200, { ...verdict, race: { gutMs, webMs, totalMs: verdict.timingMs } });
+      // Verdict endpoints are never cacheable: the service worker already
+      // treats /api/* as network-only, but the WebView's separate HTTP
+      // cache does not inherit that rule. no-store closes the gap at the
+      // layer that covers both the PWA and the WebView.
+      send(res, 200, { ...verdict, race: { gutMs, webMs, totalMs: verdict.timingMs } }, 'application/json; charset=utf-8', { 'Cache-Control': 'no-store' });
     } else {
-      send(res, 200, verdict);
+      send(res, 200, verdict, 'application/json; charset=utf-8', { 'Cache-Control': 'no-store' });
     }
   } finally {
     close();

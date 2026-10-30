@@ -114,6 +114,9 @@ export async function runWebArm({ question, webFacts, fetchImpl = fetch }) {
   if (!llmConfigured()) {
     return { arm: 'web', status: 'unavailable', reason: 'LLM arm not configured — no pick rendered' };
   }
+  if (!webFacts || webFacts.length === 0) {
+    return { arm: 'web', status: 'unavailable', reason: 'No Wikidata facts available — no pick rendered' };
+  }
   const facts = (webFacts || []).map((f) => `- ${f}`).join('\n') || '(no Wikidata facts available)';
   const out = await callLlm({
     messages: [{ role: 'user', content: `Pick ONE opening act for this live-show question using ONLY the Wikidata facts below (no Qloo taste data). Question: ${question}\nFacts:\n${facts}` }],

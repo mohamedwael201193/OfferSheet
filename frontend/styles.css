@@ -225,6 +225,7 @@ section > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
 
 /* Ledger: quiet tabular rows, full width, inner scroll only. */
 .table-wrap { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; margin: 32px 0; }
+.table-wrap:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 3px; }
 table { width: 100%; border-collapse: collapse; min-width: 720px; }
 th, td { text-align: left; padding: 16px 12px; border-bottom: 1px solid var(--hair); font-size: 17px; vertical-align: top; }
 th { color: var(--muted); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
@@ -258,6 +259,12 @@ td { color: var(--body); }
 .footer.band--deep { background: #0A0A0A; border-top: 1px solid var(--hair); padding: 80px 24px 120px; }
 .footer.band--deep p { color: var(--color-paper-2); max-width: 100%; }
 .footer.band--deep a { color: var(--color-paper-hi); }
+/* The rule above (specificity: two classes + element) beats .btn--primary
+   (one class), so the footer CTA inherited white text on its white pill
+   — invisible at 1:1. This override restores the button's dark text.
+   Same defect pattern exists in dashboard.css for the app footer (see
+   the second hunk); both must land together. */
+.footer.band--deep .footer-cta a.btn--primary { color: #0A0A0A; }
 .footer-inner { max-width: 1200px; margin: 0 auto; }
 .footer-cta { margin-bottom: 40px; }
 .footer-cta p { font-family: var(--display); font-size: clamp(32px, 5vw, 56px); font-weight: 800; color: #FFFFFF; max-width: none; }
@@ -265,6 +272,10 @@ td { color: var(--body); }
 .footer-meta { display: grid; gap: 0; border-top: 1px solid rgba(255, 255, 255, .18); padding-top: 20px; }
 .footer-meta p { margin: 0; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, .12); overflow-wrap: anywhere; }
 .footer-wordmark { font-family: var(--display); font-size: clamp(64px, 18vw, 220px); font-weight: 800; color: #FFFFFF; line-height: .9; margin: 48px 0 8px; max-width: none; will-change: transform; }
+/* The wordmark is one unbreakable word; at 1440px it can exceed the
+   1200px footer-inner and clip at the right edge (webfont-dependent).
+   Break only if it must, never reflow the layout otherwise. */
+.footer-wordmark { max-width: 100%; overflow-wrap: anywhere; }
 .footer-bottom { color: #AAAAAA; font-size: 14px; }
 
 /* Shared aid styles (defined here per suite pins; used by the app's

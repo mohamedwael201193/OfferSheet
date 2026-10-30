@@ -5,7 +5,7 @@
 // Never a guessed coordinate.
 let lastCallAt = 0;
 
-export async function geocode({ query, baseUrl, fetchImpl = fetch }) {
+export async function geocode({ query, baseUrl, fetchImpl = fetch, timeoutMs = 25000 }) {
   const now = Date.now();
   const wait = Math.max(0, 1100 - (now - lastCallAt));
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
@@ -15,13 +15,14 @@ export async function geocode({ query, baseUrl, fetchImpl = fetch }) {
   url.searchParams.set('q', query);
   url.searchParams.set('limit', '1');
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetchImpl(url.toString(), {
       headers: {
         'User-Agent': 'OfferSheet/0.1 (Qloo Agentic Hackathon demo)',
         Accept: 'application/json',
       },
+      signal: controller.signal,
     });
     if (!res.ok) return { ok: false, status: res.status, result: null };
     const body = await res.json().catch(() => null);

@@ -565,6 +565,25 @@ export async function runVerdict(input, deps) {
       ? `${tmPrice.source} — events at the named room`
       : `${tmPrice.source} — first matching Ticketmaster event's venue, not the offer room`;
   }
+  // Capacity resolution (moved BEFORE the price_unknown return, W02 P-01):
+  // user capacity (labeled) beats Ticketmaster-reported. Previously this
+  // block sat after the price_unknown return, so a user-supplied capacity
+  // was reported as unknown whenever no price was available.
+  // Capacity resolution: user capacity (labeled) beats Ticketmaster-reported.
+  let capacity = null;
+  let capacitySource = null;
+  if (typeof input.capacity === 'number' && Number.isFinite(input.capacity) && input.capacity > 0) {
+    capacity = input.capacity;
+    capacitySource = 'user-supplied, not Ticketmaster-verified';
+  } else if (tmCapacity !== null) {
+    capacity = tmCapacity;
+    // G11: same grounding rule as price — a resolved room keeps the plain
+    // Ticketmaster-reported label; the first-event fallback carries the
+    // honest "not the offer room" suffix wherever it renders.
+    capacitySource = tmVenueResolved
+      ? 'Ticketmaster-reported'
+      : `Ticketmaster-reported — first matching Ticketmaster event's venue, not the offer room`;
+  }
   if (!price) {
     // G43: price_unknown still returns the available Qloo evidence in a
     // clearly-labeled `partial` object — audience + openers + legs — so it
@@ -574,7 +593,7 @@ export async function runVerdict(input, deps) {
     return {
       status: 'price_unknown',
       message: 'No ticket price available — neither the promoter nor Ticketmaster supplied one. Break-even cannot be computed without inventing a number.',
-      capacity: unknownCapacity,
+      capacity: capacity === null ? unknownCapacity : { value: capacity, source: capacitySource, state: 'known' },
       partial: {
         label: 'Partial Qloo evidence — not a verdict. No break-even number is shown without a ticket price.',
         audience: legs.wherePopular?.status === 'ok'
@@ -602,22 +621,6 @@ export async function runVerdict(input, deps) {
       receipts: receipts.all(),
       timingMs: Date.now() - started,
     };
-  }
-
-  // Capacity resolution: user capacity (labeled) beats Ticketmaster-reported.
-  let capacity = null;
-  let capacitySource = null;
-  if (typeof input.capacity === 'number' && Number.isFinite(input.capacity) && input.capacity > 0) {
-    capacity = input.capacity;
-    capacitySource = 'user-supplied, not Ticketmaster-verified';
-  } else if (tmCapacity !== null) {
-    capacity = tmCapacity;
-    // G11: same grounding rule as price — a resolved room keeps the plain
-    // Ticketmaster-reported label; the first-event fallback carries the
-    // honest "not the offer room" suffix wherever it renders.
-    capacitySource = tmVenueResolved
-      ? 'Ticketmaster-reported'
-      : `Ticketmaster-reported — first matching Ticketmaster event's venue, not the offer room`;
   }
 
   // J3 B3: breakEven throws a plain Error for net <= 0, which server.js

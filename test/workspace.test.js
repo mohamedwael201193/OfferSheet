@@ -291,7 +291,7 @@ test('settle: attendance over capacity flags (not errors); second settlement cor
   assert.deepEqual(flagged.result.flags, ['reported attendance exceeds recorded capacity — check the count']);
   const before = clone(ws);
   const ws2 = clone(ws);
-  ws2.steps.settlements = [{ recordedAt: '2026-01-01T00:00:00.000Z' }];
+  ws2.steps.settlements = [{ recordedAt: '2026-01-01T00:00:00.000Z', actualAttendance: 700 }];
   const second = computeSettlement(ws2, { actualAttendance: 100 }, { baseUrl: BASE_URL });
   assert.equal(second.result.corrects, '2026-01-01T00:00:00.000Z');
   assert.deepEqual(ws, before, 'settle must not mutate the submitted workspace');

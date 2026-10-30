@@ -111,7 +111,7 @@
         <span class="field-hint">The actual room for this offer.</span>
         <details class="field-more">
           <summary>About this field</summary>
-          <span class="field-hint">The actual room for this offer. If Ticketmaster finds it, its capacity and event prices ground the verdict; otherwise the first matching Ticketmaster event's venue is used and labeled as not the offer room.</span>
+          <span class="field-hint">The actual room for this offer. If Ticketmaster finds it, its event prices ground the verdict; capacity is shown only if Ticketmaster reports it for the room, otherwise capacity is unknown. If the room is not found, the first matching Ticketmaster event's venue is used and labeled as not the offer room.</span>
         </details>
       </div>
       <div class="field">
@@ -135,7 +135,7 @@
       </div>
       <div class="field">
         <label for="capacity">Room capacity (optional)</label>
-        <input id="capacity" name="capacity" type="number" min="1" step="1" placeholder="Leave blank to use Ticketmaster" inputmode="numeric">
+        <input id="capacity" name="capacity" type="number" min="1" step="1" placeholder="Leave blank — Ticketmaster reports capacity only when it has it" inputmode="numeric">
         <span class="field-hint">Typed values are user-supplied, not verified.</span>
         <details class="field-more">
           <summary>About this field</summary>
