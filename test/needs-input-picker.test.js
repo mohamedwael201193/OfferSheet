@@ -169,9 +169,10 @@ test('formula section exists unhidden with an honest pre-verdict worked-example 
   assert.ok(indexHtml.includes('<section id="formula" class="sheet crop disc disc--closed" aria-label="Formula">'));
   assert.ok(!indexHtml.includes('id="formulaSection"'), 'old id must be gone');
   assert.ok(indexHtml.includes('<p id="workedExample" class="num">Run a verdict to see its worked example here.</p>'));
-  // MERGE (P3-collapse): the proof index adds a third #formula link
-  // (nav + proof index + tool card); all three resolve to the section.
-  assert.equal((indexHtml.match(/href="#formula"/g) || []).length, 3, 'nav + proof-index + tool links must all resolve');
+  // V3: the sidebar no longer duplicates the formula destination (five
+  // destinations only); the tool card and verdict card links remain, and
+  // both resolve to the section.
+  assert.equal((indexHtml.match(/href="#formula"/g) || []).length, 2, 'tool + verdict links must both resolve');
 });
 
 test('formula visibility is no longer verdict-gated, but verdicts still populate the worked example', () => {

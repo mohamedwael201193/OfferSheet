@@ -7,8 +7,12 @@
 // Scope honoured by these pins:
 //  - Hero block only in index.html (copy verbatim, image slot documented).
 //  - Landing-wide dark expressed in styles.css only; mobile-section.css
-//    and sim-animation.css are NOT edited (their pinned structure —
-//    device shell, island, keys, aspect, reduced-motion — survives).
+//    keeps its pinned structure (device shell, island, keys, aspect,
+//    reduced-motion). NOSIM ADAPTATION (03:29 EET 30 Oct user redirect):
+//    the staged film is gone, so the phone's record classes are now
+//    record-* in mobile-section.css and the verdict-number pin below
+//    follows them; the guarantee (rounded display face, not serif) is
+//    unchanged, only its pin location moved.
 //  - Statement section CONTENT untouched (void-fill agent owns it);
 //    only its styling is dark (it inherits #0A0A0A, no light rule).
 //  - Exactly ONE <nav> element on the landing: the floating glass pill.
@@ -37,61 +41,74 @@ const heroBlock = () => {
   return m[1];
 };
 const statementBlock = () => {
-  const m = html.match(/<section class="statement" id="problem"[^>]*>([\s\S]*?)<\/section>/);
-  assert.ok(m, 'index.html must contain the statement section');
+  // V3 ADAPTATION (user-approved comp v3): the statement section id is
+  // "statement", not the old "problem" — the section itself was rebuilt
+  // as one huge sentence (see the statement test below).
+  const m = html.match(/<section class="statement" id="statement"[^>]*>([\s\S]*?)<\/section>/);
+  assert.ok(m, 'index.html must contain the v3 statement section');
   return m[1];
 };
 const navBlocks = () => [...stripComments(html).matchAll(/<nav\b[^>]*>([\s\S]*?)<\/nav>/g)];
 
 test('D-HERO hero: giant display present, copy verbatim, no new claims', () => {
+  // V3 ADAPTATION (user-approved comp v3): the hero was rebuilt — new
+  // display line, new sub-copy, new CTAs, photo background. The pinned
+  // guarantees are unchanged: giant display type, verbatim copy, no new
+  // claims, no invented numbers, no live-verdict claim.
   const hero = heroBlock();
-  assert.ok(hero.includes('<h1 class="display" data-reveal>How many tickets must sell before you sign?</h1>'),
-    'hero H1 wording must be unchanged');
-  assert.ok(hero.includes('Enter the artist, the city, and the guarantee. OfferSheet returns the break-even ticket count — with the audience evidence and the receipts behind it — before you sign anything.'),
+  assert.ok(hero.includes('<h1>Know the number<br>before you sign.</h1>'),
+    'hero H1 wording must be the v3 line, unchanged');
+  assert.ok(hero.includes('Enter an artist, a city and a guarantee. Get the break-even ticket count, checked against live Qloo taste evidence — with a receipt on every claim.'),
     'hero sub-copy must be unchanged');
-  assert.ok(hero.includes('<a class="btn btn--primary btn--glow" href="app.html">Try the live demo</a>'),
+  assert.ok(hero.includes('<a class="cta-gold" href="app.html">Check an offer</a>'),
     'hero primary CTA must be unchanged');
-  assert.ok(hero.includes('<a class="btn btn--ghost" href="#arms">See the recorded evidence</a>'),
+  assert.ok(hero.includes('<a class="quiet" href="#flow">See how it works</a>'),
     'hero secondary CTA must be unchanged');
-  assert.ok(css.includes('.hero h1.display { font-size: clamp(56px, 9vw, 128px);'),
-    'hero headline must be giant (128px cap, 56px floor)');
-  assert.ok(css.includes('.hero { position: relative;') && css.includes('background: #0A0A0A;'),
-    'hero background must be explicitly near-black #0A0A0A');
+  assert.ok(!/\$\d/.test(hero), 'hero must carry no dollar figure (no invented number)');
+  assert.ok(!/winner/i.test(hero), 'hero must award no winner');
+  const v3css = read('frontend/v3-landing.css');
+  assert.ok(v3css.includes('.v3 .hero h1 {') && v3css.includes('font-size: clamp(3.4rem, 6.5vw, 5.6rem);'),
+    'hero headline must stay giant (5.6rem cap, 3.4rem floor, v3 ramp)');
+  assert.ok(hero.includes('<img class="bg"') && hero.includes('<div class="shade">'),
+    'hero must stay a dark photo hero (background image + shade overlay)');
 });
 
 test('D-HERO hero image slot: exact slot the images agent swaps into', () => {
+  // V3 ADAPTATION (user-approved comp v3): the hero image is now the
+  // generated arena photograph, carried as a full-bleed background img
+  // (class "bg", no hero-image id, no figcaption). The pinned guarantee
+  // is unchanged: the slot is one exact photographic asset with a
+  // generic scene alt — it names no real artist and claims no live data.
   const hero = heroBlock();
   const m = hero.match(/<img[^>]*>/);
-  assert.ok(m, 'hero figure must contain an img');
-  assert.ok(m[0].includes('id="hero-image"'), 'hero img must carry id="hero-image"');
-  assert.ok(m[0].includes('class="hero-image"'), 'hero img must carry class="hero-image"');
-  // D-IMAGES merge: the swap this test anticipated has landed — the slot pins
-  // now assert the photographic slot (same strictness: exact src/alt/caption).
-  assert.ok(m[0].includes('src="assets/photo-hero-room.webp"'), 'hero img src must be the photographic swap assets/photo-hero-room.webp');
-  assert.ok(m[0].includes('alt="The room, empty, before the show"'), 'hero img alt must be the generic room alt');
-  assert.ok(hero.includes('The room is the question, not the answer. The answer is a number, with receipts.'),
-    'hero caption must stay generic (names no artist, claims no live data)');
-  assert.ok(css.includes('.hero-figure img { border-radius: 0; width: 100%; height: clamp(440px, 56vh, 680px); object-fit: cover;'),
-    'hero image must be a sharp-cornered full-bleed cover frame');
-  assert.ok(css.includes('.hero-figure { position: relative; max-width: none; margin: 0; width: 100%; }'),
-    'hero figure must break out of the 1200px column at plain 100% width (never 100vw)');
+  assert.ok(m, 'hero must contain an img');
+  assert.ok(m[0].includes('class="bg"'), 'hero img must carry class="bg" (full-bleed background slot)');
+  assert.ok(m[0].includes('src="assets/media-generation-hero-arena-0-6272026f-7628-4e9e-a3b6-01710786b7b1.jpg"'), 'hero img src must be the v3 arena photograph');
+  assert.ok(m[0].includes('alt="A vast empty arena at night, stage glowing, seats curving into darkness"'), 'hero img alt must be the generic arena alt');
+  for (const bad of ['Clairo', 'Olivia Rodrigo', 'Armani White', 'Billie Eilish']) {
+    assert.ok(!m[0].includes(bad), `hero img alt must not name ${bad}`);
+  }
+  const v3css = read('frontend/v3-landing.css');
+  assert.ok(v3css.includes('.v3 .hero img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;'),
+    'hero image must be a full-bleed cover frame');
 });
 
 test('D-HERO single nav: exactly one <nav>, and it is the glass pill', () => {
+  // V3 ADAPTATION (user-approved comp v3): the landing nav is the v3
+  // topbar nav (nav-links, "Sections" landmark) with the v3 section
+  // order — the old 12-link glass pill and its appbar row are gone.
+  // The pinned guarantee is unchanged: exactly one <nav> element.
   const blocks = navBlocks();
   assert.equal(blocks.length, 1, `landing must contain exactly one <nav> element, found ${blocks.length}`);
   const openTag = stripComments(html).match(/<nav\b[^>]*>/)[0];
-  assert.ok(openTag.includes('class="nav-links"'), 'the single nav must be the glass pill (nav-links)');
+  assert.ok(openTag.includes('class="nav-links"'), 'the single nav must be the nav-links bar');
   assert.ok(openTag.includes('aria-label="Sections"'), 'the single nav must keep its landmark label');
   const hrefs = [...blocks[0][1].matchAll(/href="([^"]+)"/g)].map((x) => x[1]);
-  assert.equal(hrefs.length, 12, 'pill nav must keep its 12 links');
-  assert.deepEqual(hrefs, ['#hero', '#collage', '#problem', '#how', '#arms', '#formula',
-    '#trials', '#ledger', '#refuses', '#get-the-app', 'oracle.html', 'app.html'],
-    'pill nav hrefs and order must be unchanged');
-  assert.ok(html.includes('<div class="appbar">'), 'wordmark row must remain a <div> appbar, not a second <nav>');
-  assert.ok(!stripComments(html).match(/<nav\b[^>]*class="appbar"/), 'appbar must never be a nav element');
-  assert.ok(css.includes('.nav-links .glass-nav-cta { background: #FFFFFF; color: #0A0A0A; }'),
-    'pill nav CTA must read as a white pill (refinement, targets unchanged)');
+  assert.equal(hrefs.length, 9, 'v3 nav must keep its 9 links');
+  assert.deepEqual(hrefs, ['#flow', '#evidence', '#formula', '#recorded', '#dashboard',
+    '#ledger', '#get-the-app', 'oracle.html', 'app.html'],
+    'v3 nav hrefs and order must be unchanged');
+  assert.ok(!stripComments(html).match(/<nav\b[^>]*class="appbar"/), 'no appbar nav element may appear');
 });
 
 test('D-HERO landing-wide dark: phone screen + tokens flipped in styles.css only', () => {
@@ -107,8 +124,8 @@ test('D-HERO landing-wide dark: phone screen + tokens flipped in styles.css only
   assert.ok(vars.includes('--font-display: "Baloo 2"'), 'dark block must set the rounded display face');
   assert.ok(vars.includes('--font-body: "Inter"'), 'dark block must set Inter body');
   assert.ok(vars.includes('--radius-pill: 999px'), 'dark block must make section buttons pills, not rectangles');
-  assert.ok(css.includes('body.landing-page .sim-verdict-num { font-family: "Baloo 2"'),
-    'recorded-demo verdict number must leave serif for the rounded display face');
+  assert.ok(css.includes('body.landing-page .record-verdict-num { font-family: "Baloo 2"'),
+    'recorded verdict number must leave serif for the rounded display face');
   assert.ok(css.includes('body.landing-page .footer-meta a:focus-visible { outline-color: #FFFFFF; }'),
     'footer focus outline must leave cadmium orange for white');
   assert.ok(css.includes('body.landing-page .story-section { background: #0A0A0A;'),
@@ -116,15 +133,26 @@ test('D-HERO landing-wide dark: phone screen + tokens flipped in styles.css only
 });
 
 test('D-HERO statement: content untouched, styling dark', () => {
+  // V3 ADAPTATION (user-approved comp v3): the statement section was
+  // rebuilt as one huge sentence; the old headline, arithmetic and
+  // promoter paragraphs did not vanish — the arithmetic paragraph moved
+  // verbatim into #formula (with its hypothetical label) and the old
+  // headline line survives in the landing footer. The pinned guarantees
+  // are unchanged: statement copy verbatim, honesty labels intact, dark
+  // styling with no light-paper/orange rule.
   const stmt = statementBlock();
-  assert.ok(stmt.includes('<h2 class="display display--giant" data-clip>One money decision, before you sign.</h2>'),
-    'statement headline must be unchanged');
-  assert.ok(stmt.includes('Illustrative arithmetic on the recorded trial. Being wrong by 100 tickets = $12,000 of guarantee exposure (100 × 120 = 12,000). That 100-ticket gap is hypothetical — not a measured outcome, not a real loss, and not a prediction.'),
-    'statement arithmetic paragraph must be unchanged');
-  assert.ok(stmt.includes('A promoter signs a guarantee with a number in mind. OfferSheet makes that number explicit — tickets to break even — and shows exactly which audience evidence produced it, so the signature is a decision, not a guess.'),
-    'statement promoter paragraph must be unchanged');
-  const stmtRule = css.match(/\.statement \{[^}]*\}/);
-  assert.ok(!stmtRule || !/(#f1f7f8|oklch\(97|#e97219)/.test(stmtRule[0]),
+  assert.ok(stmt.includes('A promoter should never sign a guarantee <em>he can\'t check.</em>'),
+    'statement sentence must be unchanged');
+  assert.ok(stmt.includes('That is the whole product: one number, checked against live taste evidence, before the signature — not after the show.'),
+    'statement sub-copy must be unchanged');
+  const formula = html.match(/<section[^>]*id="formula"[^>]*>([\s\S]*?)<\/section>/)[1];
+  assert.ok(formula.includes('Illustrative arithmetic on the recorded trial. Being wrong by 100 tickets = $12,000 of guarantee exposure (100 × 120 = 12,000). That 100-ticket gap is hypothetical — not a measured outcome, not a real loss, and not a prediction.'),
+    'statement arithmetic paragraph must survive verbatim in #formula, hypothetical label intact');
+  assert.ok(html.includes('<p>One money decision, before you sign.</p>'),
+    'statement headline line must survive in the landing footer');
+  const v3css = read('frontend/v3-landing.css');
+  const stmtRules = v3css.slice(v3css.indexOf('.statement'));
+  assert.ok(!/(#f1f7f8|oklch\(97|#e97219)/.test(stmtRules.slice(0, 1200)),
     'statement must carry no light-paper/orange styling');
 });
 

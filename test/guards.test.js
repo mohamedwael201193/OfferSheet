@@ -23,7 +23,7 @@ test('T12: month rollover resets the monthly count', () => {
   const g = new Guards({ monthlyBudget: 1, perVisitorDailyCap: 20, perRunCallCap: 40 });
   g.checkCall();
   assert.throws(() => g.checkCall(), (e) => e.code === 'QUOTA_FLOOR');
-  g.monthKey = '2000-01'; // simulate a new month
+  g.monthKey = '2000-01'; // force a new month
   g.checkCall(); // no throw after rollover
 });
 

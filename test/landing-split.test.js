@@ -1,7 +1,11 @@
-// Landing/app split regressions (user order, 29 Oct 2026).
+// Landing/app split regressions, adapted for the v3 redesign (30 Oct 2026).
 // The landing is display-only: no verdict machinery, no data calls.
 // The app is the working page: every id app.js queries must be there
 // (except runtime-created buttons and landing-only guarded hero ids).
+// v3 change: the landing sections are hero/statement/flow/evidence/
+// formula/recorded/dashboard/ledger/get-the-app (the old problem/how/
+// arms/refuses sections and their showcase images are retired with the
+// old landing), and the app sidebar carries exactly five destinations.
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -26,28 +30,29 @@ test('landing is display-only: no verdict machinery, no data calls', () => {
   assert.ok(landing.includes('<script src="landing.js"'), 'landing must load landing.js');
   assert.ok(!landingJs.includes('fetch('), 'landing.js must never fetch');
   assert.ok(!landingJs.includes('/api'), 'landing.js must never name a data endpoint');
-  assert.ok(!landing.includes('/api'), 'landing must never name a data endpoint');
+  // NOSIM NARROWING (30 Oct 2026): the bare-string check below used to
+  // read the whole landing, but it now contradicts v3-spec, which
+  // REQUIRES the honest PWA-note prose "/api/* calls are network-only"
+  // in the phone section — prose describing the service worker's real
+  // behaviour, not a call. So the PWA-note block is stripped first and
+  // the no-endpoint guarantee is kept in full on the remainder, plus
+  // a behavioural pin (no fetch/XHR at all in landing markup) so the
+  // guarantee is about calls, not about one string.
+  const landingWithoutPwaNote = landing.replace(/<p class="pwa-note">[\s\S]*?<\/p>/, '');
+  assert.ok(!landingWithoutPwaNote.includes('/api'), 'landing outside the PWA note must never name a data endpoint');
+  assert.ok(!landingWithoutPwaNote.includes('fetch(') && !landingWithoutPwaNote.includes('XMLHttpRequest'),
+    'landing markup must make no data calls');
 });
 
-test('landing keeps the display sections and links into the app', () => {
-  // MERGE (dark redesign): heroStage/dealStack removed with the 3D tilt stack
-  // (user order: no stacked/tilted hero), and No. 01-05 numbering replaced by
-  // micro-labels in the dark language. All other pins below stay enforced.
-  for (const id of ['problem', 'how', 'arms', 'refuses', 'formula']) {
+test('landing keeps the v3 display sections and links into the app', () => {
+  for (const id of ['hero', 'statement', 'flow', 'evidence', 'formula', 'recorded', 'dashboard', 'ledger', 'get-the-app']) {
     assert.ok(landing.includes(`id="${id}"`), `landing must keep id="${id}"`);
   }
-  // D-IMAGES: old illustration filenames replaced 1:1 by photographs;
-  // the pin keeps its intent (arms + refusal sections still carry an image).
-  for (const s of ['photo-arms-stage.webp', 'photo-refusal-room.webp']) {
-    assert.ok(landing.includes(s), `landing must contain ${s}`);
-  }
-  assert.ok(landing.includes('Recorded example — 29 Oct 2026 trial, not a live verdict'),
-    'arms showcase must label the recorded trial as recorded, never live');
-  assert.ok(landing.includes('Gut (LLM alone)') && landing.includes('Graph (Qloo-grounded')
-    && landing.includes('Web (LLM + Wikidata facts)'), 'arms showcase must name all three arms');
-  assert.ok(landing.includes('Clairo') && landing.includes('Olivia Rodrigo')
-    && landing.includes('Armani White'), 'arms showcase must carry the recorded trial-1 picks');
-  assert.ok(landing.includes('2,084 tickets'), 'arms showcase must carry the recorded break-even');
+  assert.ok(landing.includes('A promoter should never sign a guarantee'), 'statement section must carry the v3 sentence');
+  assert.ok(landing.includes('Recorded · Trial 1') && landing.includes('Recorded · Trial 2') && landing.includes('Recorded · Trial 3'),
+    'recorded band must carry all three trials');
+  assert.ok(landing.includes('No show has settled yet'), 'ledger must carry the empty-settle note');
+  assert.ok(landing.includes('2,084 tickets'), 'landing must carry the recorded break-even');
   const appLinks = (landing.match(/href="app\.html"/g) || []).length;
   assert.ok(appLinks >= 3, `landing must link to app.html (found ${appLinks})`);
   assert.ok(!landing.includes('generic web'), 'landing must not contain a generic-web claim');
@@ -68,15 +73,7 @@ test('app carries every id app.js queries (minus runtime + landing-only guards)'
     ...appJs.matchAll(/getElementById\('([^']+)'\)/g),
     ...appJs.matchAll(/getElementById\("([^"]+)"\)/g),
   ].map((m) => m[1]));
-  // Runtime-created by design (buttons injected by app.js itself).
-  // legProgress is created by appendLegProgress on first streamed leg event
-  // and read only through that same function, so it never exists statically.
-  // headlinerImage is created by renderHeadlinerImage on a verdict that
-  // carries a Qloo image, and removed on the next render — same pattern.
   const runtime = new Set(['tryAgainBtn', 'priceFocusBtn', 'needsTryAgainBtn', 'legProgress', 'headlinerImage']);
-  // Landing-only, guarded in app.js: heroFallback is touched only when an
-  // img with id heroImg errors (no such img on the app page); dealStack /
-  // heroStage are null-guarded before any tilt listener attaches.
   const landingOnly = new Set(['heroFallback', 'dealStack', 'heroStage']);
   const ids = idsOf(app);
   const missing = [...queried].filter((id) => !ids.has(id) && !runtime.has(id) && !landingOnly.has(id));

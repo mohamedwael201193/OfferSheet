@@ -41,12 +41,15 @@ test('every single-nav href resolves, each in-page target exactly once', () => {
   }
 });
 
-test('single nav keeps every required jump target, including Receipts', () => {
+test('single nav keeps exactly the five v3 destinations', () => {
   const body = navBlocks[0][1];
-  for (const h of ['#tool', '#verdict', '#formula', '#depth', '#workspace', '#ledger',
-    '#receiptSection', '#verdictSheet', '#raceSection', '#trialTally', '#limits',
-    'oracle.html', 'index.html']) {
+  for (const h of ['#tool', '#verdict', '#evidence', '#workspace', '#ledger']) {
     assert.ok(body.includes(`href="${h}"`), `single nav must keep ${h}`);
+  }
+  const inPage = [...body.matchAll(/href="(#[^"]+)"/g)].map((m) => m[1]);
+  assert.equal(inPage.length, 5, `single nav must carry exactly 5 destinations, found ${inPage.join(', ')}`);
+  for (const h of ['#formula', '#depth', '#receiptSection', '#verdictSheet', '#raceSection', '#trialTally', '#limits']) {
+    assert.ok(!body.includes(`href="${h}"`), `v3 nav must not carry the old ${h} destination (sections stay on the page, reached by scroll and footer links)`);
   }
 });
 

@@ -159,23 +159,35 @@ test('S1: landing arms tally recomputed from trial-pack.json (same file the app 
   assert.equal(gutSame, 0);
   assert.equal(webSame, 0);
 
-  // The landing computes (not hardcodes) this tally from the static file.
+  // D1-B: the landing carries a STATIC tally, computed from trial-pack.json
+  // at patch time (no build step exists) and pinned here by recomputation:
+  // read the pack, compute changed = trials where gut or web missed, and
+  // assert the landing's static string equals "changed of n".
   const armsSection = landingHtml.match(/<section[^>]*id="arms"[^>]*>([\s\S]*?)<\/section>/);
   assert.ok(armsSection, 'landing must have an arms section');
-  assert.ok(armsSection[1].includes('id="armsTally"'), 'arms section must carry the tally element');
-  assert.ok(armsSection[1].includes("fetch('trial-pack.json')"),
-    'tally must be read from trial-pack.json, not hardcoded');
   assert.ok(armsSection[1].includes('Recorded, not live.'),
     'tally must be labelled recorded, not live');
-  assert.ok(armsSection[1].includes('Qloo changed the pick in'),
-    'tally must use the same wording as the app tally');
-  assert.ok(armsSection[1].includes('Recorded tally unavailable'),
-    'tally must fall back to an unavailable label, never an invented number');
-  assert.ok(!/\d+\/\d+/.test(
-    armsSection[1].match(/id="armsTally"[^>]*>([^<]*)/)[1]),
-    'unavailable fallback must itself contain no tally numbers');
+  assert.ok(armsSection[1].includes(`Qloo changed the pick in ${changed} of ${n} recorded trials.`),
+    'landing static tally must equal the pack recomputation');
+  assert.ok(armsSection[1].includes('at patch time'),
+    'static tally must state it was computed at patch time');
+  assert.ok(!armsSection[1].includes("fetch('trial-pack.json')"),
+    'static tally must not fetch at runtime');
+  assert.ok(!armsSection[1].includes('Recorded tally unavailable'),
+    'no unavailable fallback beside a static number');
   // Display-only preserved: no data endpoint, no verdict machinery.
-  assert.ok(!landingHtml.includes('/api'), 'landing must name no data endpoint');
+  // NOSIM NARROWING (30 Oct 2026): the bare-string check used to read
+  // the whole landing, but it now contradicts v3-spec, which REQUIRES
+  // the honest PWA-note prose "/api/* calls are network-only" in the
+  // phone section — prose describing the service worker's real
+  // behaviour, not a call. So the PWA-note block is stripped first and
+  // the no-endpoint guarantee is kept in full on the remainder, plus
+  // a behavioural pin (no fetch/XHR at all in landing markup) so the
+  // guarantee is about calls, not about one string.
+  const landingWithoutPwaNote = landingHtml.replace(/<p class="pwa-note">[\s\S]*?<\/p>/, '');
+  assert.ok(!landingWithoutPwaNote.includes('/api'), 'landing outside the PWA note must name no data endpoint');
+  assert.ok(!landingWithoutPwaNote.includes('fetch(') && !landingWithoutPwaNote.includes('XMLHttpRequest'),
+    'landing markup must make no data calls');
   assert.ok(!landingHtml.includes('<script src="app.js"'), 'landing must not load app.js');
   const landingJs = read('frontend/landing.js');
   assert.ok(!landingJs.includes('fetch('), 'landing.js must still never fetch');

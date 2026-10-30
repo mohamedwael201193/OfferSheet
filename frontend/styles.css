@@ -308,8 +308,8 @@ td { color: var(--body); }
   .hero-figure figcaption { padding: 24px 20px 16px; }
 }
 /* LANDING-WIDE DARK (d-hero scope update, filing day).
-   Why this block exists: styles.css loads FIRST; landing-mobile.css,
-   mobile-section.css and sim-animation.css load after it and still
+   Why this block exists: styles.css loads FIRST; landing-mobile.css and
+   mobile-section.css load after it and still
    carry the light Studio tokens (paper #f1f7f8, ink #030e1a, cadmium
    orange, Hedvig serif). The phone section's chrome was already
    patched dark inside mobile-section.css, but the phone SCREEN still
@@ -347,14 +347,13 @@ body.landing-page .ms-section {
   color: #D4D4D4;
 }
 /* Hardcoded Studio values the variable flip cannot reach: the
-   recorded-demo verdict number (serif in sim-animation.css) joins
-   the rounded display face; the recorded label becomes a pill and
-   the receipt cards go sharp-cornered, matching the landing's
-   pill buttons and sharp photography. The device shell keeps its
-   48px hardware corners (documented exception, still dark). */
-body.landing-page .sim-verdict-num { font-family: "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif; font-weight: 800; }
-body.landing-page .sim-label { border-radius: 999px; }
-body.landing-page .sim-receipt { border-radius: 0; }
+   recorded verdict number (serif in mobile-section.css) joins
+   the rounded display face; the recorded label becomes a pill,
+   matching the landing's pill buttons and sharp photography.
+   The device shell keeps its 48px hardware corners (documented
+   exception, still dark). */
+body.landing-page .record-verdict-num { font-family: "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif; font-weight: 800; }
+body.landing-page .record-label { border-radius: 999px; }
 /* Footer focus outline: landing-mobile.css still sets cadmium
    orange; on the dark footer the outline is white. */
 body.landing-page .footer-meta a:focus-visible { outline-color: #FFFFFF; }

@@ -227,7 +227,7 @@
    the 3px/2px card tokens — a hardware silhouette, not a UI card),
    protruding side buttons, a dynamic-island pill inside the screen,
    and a home bar in the bottom bezel. The screen holds ONLY the
-   recorded-demo animation (sim-animation.css/js) — no live app, no
+   static record of the recorded 29 Oct 2026 trial — no live app, no
    embed of any kind. The keys and island are decorative (aria-hidden,
    not buttons) — the 48px rule applies to interactive targets, and
    these are not targets. */
@@ -285,8 +285,10 @@
 .ms-key--volume-up { left: -4px; top: 130px; height: 36px; }
 .ms-key--volume-down { left: -4px; top: 174px; height: 36px; }
 /* The screen is a fixed phone viewport at ~9/19.5, not a content-sized
-   box: the recorded animation plays inside it, and nothing else is
-   layered over it, so there is no overlay that could fake a screen. */
+   box: the static record of the recorded 29 Oct 2026 trial sits inside
+   it, and nothing else is layered over it, so there is no overlay that
+   could fake a screen. The screen holds ONLY that static record — no
+   live app, no embed of any kind. */
 .ms-screen {
   position: relative;
   aspect-ratio: 9 / 19.5;
@@ -312,13 +314,6 @@
   margin: 16px auto 0;
   max-width: 380px;
 }
-.ms-scroll-hint {
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--color-muted);
-  margin: 8px auto 0;
-  max-width: 380px;
-}
 .ms-fullapp--under { width: 100%; max-width: 380px; margin: 12px auto 0; }
 
 /* Desktop composition. */
@@ -341,10 +336,9 @@
   .ms-section.crop::before { inset: 4px; }
 }
 
-/* Reduced motion: this section adds no animation and no transition
-   survives the kill. The recorded animation resolves to its static
-   final state under its own stylesheet; nothing in this section
-   re-enables it, and no content here is ever hidden by motion. */
+/* Reduced motion: this section is static — it adds no moving content
+   and no transition survives the kill, and no content here is ever
+   hidden by motion. */
 @media (prefers-reduced-motion: reduce) {
   .ms-section *, .ms-section *::before, .ms-section *::after {
     animation: none !important;
@@ -354,7 +348,7 @@
   .ms-section .apk-button.ms-apk:hover, .ms-fullapp:hover { translate: 0 0; box-shadow: none; }
 }
 
-/* Print: the animation device is hidden and the caption + live-demo
+/* Print: the phone device is hidden and the caption + live-demo
    link carry the section instead. */
 @media print {
   .ms-device, .ms-dim { display: none !important; }
@@ -362,8 +356,8 @@
 
 /* ---------- Dark landing override (coordinator, merge) ----------
    The phone section sits on the dark landing now. The device shell was
-   already dark; the screen stays light (a lit phone in a dark room) and
-   sim-animation.css is untouched. Only section chrome is recolored. */
+   already dark; the screen stays light (a lit phone in a dark room).
+   Only section chrome is recolored. */
 .ms-section { background: #0A0A0A; color: #D4D4D4; --color-mark: rgba(255, 255, 255, .35); }
 .ms-section h2 { font-family: "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif; font-weight: 800; color: #FFFFFF; font-size: clamp(40px, 6vw, 64px); }
 .ms-kicker { color: #AAAAAA; font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
@@ -371,8 +365,7 @@
 .ms-section .ms-lede em { color: #FFFFFF; }
 .ms-dim, .ms-dim::before, .ms-dim::after { background: #FFFFFF; }
 .ms-dim-label { background: #0A0A0A; color: #AAAAAA; }
-.ms-section .sim-divider line { stroke: #FFFFFF; }
-.ms-section .ms-figcaption, .ms-scroll-hint { color: #AAAAAA; }
+.ms-section .ms-figcaption { color: #AAAAAA; }
 
 /* Dark phone-section chrome (J1 B3 fix): the override above recolored the
    section background and headings but left copy chrome light or
@@ -416,3 +409,36 @@
 @media (max-width: 480px) {
   .ms-section { padding-bottom: max(32px, calc(32px + env(safe-area-inset-bottom))); }
 }
+
+/* Static record inside the phone (03:29 EET 30 Oct user redirect: the
+   staged film is gone; the phone shows this static record only).
+   Tokens follow the section variables so the dark-landing flip in
+   styles.css recolours the record with the rest of the section. */
+.record-stage {
+  position: relative; height: 100%; display: flex; flex-direction: column;
+  padding: 40px 14px 12px; background: var(--color-paper, #f1f7f8);
+  color: var(--color-ink-2, #030e1a); text-align: left; overflow: hidden;
+}
+.record-topbar { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; }
+.record-island {
+  display: flex; align-items: center; justify-content: flex-end;
+  width: 96px; height: 26px; padding-right: 10px; border-radius: 999px; background: #000;
+}
+.record-lens { width: 10px; height: 10px; border-radius: 50%; background: #1c2733; box-shadow: inset 0 0 0 2px #000, 0 0 0 1px rgba(255,255,255,.25); }
+.record-label {
+  max-width: 380px; margin: 0 auto 10px; padding: 8px 12px;
+  border: 1px solid var(--color-ink, #030e1a); border-radius: 3px;
+  background: var(--color-paper-hi, #f7fbfc); color: var(--color-ink, #030e1a);
+  font-size: 14px; line-height: 20px; font-weight: 500; text-align: center;
+}
+.record-row { display: grid; grid-template-columns: 96px 1fr; gap: 8px; margin: 0 0 6px; font-size: 15px; line-height: 21px; }
+.record-field { color: var(--color-muted, rgba(3,14,26,.6)); }
+.record-value { font-weight: 500; color: var(--color-ink, #030e1a); overflow-wrap: anywhere; }
+.record-math { margin: 0 0 6px; font-size: 15px; line-height: 22px; color: var(--color-ink, #030e1a); }
+.record-verdict-num {
+  margin: 0; font-family: "Hedvig Letters Serif", Georgia, serif;
+  font-size: 48px; line-height: 1; color: var(--color-ink, #030e1a);
+  font-variant-numeric: tabular-nums;
+}
+.record-verdict-label { margin: 4px 0 2px; font-size: 16px; line-height: 21px; font-weight: 500; color: var(--color-ink, #030e1a); }
+.record-verdict-sub { margin: 0; font-size: 13px; line-height: 18px; color: var(--color-muted, rgba(3,14,26,.6)); }

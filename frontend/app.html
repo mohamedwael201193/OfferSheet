@@ -6,6 +6,7 @@
 <title>OfferSheet — check a live-show offer before you sign it</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="kinpaku.css">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0A0A0A">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -45,25 +46,10 @@
       <a href="#tool">Tool</a>
       <a href="#verdict" class="nav-verdict-link" data-verdict-link aria-disabled="true" title="Appears after a verdict runs" aria-label="Verdict — appears after a verdict runs" aria-describedby="verdictNavNote">Verdict</a>
       <a href="#evidence">Evidence</a>
-      <a href="#formula">Formula</a>
-      <a href="#depth">Proof</a>
       <a href="#workspace">Workspace</a>
       <a href="#ledger">Ledger</a>
-    </div>
-    <div class="nav-group nav-group--proof">
-      <span class="nav-group-label">Proof index</span>
-      <a href="#receiptSection" class="nav-verdict-link" data-verdict-link aria-disabled="true" title="Appears after a verdict runs" aria-label="Receipts — appears after a verdict runs" aria-describedby="verdictNavNote">Receipts</a>
-      <a href="#verdictSheet" class="nav-verdict-link" data-verdict-link aria-disabled="true" title="Appears after a verdict runs" aria-label="Sheet — appears after a verdict runs" aria-describedby="verdictNavNote">Sheet</a>
-      <a href="#raceSection" class="nav-verdict-link" data-verdict-link aria-disabled="true" title="Appears after a verdict runs" aria-label="Race — appears after a verdict runs" aria-describedby="verdictNavNote">Race</a>
-      <a href="#trialTally">Trials</a>
-      <a href="#limits">Limits</a>
-      <p class="sidebar-note" id="verdictNavNote">Verdict, Receipts, Sheet and Race are not shown yet — they appear with a verdict. Run a verdict first; these links will not jump to empty sections.</p>
+      <p class="sidebar-note" id="verdictNavNote">Verdict is not shown yet — it appears with a verdict. Run a verdict first; this link will not jump to an empty section.</p>
       <p class="sidebar-status" id="verdictNavStatus" aria-live="polite"></p>
-    </div>
-    <div class="nav-group nav-group--main">
-      <span class="nav-group-label">Project</span>
-      <a href="oracle.html" target="_top">Oracle</a>
-      <a href="index.html" target="_top">Landing</a>
     </div>
   </nav>
 </div>
@@ -106,7 +92,7 @@
     </figure>
     <p>Other tools rank openers for a show. OfferSheet answers whether to sign the guarantee at all — a ticket count, not a ranking.</p>
     <p id="formDisabledNote" class="form-disabled-note" hidden>The form is disabled because Qloo is not configured for this demo — no verdict can be computed without live Qloo data.</p>
-    <form id="offerForm">
+    <form id="offerForm" class="formstrip">
       <div class="field">
         <label for="artist">Artist</label>
         <input id="artist" name="artist" value="Billie Eilish" required autocomplete="off">
@@ -116,6 +102,10 @@
         <input id="city" name="city" value="New York" required autocomplete="off">
       </div>
       <div class="field">
+        <label for="guarantee">Guarantee (USD)</label>
+        <input id="guarantee" name="guarantee" type="number" min="0" step="1" value="250000" required inputmode="numeric">
+      </div>
+      <div class="field">
         <label for="venue">Room / venue (optional)</label>
         <input id="venue" name="venue" placeholder="Leave blank to use the first matching Ticketmaster event" autocomplete="off">
         <span class="field-hint">The actual room for this offer.</span>
@@ -123,10 +113,6 @@
           <summary>About this field</summary>
           <span class="field-hint">The actual room for this offer. If Ticketmaster finds it, its capacity and event prices ground the verdict; otherwise the first matching Ticketmaster event's venue is used and labeled as not the offer room.</span>
         </details>
-      </div>
-      <div class="field">
-        <label for="guarantee">Guarantee (USD)</label>
-        <input id="guarantee" name="guarantee" type="number" min="0" step="1" value="250000" required inputmode="numeric">
       </div>
       <div class="field">
         <label for="ticketPrice">Ticket price (USD, optional)</label>
@@ -233,6 +219,12 @@
        this page (nav + tool card + verdict hero). The static figure
        sits beside the live diagram: the figure is the visual anchor,
        the diagram is the checkable arithmetic. -->
+  <div class="evrow" aria-label="Evidence at a glance">
+    <div class="evmini"><h4>Headliner</h4><p>Tags and description resolved for the artist entered — never guessed.</p></div>
+    <div class="evmini"><h4>Opener</h4><p>Candidates from headliner fans, ranked for the city audience.</p></div>
+    <div class="evmini"><h4>City</h4><p>Matched areas and overlap — aggregate signals, never a headcount.</p></div>
+  </div>
+
   <section id="formula" class="sheet crop disc disc--closed" aria-label="Formula">
     <div class="disc-head-row"><div>
         <p class="eyebrow">No. 03 — The formula</p>
@@ -469,6 +461,7 @@
 
   <!-- Deal workspace: client-held (localStorage + JSON export/import). Seeds ONLY from a verdict response; withheld, price-unknown, and needs-input responses are rejected and seed nothing. No verdict auto-runs here. -->
   <section id="workspace" class="sheet crop disc disc--closed" aria-label="Deal workspace">
+    <p class="label">Routing example (recorded trial): base city New York (40.7127, −74.0060) · candidate Los Angeles (34.0537, −118.2428). Cities that do not resolve are omitted and labelled; the table stays authoritative. Comparison holds up to 5 offers with no winner badge.</p>
     <div class="disc-head-row"><div>
         <p class="eyebrow">No. 08 — The workspace</p>
         <h2>Deal workspace</h2>

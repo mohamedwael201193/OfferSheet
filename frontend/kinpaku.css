@@ -1,0 +1,74 @@
+/* OfferSheet v3 — kinpaku tokens (verbatim oklch, from DESIGN.md and the
+   impeccable token file ui/component-review/vendor/kinpaku-tokens.css).
+   Tokens and method only: no artwork, copy, or code is taken from that
+   reference. This sheet carries tokens, CTA/radii/type rules, and the
+   small v3 dashboard-shell overrides. Page layout lives in the pages'
+   own sheets. */
+:root {
+  --gold: oklch(84% 0.19 80.46);
+  --gold-deep: oklch(61% 0.085 78);
+  --gold-hairline: oklch(78% 0 0 / 0.16);
+  --gold-hairline-strong: oklch(74% 0.09 82 / 0.6);
+  --verdigris: oklch(70% 0.12 188);
+  --ground: oklch(7% 0.006 95);
+  --deep: oklch(4% 0.004 95);
+  --panel: oklch(11% 0.006 95);
+  --graphite: oklch(15% 0.008 95);
+  --champagne: oklch(91% 0 0);
+  --warm: oklch(88% 0 0);
+  --muted: oklch(72% 0 0);
+  --faint: oklch(62% 0 0);
+  --vermilion: oklch(58% 0.15 35);
+  --on-gold: oklch(14% 0.018 95);
+}
+
+/* One gold CTA per view: the gold button. Verdigris is LIVE state only. */
+.btn--gold, .cta-gold {
+  background: var(--gold);
+  color: var(--on-gold);
+  border: 0;
+  border-radius: 999px;
+  min-height: 48px;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn--gold:focus-visible, .cta-gold:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 3px; }
+
+/* Radii: cards 14px, controls 7px, pills 999px. */
+.v3-card { border-radius: 14px; }
+.v3-control { border-radius: 7px; }
+.v3-pill { border-radius: 999px; }
+
+/* Verdict unit on its own line (v3 dashboard spec, all widths). */
+.verdict-unit { display: block; margin-top: 4px; }
+
+/* Live state only, sparingly. */
+.live-dot { color: var(--verdigris); }
+
+/* Form strip: first row is Artist / City / Guarantee + gold Run. */
+.formstrip { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; }
+.formstrip .field { flex: 1 1 160px; }
+
+/* Dashboard evidence minis under the verdict card. */
+.evrow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 24px; }
+.evmini { border: 1px solid var(--gold-hairline); border-radius: 14px; background: var(--panel); padding: 20px; }
+.evmini h4 { font-size: 18px; font-weight: 500; margin: 0 0 8px; }
+.evmini p { color: var(--muted); font-size: 16px; line-height: 1.8; margin: 0; }
+@media (max-width: 640px) {
+  .evrow { grid-template-columns: 1fr; }
+}
+
+/* Reduced motion kills ALL animation on v3 pages. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

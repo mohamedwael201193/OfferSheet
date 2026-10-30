@@ -50,7 +50,12 @@ test('formula section shows real content statically, or is absent with zero dang
   }
   // Fix branch: labeled parts + worked numbers + rounding note, all in
   // static markup (no SVG, no canvas, no JS-driven drawing).
-  for (const marker of ['Guarantee', 'Ticket price', 'Tickets to break even',
+  // V3 ADAPTATION (user-approved comp v3): the formula section keeps
+  // every worked number but labels them in v3's shorter wording —
+  // "Ticket $120" (not "Ticket price") and "= 2,084 tickets" (not
+  // "Tickets to break even"). The guarantee is unchanged: labeled
+  // parts, worked numbers, rounding note, all static.
+  for (const marker of ['Guarantee', 'Ticket $120', '2,084 tickets',
     '$250,000', '$120', '2,083.33', '2,084', 'rounded up']) {
     assert.ok(section.includes(marker), `formula section missing marker: ${marker}`);
   }

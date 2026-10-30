@@ -22,7 +22,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const APP_JS = fs.readFileSync(path.join(ROOT, 'frontend', 'app.js'), 'utf8');
 const SLICE = APP_JS.slice(0, APP_JS.indexOf('async function submitVerdict'));
-const LIVE = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'phase3-evidence', 'live-verdict-billie.json'), 'utf8'));
+const LIVE = JSON.parse(fs.readFileSync((fs.existsSync(path.join(__dirname, '..', 'phase3-evidence', 'live-verdict-billie.json'))
+  ? path.join(__dirname, '..', 'phase3-evidence', 'live-verdict-billie.json')
+  : path.join(__dirname, '..', '..', 'phase3-evidence', 'live-verdict-billie.json')), 'utf8'));
+// ^ CI-fix (v3 merge): resolve the fixture from inside the tree first, so the
+// suite passes in a fresh checkout; the old ../.. path only survives as a
+// fallback for the pre-merge workspace layout.
 const TRIAL_PACK = JSON.parse(fs.readFileSync(path.join(ROOT, 'frontend', 'trial-pack.json'), 'utf8'));
 const BENCH = JSON.parse(fs.readFileSync(path.join(ROOT, 'bench', 'results.json'), 'utf8'));
 const sha = (s) => createHash('sha256').update(s).digest('hex');

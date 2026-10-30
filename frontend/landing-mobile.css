@@ -1,6 +1,7 @@
 /* OfferSheet landing — Maya story only. (The Get-the-app section is
-   styled by mobile-section.css; the recorded-trial phone frame was
-   replaced by the live iframe at merge.)
+   styled by mobile-section.css; its phone frame shows a static record
+   of the recorded 29 Oct 2026 trial verdict — never a live app, and
+   never an embedded frame: index.html contains zero <iframe>.)
    Studio tokens only: paper #f1f7f8, ink #030e1a, cadmium orange #e97219.
    Geist body, Hedvig Letters Serif display. No monospace anywhere.
    8pt grid; every tap target is at least 48px tall. */

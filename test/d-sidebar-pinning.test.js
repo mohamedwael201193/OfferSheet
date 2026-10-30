@@ -52,17 +52,28 @@ test('top header bar and floating toolbar are gone, their contents moved to the 
 });
 
 test('nav target inventory: every previous target kept exactly once, resolving to a real id', () => {
+  // V3 ADAPTATION (user-approved comp v3, five-destination sidebar):
+  // the nav was intentionally cut from the design-6 fourteen to exactly
+  // five destinations. The pinned guarantees are unchanged: nav
+  // in-page targets must not repeat, and every nav href must resolve
+  // to a real id — plus, as the no-rename guarantee in substance, every
+  // previous section id must still exist in app.html (none renamed or
+  // dropped; only their nav links were retired, and Oracle/Landing
+  // remain reachable via the app footer).
   const body = navBlocks[0][1];
   const ids = idsOf(html);
   const hrefs = [...body.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
   const inPage = hrefs.filter((h) => h.startsWith('#'));
   assert.equal(new Set(inPage).size, inPage.length, `nav in-page targets must not repeat: ${inPage}`);
-  for (const h of ['#tool', '#verdict', '#evidence', '#formula', '#depth', '#workspace', '#ledger',
-    '#receiptSection', '#verdictSheet', '#raceSection', '#trialTally', '#limits',
-    'oracle.html', 'index.html']) {
-    assert.ok(body.includes(`href="${h}"`), `single nav must keep ${h}`);
-  }
+  assert.deepEqual(inPage, ['#tool', '#verdict', '#evidence', '#workspace', '#ledger'],
+    'single nav must be exactly the v3 five destinations, in order');
   for (const h of inPage) assert.ok(ids.has(h.slice(1)), `nav href ${h} must resolve to an existing id`);
+  for (const id of ['tool', 'verdict', 'evidence', 'formula', 'depth', 'workspace', 'ledger',
+    'receiptSection', 'verdictSheet', 'raceSection', 'trialTally', 'limits']) {
+    assert.ok(ids.has(id), `previous section id ${id} must still exist (not renamed or dropped)`);
+  }
+  assert.ok(html.includes('href="oracle.html"'), 'Oracle must remain reachable via the app footer');
+  assert.ok(html.includes('href="index.html"'), 'Landing must remain reachable via the app footer');
 });
 
 test('no jump target was renamed', () => {
@@ -102,17 +113,23 @@ test('skip link + keyboard path survive the consolidation', () => {
 });
 
 test('four verdict links are inert-but-explained pre-run in markup', () => {
+  // V3 ADAPTATION (user-approved comp v3, five-destination sidebar):
+  // only #verdict remains as a verdict link in the nav; the other three
+  // subsection links were retired from static markup (their sections
+  // still exist, reached via #verdict). The pinned guarantee is
+  // unchanged: EVERY verdict link in the nav is inert-but-explained
+  // pre-run — and with exactly one such link, that is fully pinned.
   const body = navBlocks[0][1];
-  for (const h of VERDICT_LINKS) {
-    const tag = body.match(new RegExp(`<a[^>]*href="${h}"[^>]*>`));
-    assert.ok(tag, `nav must contain ${h}`);
-    assert.ok(tag[0].includes('data-verdict-link'), `${h} must carry data-verdict-link`);
-    assert.ok(tag[0].includes('aria-disabled="true"'), `${h} must be aria-disabled pre-run`);
-    assert.ok(tag[0].includes('aria-describedby="verdictNavNote"'), `${h} must describe the explanation note`);
-    assert.ok(tag[0].includes('title="Appears after a verdict runs"'), `${h} must carry the f-a11y explanatory title pre-run`);
-    const labels = { '#verdict': 'Verdict', '#receiptSection': 'Receipts', '#verdictSheet': 'Sheet', '#raceSection': 'Race' };
-    assert.ok(tag[0].includes(`aria-label="${labels[h]} — appears after a verdict runs"`), `${h} must carry the f-a11y explanatory aria-label pre-run`);
-    assert.ok(tag[0].includes('>') && !tag[0].includes('inert'), `${h} must stay focusable (aria-disabled, never HTML inert)`);
+  const tag = body.match(/<a[^>]*href="#verdict"[^>]*>/);
+  assert.ok(tag, 'nav must contain #verdict');
+  assert.ok(tag[0].includes('data-verdict-link'), '#verdict must carry data-verdict-link');
+  assert.ok(tag[0].includes('aria-disabled="true"'), '#verdict must be aria-disabled pre-run');
+  assert.ok(tag[0].includes('aria-describedby="verdictNavNote"'), '#verdict must describe the explanation note');
+  assert.ok(tag[0].includes('title="Appears after a verdict runs"'), '#verdict must carry the f-a11y explanatory title pre-run');
+  assert.ok(tag[0].includes('aria-label="Verdict — appears after a verdict runs"'), '#verdict must carry the f-a11y explanatory aria-label pre-run');
+  assert.ok(tag[0].includes('>') && !tag[0].includes('inert'), '#verdict must stay focusable (aria-disabled, never HTML inert)');
+  for (const h of ['#receiptSection', '#verdictSheet', '#raceSection']) {
+    assert.ok(!body.match(new RegExp(`<a[^>]*href="${h}"[^>]*>`)), `v3 nav must not contain ${h} (five-destination sidebar)`);
   }
   assert.ok(body.includes('id="verdictNavNote"'), 'explanation note must be in the nav');
   assert.ok(body.includes('not shown yet'), 'note must say the sections are not shown yet pre-run');
@@ -172,24 +189,23 @@ test('sidebar CSS: persistent desktop, drawer at narrow widths, reduced-motion s
 });
 
 test('live-inspection destination inventory: every drawer destination accounted for, nothing else', () => {
-  // Live drawer destinations, in drawer order: Tool, Verdict, Evidence,
-  // Formula, Proof, Workspace, Ledger, Receipts, Sheet, Race, Trials,
-  // Limits, Oracle, Landing — plus the orange "Check an offer" primary
-  // action. "PROOF INDEX" is a label, not a destination; "Close" is
-  // the sidebar collapse control, not a destination.
+  // V3 ADAPTATION (user-approved comp v3, five-destination sidebar):
+  // the drawer was intentionally cut from the fourteen live-inspection
+  // destinations to exactly five. The pinned guarantees are unchanged:
+  // sidebar link labels must be exactly the drawer destinations in
+  // order, nothing else; "Close" is the collapse control (button, not
+  // a link) and is not a destination; the primary action survives in
+  // the panel. Oracle/Landing remain reachable via the footer (pinned
+  // by the nav-target inventory test), not the drawer.
   const body = navBlocks[0][1];
   const linkTexts = [...body.matchAll(/<a[^>]*>([^<]*)<\/a>/g)].map((m) => m[1].trim());
   assert.deepEqual(linkTexts,
-    ['Tool', 'Verdict', 'Evidence', 'Formula', 'Proof', 'Workspace', 'Ledger',
-     'Receipts', 'Sheet', 'Race', 'Trials', 'Limits', 'Oracle', 'Landing'],
-    `sidebar link labels must be exactly the live drawer destinations in order: ${linkTexts}`);
-  const hrefs = [...body.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(hrefs[4], '#depth', 'the drawer "Proof" destination must resolve to #depth');
-  assert.ok(body.includes('>Proof index<'), 'PROOF INDEX must survive as a label, not a link');
-  assert.ok(!linkTexts.includes('Proof index'), 'PROOF INDEX must not be counted as a destination');
+    ['Tool', 'Verdict', 'Evidence', 'Workspace', 'Ledger'],
+    `sidebar link labels must be exactly the v3 drawer destinations in order: ${linkTexts}`);
   assert.ok(!linkTexts.includes('Close'), 'Close must not be counted as a destination');
   const panel = html.slice(html.indexOf('<div class="sidebar-panel"'), html.indexOf('<div class="app-shell"'));
-  assert.ok(panel.includes('>Check an offer<'), 'the orange "Check an offer" primary action must survive in the panel');
+  assert.ok(panel.includes('>Check an offer<'), 'the "Check an offer" primary action must survive in the panel');
+  assert.ok(panel.includes('>Run the verdict<'), 'the "Run the verdict" sidebar action must survive in the panel');
   assert.ok(panel.includes('class="btn nav-close"'), 'Close must survive as the sidebar collapse control (button, not link)');
   assert.ok(panel.includes('aria-label="Close navigation"'), 'collapse control must keep its accessible name');
 });

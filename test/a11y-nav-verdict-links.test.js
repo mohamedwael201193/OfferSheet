@@ -26,7 +26,12 @@ const ROOT = path.join(__dirname, '..');
 const APP_HTML = fs.readFileSync(path.join(ROOT, 'frontend', 'app.html'), 'utf8');
 const APP_JS = fs.readFileSync(path.join(ROOT, 'frontend', 'app.js'), 'utf8');
 const SLICE = APP_JS.slice(0, APP_JS.indexOf('async function submitVerdict'));
-const LIVE = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'phase3-evidence', 'live-verdict-billie.json'), 'utf8'));
+const LIVE = JSON.parse(fs.readFileSync((fs.existsSync(path.join(__dirname, '..', 'phase3-evidence', 'live-verdict-billie.json'))
+  ? path.join(__dirname, '..', 'phase3-evidence', 'live-verdict-billie.json')
+  : path.join(__dirname, '..', '..', 'phase3-evidence', 'live-verdict-billie.json')), 'utf8'));
+// ^ CI-fix (v3 merge): resolve the fixture from inside the tree first, so the
+// suite passes in a fresh checkout; the old ../.. path only survives as a
+// fallback for the pre-merge workspace layout.
 
 const EXPLAIN = 'appears after a verdict runs';
 const NAV_TARGETS = [
@@ -54,13 +59,32 @@ const sectionTag = (id) => {
 };
 
 test('M1 pre-run (static): the four nav links are inert-but-explained', () => {
+  // V3 ADAPTATION (user-approved comp v3, five-destination sidebar): the
+  // sidebar no longer carries one link per verdict subsection. Only
+  // #verdict remains in the nav, and it keeps the full inert-but-explained
+  // contract. The underlying guarantee is unchanged and is pinned two ways:
+  // (1) the single verdict link is inert-but-explained pre-run, and (2) NO
+  // nav link points at a still-hidden section without that explanation —
+  // the three retired subsection links are absent from the nav entirely,
+  // so they cannot be dead jumps, and their sections still exist as ids
+  // (reachable via #verdict once a verdict runs, plus the runtime aids).
   const nav = navBlock();
-  for (const [id, label] of NAV_TARGETS) {
-    const tag = anchorsIn(nav).find((a) => attrOf(a, 'href') === `#${id}`);
-    assert.ok(tag, `nav must contain a link to #${id}`);
-    assert.equal(attrOf(tag, 'aria-disabled'), 'true', `#${id} nav link must be aria-disabled pre-run`);
-    assert.equal(attrOf(tag, 'title'), `Appears after a verdict runs`, `#${id} nav link must explain itself in title`);
-    assert.equal(attrOf(tag, 'aria-label'), `${label} — ${EXPLAIN}`, `#${id} nav link must explain itself in aria-label`);
+  const tag = anchorsIn(nav).find((a) => attrOf(a, 'href') === '#verdict');
+  assert.ok(tag, 'nav must contain a link to #verdict');
+  assert.equal(attrOf(tag, 'aria-disabled'), 'true', '#verdict nav link must be aria-disabled pre-run');
+  assert.equal(attrOf(tag, 'title'), `Appears after a verdict runs`, '#verdict nav link must explain itself in title');
+  assert.equal(attrOf(tag, 'aria-label'), `Verdict — ${EXPLAIN}`, '#verdict nav link must explain itself in aria-label');
+  for (const id of ['receiptSection', 'verdictSheet', 'raceSection']) {
+    assert.ok(!anchorsIn(nav).find((a) => attrOf(a, 'href') === `#${id}`),
+      `v3 nav must not link #${id} (five-destination sidebar; no dead jump can exist for a link that is absent)`);
+    assert.ok(APP_HTML.includes(`id="${id}"`), `#${id} section must still exist in app.html (not renamed or dropped)`);
+    assert.ok(/hidden/.test(sectionTag(id)), `#${id} must still carry hidden pre-run`);
+  }
+  // Every other nav target must resolve to a section that is visible
+  // pre-run (tool/evidence/workspace/ledger), so no nav link dead-jumps.
+  for (const [id] of [['tool'], ['evidence'], ['workspace'], ['ledger']]) {
+    assert.ok(anchorsIn(nav).find((a) => attrOf(a, 'href') === `#${id}`), `nav must contain #${id}`);
+    assert.ok(!/hidden/.test(sectionTag(id)), `#${id} must be visible pre-run (its nav link needs no inert explanation)`);
   }
 });
 
@@ -78,14 +102,26 @@ test('M1 pre-run (static): no duplicate verdict links survive the sidebar consol
   // at all": exactly one link per verdict target in the whole page,
   // and that single copy is the inert-but-explained sidebar link.
   // (The sidebar pinning test independently pins the same contract.)
+  // V3 ADAPTATION (user-approved comp v3, five-destination sidebar):
+  // the contract goes one step stricter again — the Receipts/Sheet
+  // subsection links are removed from the STATIC page entirely (the
+  // nav holds only #verdict). Zero static copies cannot duplicate and
+  // cannot dead-jump. The only Receipts link is the runtime G9 aid in
+  // app.js (wireVerdictAids), which appends exactly one link, guarded
+  // by "if not already present", only after a verdict runs — so it is
+  // live, not pre-run, and never duplicated. That runtime behavior is
+  // intentionally NOT asserted here (static test); it is reported as
+  // the G9 nuance in the merge report, not changed silently.
   assert.ok(!APP_HTML.includes('glass-toolbar'), 'the floating glass toolbar must be gone after the sidebar consolidation');
   const page = stripComments(APP_HTML);
-  for (const [id, label] of [['receiptSection', 'Receipts'], ['verdictSheet', 'Sheet']]) {
+  for (const id of ['receiptSection', 'verdictSheet']) {
     const copies = anchorsIn(page).filter((a) => attrOf(a, 'href') === `#${id}`);
-    assert.equal(copies.length, 1, `#${id} must have exactly one link on the page (no toolbar duplicate)`);
-    assert.equal(attrOf(copies[0], 'aria-disabled'), 'true', `the single #${id} link must be aria-disabled pre-run`);
-    assert.equal(attrOf(copies[0], 'aria-label'), `${label} — ${EXPLAIN}`);
+    assert.equal(copies.length, 0, `v3 static page must have zero links to #${id} (no static copy, no duplicate)`);
   }
+  const verdict = anchorsIn(page).filter((a) => attrOf(a, 'href') === '#verdict');
+  assert.equal(verdict.length, 1, '#verdict must have exactly one link on the page');
+  assert.equal(attrOf(verdict[0], 'aria-disabled'), 'true', 'the single #verdict link must be aria-disabled pre-run');
+  assert.equal(attrOf(verdict[0], 'aria-label'), `Verdict — ${EXPLAIN}`);
 });
 
 test('M1 (static): disabled-link jumps are cancelled in the glue, before openAncestors', () => {

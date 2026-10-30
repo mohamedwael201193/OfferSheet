@@ -16,7 +16,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const APP_JS = fs.readFileSync(path.join(ROOT, 'frontend', 'app.js'), 'utf8');
 const SLICE = APP_JS.slice(0, APP_JS.indexOf('async function submitVerdict'));
-const LIVE = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'phase3-evidence', 'live-verdict-billie.json'), 'utf8'));
+const LIVE = JSON.parse(fs.readFileSync((fs.existsSync(path.join(__dirname, '..', 'phase3-evidence', 'live-verdict-billie.json'))
+    ? path.join(__dirname, '..', 'phase3-evidence', 'live-verdict-billie.json')
+    : path.join(__dirname, '..', '..', 'phase3-evidence', 'live-verdict-billie.json')), 'utf8'));
 
 function makeEl(id) {
   const el = {
