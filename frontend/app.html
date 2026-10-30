@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="dashboard.css?v=u15">
 <link rel="stylesheet" href="kinpaku.css?v=u12">
 <link rel="stylesheet" href="u16-dashboard.css?v=u17">
-<link rel="stylesheet" href="u17-dashboard.css?v=u18">
+<link rel="stylesheet" href="u17-dashboard.css?v=u19">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0A0A0A">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -540,7 +540,6 @@
 
   <!-- Deal workspace: client-held (localStorage + JSON export/import). Seeds ONLY from a verdict response; withheld, price-unknown, and needs-input responses are rejected and seed nothing. No verdict auto-runs here. -->
   <section id="workspace" class="sheet crop disc disc--closed" aria-label="Deal workspace">
-    <p class="label">Routing example (recorded trial): base city New York (40.7127, −74.0060) · candidate Los Angeles (34.0537, −118.2428). Cities that do not resolve are omitted and labelled; the table stays authoritative. Comparison holds up to 5 offers with no winner badge.</p>
     <div class="disc-head-row"><div>
         <p class="eyebrow">No. 08 — The workspace</p>
         <h2>Deal workspace</h2>
@@ -569,6 +568,7 @@
           <div class="ws-panel" aria-label="Routing">
             <h3>Routing — where next</h3>
             <p class="label">Candidate cities you type, ranked by matched-area counts.</p>
+            <p class="label ws-example"><span class="ws-example-k">Example</span> Routing example (recorded trial): base city New York (40.7127, −74.0060) · candidate Los Angeles (34.0537, −118.2428). Cities that do not resolve are omitted and labelled; the table stays authoritative. Comparison holds up to 5 offers with no winner badge.</p>
             <div id="wsRouting"></div>
           </div>
           <div class="ws-panel" aria-label="Budget envelope">
@@ -763,13 +763,13 @@
   </footer>
 </div>
 
-<script src="app.js?v=u18"></script>
+<script src="app.js?v=u19"></script>
 <script src="workspace.js?v=u15"></script>
 <script src="oracle.js?v=u15"></script>
 <script src="dark-dash.js?v=u12"></script>
 <script src="vendor/gsap.min.js?v=3.15.0"></script>
 <script src="u16-dashboard.js?v=u17"></script>
-<script src="u17-tabs.js?v=u18"></script>
+<script src="u17-tabs.js?v=u19"></script>
 <script>
   // Arithmetic checker: pure client-side ceil math on typed inputs.
   // No fetch, no verdict, no Qloo call, no stored state.

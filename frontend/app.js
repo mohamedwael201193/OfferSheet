@@ -213,6 +213,44 @@ function setRunning(on) {
   if (rt) rt.disabled = on;
 }
 
+// U19: promoter-readable demographics and shared tags. Same values as the
+// verdict object — relabelled, never rescaled or invented. Anything that
+// does not match the expected shape falls back to the raw kvOrList view.
+const AGE_LABELS = { '24_and_younger': '24 and under', '25_to_29': '25–29', '30_to_34': '30–34', '35_and_younger': '35 and under', '35_to_44': '35–44', '36_to_55': '36–55', '45_to_54': '45–54', '55_and_older': '55 and over' };
+function scoreRow(label, val) {
+  const n = Number(val);
+  if (!Number.isFinite(n)) return '';
+  const pct = Math.min(100, Math.abs(n) * 100);
+  const word = n > 0.05 ? 'over-indexes' : (n < -0.05 ? 'under-indexes' : 'about average');
+  return `<div class="u19-score"><span class="u19-score-k">${esc(label)}</span><span class="u19-bar" aria-hidden="true"><i class="${n < 0 ? 'neg' : 'pos'}" style="width:${pct.toFixed(0)}%"></i></span><span class="u19-score-v">${n > 0 ? '+' : ''}${n.toFixed(2)} · ${word}</span></div>`;
+}
+function demoHtml(list) {
+  if (!Array.isArray(list) || list.length === 0) return '';
+  const blocks = list.map((d) => {
+    const q = d && typeof d === 'object' ? (d.query || d) : null;
+    if (!q || typeof q !== 'object' || (!q.age && !q.gender)) return null;
+    const ages = q.age && typeof q.age === 'object' ? Object.entries(q.age).map(([k, v]) => scoreRow(AGE_LABELS[k] || k.replace(/_/g, ' '), v)).join('') : '';
+    const gender = q.gender && typeof q.gender === 'object' ? Object.entries(q.gender).map(([k, v]) => scoreRow(k.charAt(0).toUpperCase() + k.slice(1), v)).join('') : '';
+    return `${ages ? `<p class="u19-sub">Age bands</p>${ages}` : ''}${gender ? `<p class="u19-sub">Gender</p>${gender}` : ''}${d.entity_id ? `<p class="u19-id">Qloo entity ${esc(d.entity_id)}</p>` : ''}`;
+  });
+  if (blocks.some((b) => b === null)) return '';
+  return `<h3>Who this audience is</h3><p class="u19-hint">Qloo relative score per band, −1 to +1 (0 = average fan base). A taste signal, not a headcount.</p>${blocks.join('')}`;
+}
+function tagKind(type) {
+  const t = String(type || '').replace(/^urn:tag:/, '').split(':');
+  return t.map((x) => x.replace(/_/g, ' ')).join(' · ');
+}
+function tagsHtml(list) {
+  if (!Array.isArray(list) || list.length === 0) return '';
+  if (!list.every((t) => t && typeof t === 'object' && (t.name || t.id))) return '';
+  const rows = list.map((t) => {
+    const pop = Number(t.popularity), aff = Number(t.affinity);
+    const meta = [t.type ? tagKind(t.type) : '', Number.isFinite(pop) ? `popularity ${(pop * 100).toFixed(0)}%` : '', Number.isFinite(aff) ? `affinity ${aff.toFixed(2)}` : ''].filter(Boolean).join(' · ');
+    return `<li><strong>${esc(t.name || t.id)}</strong>${meta ? `<span class="u19-meta">${esc(meta)}</span>` : ''}${t.id ? `<span class="u19-id">${esc(t.id)}</span>` : ''}</li>`;
+  }).join('');
+  return `<h3>Shared tags</h3><ul class="u19-tags">${rows}</ul>`;
+}
+
 function kvOrList(value, title) {
   if (value === null || value === undefined) return `<h3>${esc(title)}</h3><p class="empty">Unavailable this run. <span class="next-action">Next action:</span> run the verdict again.</p>`;
   if (Array.isArray(value)) {
@@ -888,7 +926,8 @@ function legRowHtml(key, l) {
   const secondary = plain === key ? '' : ` <span class="label">(${esc(key)})</span>`;
   // SHIP item 8: ok/partial state badge on every leg row. A leg counts
   // ONLY at ok; anything else is partial, never a pass.
-  const state = l.status === 'ok' ? '<span class="leg-state leg-state--ok">ok</span>' : '<span class="leg-state leg-state--partial">partial</span>';
+  const state = (l.status === 'ok' ? '<span class="leg-state leg-state--ok">ok</span>' : '<span class="leg-state leg-state--partial">partial</span>')
+    + (l.retried429 && l.status === 'ok' ? ' <span class="leg-retry">rate-limited once, retried, data returned</span>' : '');
   // T3: surface the already-fetched REST payloads on the leg row itself
   // (no new call). Previously a receipted insights/compare leg rendered
   // only its status, so its fetched data was invisible on the page even
@@ -1610,9 +1649,9 @@ function renderVerdict(v, race) {
   $('topPick').textContent = v.openers.topPick
     ? (v.openers.ranked.length > 0 ? `Graph pick: ${v.openers.topPick}` : `First candidate (unranked — no ranked winner this run): ${v.openers.topPick}`)
     : '';
-  $('demoBlock').innerHTML = kvOrList(v.demographics, 'Who this audience is');
+  $('demoBlock').innerHTML = demoHtml(v.demographics) || kvOrList(v.demographics, 'Who this audience is');
   $('trendBlock').innerHTML = kvOrList(v.trends, 'Whether the artist is rising');
-  $('tagsBlock').innerHTML = kvOrList(v.sharedTags, 'Shared tags');
+  $('tagsBlock').innerHTML = tagsHtml(v.sharedTags) || kvOrList(v.sharedTags, 'Shared tags');
   $('overlapBlock').innerHTML = kvOrList(v.overlap, 'How the fan bases overlap');
   // Phase 3 D: one tag per verdict section, set after the section renders.
   // Audience areas trace to the where-popular receipt when present;

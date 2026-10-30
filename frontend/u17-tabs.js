@@ -79,6 +79,49 @@
   row.after(hint);
 
   var current = null;
+  /* U19: opening a tab is the click — its sections open with it. Only the
+     two long reference cards (integration depth, limits) keep a toggle. */
+  var KEEP_TOGGLE = { depth: 1, limits: 1 };
+  function openPanel(k) {
+    Array.prototype.forEach.call(main.children, function (el) {
+      if (el.getAttribute('data-u17') !== k || !el.classList.contains('disc') || KEEP_TOGGLE[el.id]) return;
+      if (typeof window.openDiscSection === 'function') window.openDiscSection(el);
+      el.classList.add('u19-open');
+    });
+    if (k === 'workspace') wsBar();
+  }
+  var wsBaseEl = document.getElementById('wsHeader');
+  if (wsBaseEl) new MutationObserver(function () { if (current === 'workspace') wsBar(); }).observe(wsBaseEl, { childList: true, subtree: true });
+  function wsBar() {
+    var body = document.getElementById('disc-workspace-body'); if (!body) return;
+    var bar = document.getElementById('u19WsBar');
+    if (!bar) {
+      bar = document.createElement('div'); bar.id = 'u19WsBar'; bar.className = 'u19-wsbar';
+      body.insertBefore(bar, body.firstChild);
+      bar.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-ws-go]'); if (!b) return;
+        var t = b.getAttribute('data-ws-go');
+        if (t === 'offer') { go('offer', true); return; }
+        if (t === 'export') { var x = document.getElementById('wsExportBtn'); if (x) x.click(); return; }
+        var el = document.getElementById(t); if (!el) return;
+        var panel = el.closest('.ws-panel') || el;
+        panel.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+        var f = el.querySelector('input, select, textarea, button'); if (f) setTimeout(function () { f.focus({ preventScroll: true }); }, 350);
+      });
+    }
+    var ws = null;
+    try { ws = window.OfferSheetWorkspace && window.OfferSheetWorkspace.get ? window.OfferSheetWorkspace.get() : null; } catch (e) { ws = null; }
+    var saved = !!ws;
+    bar.innerHTML = saved
+      ? '<p class="u19-ws-state">\u2713 This offer is saved on this device.</p><div class="u19-ws-actions">'
+        + '<button type="button" class="u19-act u19-act--primary" data-ws-go="export">Save this offer (export)</button>'
+        + '<button type="button" class="u19-act" data-ws-go="wsReplacement">Try a replacement</button>'
+        + '<button type="button" class="u19-act" data-ws-go="wsRenegotiation">Renegotiate</button>'
+        + '<button type="button" class="u19-act" data-ws-go="wsComparison">Compare offers</button></div>'
+      : '<div class="u19-ws-empty"><p><strong>No offer saved yet.</strong> Run a verdict in the Offer tab — it is saved here automatically, then you can try a replacement, renegotiate or compare.</p>'
+        + '<button type="button" class="u19-act u19-act--primary" data-ws-go="offer">Go to Offer</button></div>';
+    body.classList.toggle('u19-ws-isempty', !saved);
+  }
   var NAV_IDLE = ['enter the offer', 'open', 'open', 'save & compare offers', 'recorded trials'];
   function navStates() {
     var run = hasRun();
@@ -122,6 +165,7 @@
     main.setAttribute('data-u17-active', k);
     tabs.forEach(function (t) { var on = t.getAttribute('data-tab') === k; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; });
     navStates();
+    openPanel(k);
     if (k === 'evidence') openEvidence();
   }
   function go(k, push, scrollEl) {
@@ -260,4 +304,20 @@
       var p = document.createElement('p'); p.className = 'u17-done'; p.textContent = 'Done — your verdict is ready.'; st.prepend(p);
     }
   }).observe(v, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
+})();
+
+/* U19 · one heading level per tab, photo credit beside the name */
+(function () {
+  Array.prototype.forEach.call(document.querySelectorAll('.app-shell main.wrap .eyebrow'), function (e) {
+    if (/^No\.\s*\d+/.test(e.textContent.trim())) e.classList.add('u19-num');
+  });
+  var v = document.getElementById('verdict'); if (!v) return;
+  function credit() {
+    var fig = document.getElementById('headlinerImage'), sub = document.getElementById('verdictSubject');
+    var c = document.getElementById('u19Credit');
+    var show = fig && !fig.hidden && fig.classList.contains('u17-img-ok');
+    if (show && sub && !c) { c = document.createElement('span'); c.id = 'u19Credit'; c.className = 'u19-credit'; c.textContent = ' · Photo via Qloo'; sub.appendChild(c); }
+    if (!show && c) c.remove();
+  }
+  new MutationObserver(credit).observe(v, { attributes: true, childList: true, subtree: true, attributeFilter: ['class', 'hidden'] });
 })();
