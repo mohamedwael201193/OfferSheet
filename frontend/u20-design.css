@@ -306,3 +306,29 @@ details.ws-rcpt-more[open]{min-width:280px}
   table.ws-cmp td.ws-c-rcpt::before{display:block;margin-bottom:4px}
   table.ws-cmp .ws-tix{font-size:24px}
 }
+/* U21b: fit at 1280 (no mid-word breaks), cards at 390 keep values visible */
+#wsComparison .ws-table.ws-cmp{min-width:0}
+table.ws-cmp th{padding:10px 8px}
+table.ws-cmp td{padding:14px 8px}
+table.ws-cmp td:first-child{width:7.5em;max-width:7.5em;font-size:12.5px;line-height:1.35}
+table.ws-cmp td.ws-c-offer{min-width:6.5em}
+table.ws-cmp td.ws-c-rcpt{white-space:nowrap}
+@media (max-width:820px){
+  table.ws-cmp td:first-child{width:auto;max-width:none}
+  table.ws-cmp td{flex-wrap:wrap;text-align:right;min-width:0}
+  table.ws-cmp td>*{min-width:0}
+  table.ws-cmp td.ws-c-terms{display:block;text-align:left}
+  table.ws-cmp td.ws-c-terms::before{display:block;margin-bottom:4px}
+  table.ws-cmp td.ws-c-rcpt{white-space:normal;text-align:left}
+}
+@media (min-width:821px){
+  table.ws-cmp td:first-child{min-width:8em;word-break:normal;overflow-wrap:normal;hyphens:none}
+  table.ws-cmp th{white-space:normal;letter-spacing:.04em;vertical-align:bottom}
+  table.ws-cmp td.ws-c-terms{min-width:12em}
+  table.ws-cmp .ws-tix{font-size:26px}
+}
+@media (min-width:821px){
+  table.ws-cmp th,table.ws-cmp td{word-break:normal;overflow-wrap:normal}
+  table.ws-cmp .ws-tix,table.ws-cmp td.ws-c-cap{white-space:nowrap}
+  table.ws-cmp td.ws-c-terms{min-width:0;max-width:15em}
+}
