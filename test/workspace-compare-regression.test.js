@@ -239,3 +239,18 @@ test('workspace compare: a second submit event delivered while working is ignore
   assert.ok(h.panelHtml().includes('<table'), 'the first flight still renders its table');
   assert.equal(countRow(h.panelHtml(), 0), 0, 'no duplicate row 0 from the ignored second submit');
 });
+
+test('U21 workspace compare: one readable row per offer — prominent tickets, delta vs base, receipts behind an expander', async () => {
+  const ws = manualWorkspace();
+  ws.steps.comparison = { result: comparePayload().result, recordedAt: '2026-10-29T12:30:00.000Z' };
+  const h = await loadWorkspace(ws);
+  const html = h.panelHtml();
+  assert.equal((html.match(/<table/g) || []).length, 1, 'still exactly one table');
+  assert.ok(html.includes('ws-cmp'), 'the comparison table carries the U21 class');
+  assert.ok(html.includes('<strong class="ws-tix">2,084</strong>'), 'base tickets are prominent');
+  assert.ok(html.includes('<strong class="ws-tix">834</strong>'), 'row tickets are prominent');
+  assert.ok(html.includes('-1,250 tickets'), 'delta is plain arithmetic vs the verified base (834 - 2,084)');
+  assert.ok(/<details class="ws-rcpt-more"[^>]*><summary>\d+ receipts?/.test(html), 'receipts sit behind an "n receipts" expander');
+  assert.ok(html.includes('<th>vs base</th>'), 'the delta column is labelled');
+  assert.equal(countRow(html, 1), 1, 'the bare first cell stays');
+});
