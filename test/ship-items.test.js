@@ -323,7 +323,7 @@ test('static: SHIP containers, links, and copy present on both pages', () => {
   assert.ok(app.includes('Keys never appear here'), 'receipts key line');
   assert.ok(app.includes('What Qloo doesn\'t decide'), 'limits section');
   assert.ok(app.includes('Cite-or-omit rule'), 'cite-or-omit rule');
-  assert.ok(landing.includes('Typical verdict time: 26–40 seconds'), 'landing timing line');
+  assert.ok(landing.includes('Typical verdict time: 26.2–40.1 seconds'), 'landing timing line');
   assert.ok(landing.includes('measured across the 3 recorded trials, 29 Oct 2026'), 'timing basis');
   assert.ok(!landing.includes('one page, one money decision'), 'landing footer tagline updated');
   assert.ok(!app.includes('one page, one money decision'), 'app footer tagline updated');

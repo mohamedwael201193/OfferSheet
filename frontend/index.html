@@ -48,7 +48,7 @@
 
   <section class="statement" id="statement">
     <p class="eyebrow">The statement</p>
-    <p class="big">A promoter should never sign a guarantee <em>he can't check.</em></p>
+    <h2 class="big">A promoter should never sign a guarantee <em>he can't check.</em></h2>
     <p class="sub2">That is the whole product: one number, checked against live taste evidence, before the signature — not after the show.</p>
   </section>
 
@@ -58,9 +58,9 @@
     <p class="lede">The flow, drawn as a thin line — input, evidence, verdict. Nothing decorative, nothing hidden.</p>
     <div class="fig">
       <p class="cap mono">Flow diagram · thin-line, functional only</p>
-      <svg viewBox="0 0 900 120" fill="none" stroke="oklch(72% 0 0)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-label="Offer enters, Qloo evidence is checked, verdict comes out">
-        <line x1="60" y1="45" x2="330" y2="45" stroke="oklch(78% 0 0 / 0.4)"/>
-        <line x1="570" y1="45" x2="840" y2="45" stroke="oklch(78% 0 0 / 0.4)"/>
+      <svg viewBox="0 0 900 120" fill="none" stroke="oklch(72% 0 0)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Offer enters, Qloo evidence is checked, verdict comes out">
+        <line x1="86" y1="45" x2="424" y2="45" stroke="oklch(78% 0 0 / 0.4)"/>
+        <line x1="476" y1="45" x2="814" y2="45" stroke="oklch(78% 0 0 / 0.4)"/>
         <circle cx="60" cy="45" r="26" stroke="oklch(84% 0.19 80.46)"/>
         <circle cx="450" cy="45" r="26"/>
         <circle cx="840" cy="45" r="26" stroke="oklch(84% 0.19 80.46)"/>
@@ -74,7 +74,7 @@
     </div>
     <div class="steps">
       <div class="step"><p class="n mono">01</p><h3>Enter the offer</h3><p>Artist, city, guarantee. Optional room, ticket price and capacity.</p></div>
-      <div class="step"><p class="n mono">02</p><h3>Read the evidence</h3><p>Qloo audience for the headliner, the opener shortlist and the city — every claim receipted.</p></div>
+      <div class="step"><p class="n mono">02</p><h3>Check the evidence</h3><p>Qloo audience for the headliner, the opener shortlist and the city — every claim receipted.</p></div>
       <div class="step"><p class="n mono">03</p><h3>Take the verdict</h3><p>Tickets to break even, the formula shown, and the Gut-vs-Graph race beside it.</p></div>
     </div>
   </section>
@@ -85,17 +85,17 @@
     <p class="lede">Taste evidence for the headliner, the opener shortlist and the city audience. The overlap below is the whole idea: the opener must share the headliner's audience.</p>
     <div class="fig">
       <p class="cap mono">Overlap diagram · headliner audience ∩ opener audience</p>
-      <svg viewBox="0 0 900 190" fill="none" stroke="oklch(72% 0 0)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-label="Two overlapping circles: headliner audience and opener audience, shared audience in the overlap">
-        <circle cx="360" cy="90" r="70"/>
-        <circle cx="540" cy="90" r="70" stroke="oklch(84% 0.19 80.46)"/>
-        <text x="310" y="95" text-anchor="middle" font-size="13" fill="oklch(91% 0 0)" stroke="none">Headliner</text>
-        <text x="590" y="95" text-anchor="middle" font-size="13" fill="oklch(91% 0 0)" stroke="none">Opener</text>
-        <text x="450" y="140" text-anchor="middle" font-size="12" fill="oklch(84% 0.19 80.46)" stroke="none">shared audience</text>
+      <svg viewBox="0 0 900 190" fill="none" stroke="oklch(72% 0 0)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Two overlapping circles: headliner audience and opener audience, shared audience in the overlap">
+        <circle cx="400" cy="90" r="70"/>
+        <circle cx="500" cy="90" r="70" stroke="oklch(84% 0.19 80.46)"/>
+        <text x="365" y="95" text-anchor="middle" font-size="13" fill="oklch(91% 0 0)" stroke="none">Headliner</text>
+        <text x="535" y="95" text-anchor="middle" font-size="13" fill="oklch(91% 0 0)" stroke="none">Opener</text>
+        <text x="450" y="95" text-anchor="middle" font-size="12" fill="oklch(84% 0.19 80.46)" stroke="none">shared audience</text>
       </svg>
     </div>
     <div class="cards">
       <div class="card"><h3>Headliner</h3><p>Tags, audience bands and affinity for the artist you entered — resolved first, never guessed.</p><span class="tag">describe · entity_tags</span></div>
-      <div class="card"><h3>Opener shortlist</h3><p>Candidates from fans of the headliner, ranked for the city audience — with a miss ledger when arms disagree.</p><span class="tag">recommend · rank</span></div>
+      <div class="card"><h3>Opener shortlist</h3><p>Candidates from fans of the headliner, ranked for the city audience — with a miss ledger when the three arms disagree (Gut: LLM alone; Web: LLM + Wikidata facts; Graph: the Qloo-grounded pick).</p><span class="tag">recommend · rank</span></div>
       <div class="card"><h3>City audience</h3><p>Matched areas and overlap between headliner and opener — aggregate signals, never a headcount.</p><span class="tag">where_popular · compare</span></div>
     </div>
     <figure class="photo-band">
@@ -104,9 +104,9 @@
     </figure>
     <div class="proof">
       <h3>Proof strip — real receipts, recorded 29 Oct 2026</h3>
-      <p class="note">Three of the seven receipts from the recorded Billie Eilish / New York trial. Hashes are SHA-256 of the call arguments, shown truncated — the full hash is on replay. Qloo returns no requestId on this path, so it is shown as “—”, never invented.</p>
+      <p class="note">Three of the seven receipts from the recorded Billie Eilish / New York trial. Hashes are SHA-256 of the call arguments, shown truncated — the full hash travels in the downloadable proof pack. Qloo returns no requestId on this path, so it is shown as “—”, never invented.</p>
       <table>
-        <tr><th>Claim</th><th>Argument hash</th><th>RequestId</th><th>Results</th></tr>
+        <tr><th scope="col">Claim</th><th scope="col">Argument hash</th><th scope="col">RequestId</th><th scope="col">Results</th></tr>
         <tr><td>headliner tags</td><td class="hash mono" title="affa6e35703be8f54ddeec84c42966a06093e94f21082f4cd446ada31f7f93f7">affa6e35…<b>f7f93f7</b></td><td>—</td><td>10</td></tr>
         <tr><td>opener candidates</td><td class="hash mono" title="ca25e61f063d761de30b8d2378b3fa94a15520e3f51f2d681fa78e98f5f3bc4b">ca25e61f…<b>f5f3bc4b</b></td><td>—</td><td>10</td></tr>
         <tr><td>city audience areas</td><td class="hash mono" title="300b829594a73e7e81960ee7a913b4e258610d8a1a70fe903fad57bff1a53cfc">300b8295…<b>1a53cfc</b></td><td>—</td><td>10</td></tr>
@@ -129,8 +129,8 @@
   <section class="wrap" id="recorded">
     <p class="eyebrow">Recorded trials · not live</p>
     <h2>Proven on real runs.</h2>
-    <p class="lede">Three recorded live trials against real Qloo data. Labeled recorded, with the Graph pick and the race beside it — never presented as live.</p>
-    <p class="lede">Typical verdict time: 26–40 seconds, measured across the 3 recorded trials, 29 Oct 2026.</p>
+    <p class="lede">Three recorded trials against live Qloo data. Labeled recorded, with the Graph pick and the race beside it — never presented as live. Trials 1 and 2 share the same guarantee and ticket price, so the same arithmetic gives the same count.</p>
+    <p class="lede">Typical verdict time: 26.2–40.1 seconds, measured across the 3 recorded trials, 29 Oct 2026.</p>
     <div class="trials">
       <div class="trial"><p class="rec mono">Recorded · Trial 1 · 35.3s</p><p class="t-num">2,084</p><p>Billie Eilish · New York · $250,000 / $120<br>Graph Olivia Rodrigo · Gut Clairo · Web Armani White</p></div>
       <div class="trial"><p class="rec mono">Recorded · Trial 2 · 26.2s</p><p class="t-num">2,084</p><p>Taylor Swift · New York · $250,000 / $120<br>Graph Carly Rae Jepsen · Gut Sabrina Carpenter · Web Def Leppard</p></div>
@@ -177,13 +177,13 @@
           <ul class="chips"><li>7 receipts</li><li>6/7 legs live</li><li>Graph: Olivia Rodrigo</li><li>Gut: Clairo</li><li>Web: Armani White</li></ul>
         </div>
         <div class="evrow">
-          <div class="evmini"><h4>Headliner</h4><p>Tags + description resolved; 10 tags, 1 entity.</p></div>
-          <div class="evmini"><h4>Opener</h4><p>10 candidates from headliner fans; Graph pick Olivia Rodrigo.</p></div>
-          <div class="evmini"><h4>City</h4><p>10 matched areas; aggregate signals, never a headcount.</p></div>
+          <div class="evmini"><h3>Headliner</h3><p>Tags + description resolved; 10 tags, 1 entity.</p></div>
+          <div class="evmini"><h3>Opener</h3><p>10 candidates from headliner fans; Graph pick Olivia Rodrigo.</p></div>
+          <div class="evmini"><h3>City</h3><p>10 matched areas; aggregate signals, never a headcount.</p></div>
         </div>
         <div class="workstrip">
           <h3>Workspace — routing</h3>
-          <p>Base city New York (40.7127, −74.0060) · candidate Los Angeles (34.0537, −118.2428). Cities that do not resolve are omitted and labelled; the table stays authoritative. Comparison holds up to 5 offers with no winner badge.</p>
+          <p>Base city New York (40.7127, -74.0060) · candidate Los Angeles (34.0537, -118.2428). Cities that do not resolve are omitted and labelled. Comparison holds up to 5 offers with no winner badge.</p>
         </div>
       </div>
     </div>
@@ -195,7 +195,7 @@
     <p class="lede">The season, drawn as a line: an offer is signed, the show happens, attendance is reported, and the settle is measured against the break-even the verdict gave.</p>
     <div class="fig">
       <p class="cap mono">Season arc · offer → show → report → settle</p>
-      <svg viewBox="0 0 900 120" fill="none" stroke="oklch(72% 0 0)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-label="Season arc: offer signed, show happens, attendance reported, settle measured against break-even">
+      <svg viewBox="0 0 900 120" fill="none" stroke="oklch(72% 0 0)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Season arc: offer signed, show happens, attendance reported, settle measured against break-even">
         <line x1="60" y1="45" x2="840" y2="45" stroke="oklch(78% 0 0 / 0.4)"/>
         <circle cx="60" cy="45" r="22"/>
         <circle cx="320" cy="45" r="22"/>
@@ -208,7 +208,7 @@
       </svg>
     </div>
     <table class="ledger">
-      <tr><th>Offer</th><th>Break-even</th><th>Attendance</th><th>Status</th></tr>
+      <tr><th scope="col">Offer</th><th scope="col">Break-even</th><th scope="col">Attendance</th><th scope="col">Status</th></tr>
       <tr><td>—</td><td>—</td><td>—</td><td>—</td></tr>
     </table>
     <div class="empty">No show has settled yet — the settle ledger is empty, and no settled figure is claimed anywhere.</div>
