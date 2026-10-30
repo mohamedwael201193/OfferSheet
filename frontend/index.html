@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="mobile-section.css?v=u12">
 <link rel="stylesheet" href="kinpaku.css?v=u12">
 <link rel="stylesheet" href="v3-landing.css?v=u14">
-<link rel="stylesheet" href="u16-landing.css?v=u16b">
+<link rel="stylesheet" href="u16-landing.css?v=u16c">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0A0A0A">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -278,24 +278,24 @@
     <div class="empty">No show has settled yet — the settle ledger is empty, and no settled figure is claimed anywhere.</div>
   </section>
 
-  <section class="ms-section crop" id="get-the-app" aria-label="Get the app">
-    <p class="ms-kicker">On your phone</p>
-    <h2>The same verdict, in your pocket.</h2>
-    <p class="get-app-subline">The phone below shows a static record of the real 29 Oct 2026 trial verdict. For a live verdict on your own offer, use the real app — one tap away.</p>
+  <section class="ms-section crop u16-phone" id="get-the-app" aria-label="Get the app">
     <div class="ms-layout">
       <div class="ms-copy">
+        <p class="ms-kicker">On your phone</p>
+        <h2>The same verdict, in your pocket.</h2>
         <p class="ms-lede">The real app takes an offer — artist, city, guarantee, ticket price — and returns a break-even verdict with receipted Qloo evidence beside it, plus a workspace to save and compare offers.</p>
         <div class="ms-actions">
           <a class="apk-button ms-apk" href="https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk">Download the Android app (APK)</a>
           <a class="ms-fullapp" href="app.html">Try the live demo</a>
         </div>
-        <p class="u16-honest">A static record of the 29 Oct 2026 trial — not a live verdict. Live verdicts run in the app.</p>
+        <p class="u16-honest">Static record of the 29 Oct 2026 trial — not a live verdict.</p>
         <details class="ms-details u16-notes">
           <summary>About this record, the APK and offline use</summary>
-        <p class="ms-frame-note">This landing section itself runs no verdict and makes no verdict call. The phone shows only the static record below — the same numbers already stated on this page. It is not the app, it runs no verdict, and nothing inside it can be tapped as if it were live.</p>
-        <p class="apk-note">Android APK via GitHub Release. Live verdicts run in the app — this landing page never runs a verdict.</p>
-        <p class="pwa-note">PWA note: OfferSheet is installable as an app — installing adds it to your home screen. Offline, the app shows its honest offline page with no number and no stale result; /api/* calls are network-only.</p>
-        <ul class="ms-features" aria-label="On your phone">
+          <p class="ms-frame-note">This landing section itself runs no verdict and makes no verdict call. The phone shows only the static record below — the same numbers already stated on this page. It is not the app, it runs no verdict, and nothing inside it can be tapped as if it were live.</p>
+          <p>A picture of a verdict looks like a verdict, and this page refuses to show one that nobody ran. So the phone shows a clearly labelled record of a trial that did run — 29 Oct 2026 — and nothing else. For a live verdict on your own offer, use “Try the live demo” or the Android app.</p>
+          <p class="apk-note">Android APK via GitHub Release. Live verdicts run in the app — this landing page never runs a verdict.</p>
+          <p class="pwa-note">PWA note: OfferSheet is installable as an app — installing adds it to your home screen. Offline, the app shows its honest offline page with no number and no stale result; /api/* calls are network-only.</p>
+          <ul class="ms-features" aria-label="On your phone">
           <li class="ms-feature">
             <span class="ms-feature-title">A static record, not a moving demo</span>
             <span class="ms-feature-text">The phone shows the static record of the 29 Oct 2026 trial only — offer, evidence, verdict. It is a record, never a live run.</span>
@@ -310,13 +310,9 @@
           </li>
         </ul>
         </details>
-        <details class="ms-details">
-          <summary>Why the phone shows a record, not a live verdict</summary>
-          <p>A picture of a verdict looks like a verdict, and this page refuses to show one that nobody ran. So the phone shows a clearly labelled record of a trial that did run — 29 Oct 2026 — and nothing else. For a live verdict on your own offer, use “Try the live demo” or the Android app.</p>
-        </details>
       </div>
       <figure class="ms-device-fig" aria-label="Static record of the 29 Oct 2026 trial inside a phone frame">
-        <div class="ms-dim" aria-hidden="true"><span class="ms-dim-label">Recorded demo, at phone width — not live</span></div>
+        <span class="u16-glow" aria-hidden="true"></span>
         <div class="ms-device">
           <span class="ms-key ms-key--volume-up" aria-hidden="true"></span>
           <span class="ms-key ms-key--volume-down" aria-hidden="true"></span>
@@ -325,21 +321,27 @@
             <div class="record-stage" role="group" aria-label="Static record of the 29 Oct 2026 trial">
               <div class="record-topbar" aria-hidden="true"><span class="record-island"><span class="record-lens"></span></span></div>
               <p class="record-label">Recorded demo — 29 Oct 2026 trial, not a live verdict</p>
-              <p class="record-row"><span class="record-field">Artist</span><span class="record-value">Billie Eilish</span></p>
-              <p class="record-row"><span class="record-field">City</span><span class="record-value">New York</span></p>
-              <p class="record-row"><span class="record-field">Guarantee</span><span class="record-value">$250,000</span></p>
-              <p class="record-row"><span class="record-field">Ticket price</span><span class="record-value">$120</span></p>
-              <p class="record-math">$250,000 ÷ $120 = 2,083.33, rounded up</p>
+              <div class="u16-rgrid">
+                <p class="record-row"><span class="record-field">Artist</span><span class="record-value">Billie Eilish</span></p>
+                <p class="record-row"><span class="record-field">City</span><span class="record-value">New York</span></p>
+                <p class="record-row"><span class="record-field">Guarantee</span><span class="record-value">$250,000</span></p>
+                <p class="record-row"><span class="record-field">Ticket price</span><span class="record-value">$120</span></p>
+              </div>
               <p class="record-verdict-num">2,084</p>
               <p class="record-verdict-label">tickets to break even</p>
+              <p class="record-math">$250,000 ÷ $120 = 2,083.33, rounded up</p>
+              <p class="u16-scr-h">Receipts · SHA-256</p>
+              <p class="u16-rcpt"><span>headliner tags</span><b>affa6e35…f7f93f7</b></p>
+              <p class="u16-rcpt"><span>opener candidates</span><b>ca25e61f…f5f3bc4b</b></p>
+              <p class="u16-rcpt"><span>city audience areas</span><b>300b8295…1a53cfc</b></p>
+              <p class="u16-scr-h">Evidence</p>
+              <ul class="u16-evchips"><li>Headliner · 10 tags</li><li>Opener · Olivia Rodrigo</li><li>City · New York</li><li>7 receipts · 6 of 7 legs ok</li></ul>
               <p class="record-verdict-sub">Billie Eilish · New York · recorded trial</p>
             </div>
           </div>
           <span class="ms-homebar" aria-hidden="true"></span>
         </div>
         <div class="u16-orbit" aria-hidden="true"><span class="u16-chip u16-chip--a">Android APK · android-app-v1.0.0</span><span class="u16-chip u16-chip--b">Installable PWA</span><span class="u16-chip u16-chip--c">Offline: honest page, no number</span></div>
-        <figcaption class="ms-figcaption">Static record inside the phone frame — the recorded 29 Oct 2026 trial, not a live verdict. The phone frame is not clickable as the app. For a live verdict, use “Try the live demo” or the Android app.</figcaption>
-        <a class="ms-fullapp ms-fullapp--under" href="app.html">Try the live demo</a>
       </figure>
     </div>
   </section>
@@ -365,7 +367,7 @@
 <script src="landing.js?v=u12"></script>
 <script src="vendor/gsap.min.js?v=3.15.0"></script>
 <script src="vendor/ScrollTrigger.min.js?v=3.15.0"></script>
-<script src="u16-landing.js?v=u16b"></script>
+<script src="u16-landing.js?v=u16c"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

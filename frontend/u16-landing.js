@@ -113,7 +113,7 @@
   }
 
   /* ---------- generic reveals ---------- */
-  var revealSel = 'section.wrap > .eyebrow, section.wrap > h2, section.wrap > .lede, section.wrap > .tally, #statement .sub2, .fig, #flow .step, #evidence .card, .proof, .formula-big > p, .trial, .evmini, .workstrip, .empty, .table-wrap, .ms-section > *:not(.ms-layout), .ms-copy > *, .footer-inner > *';
+  var revealSel = 'section.wrap > .eyebrow, section.wrap > h2, section.wrap > .lede, section.wrap > .tally, #statement .sub2, .fig, #flow .step, #evidence .card, .proof, .formula-big > p, .trial, .evmini, .workstrip, .empty, .table-wrap, .footer-inner > *';
   g.set(revealSel, { y: 36, autoAlpha: 0 });
   ST.batch(revealSel, { start: 'top 88%', once: true, onEnter: function (els) { g.to(els, { y: 0, autoAlpha: 1, stagger: 0.08, duration: 1, ease: 'expo.out', overwrite: true }); } });
 
@@ -174,20 +174,34 @@
   });
   g.from('.u16-story-steps li', { x: -24, autoAlpha: 0, stagger: 0.1, duration: 0.9, ease: 'expo.out', scrollTrigger: { trigger: '.u16-story', start: 'top 75%', once: true } });
 
-  /* ---------- phone section ---------- */
-  var dev = $('.ms-device');
+  /* ---------- phone section: pinned on desktop, one scrubbed sequence ---------- */
+  var dev = $('.u16-phone .ms-device');
   if (dev) {
-    g.fromTo(dev, { rotationX: 28, rotationY: -18, rotationZ: 4, y: 140, scale: 0.86, transformPerspective: 1400 },
-      { rotationX: 0, rotationY: 0, rotationZ: 0, y: 0, scale: 1, ease: 'none', scrollTrigger: { trigger: '#get-the-app', start: 'top 90%', end: 'center 55%', scrub: 1 } });
-    var rows = $$('.record-stage > *:not(.record-topbar)');
-    var phoneNum = $('.record-verdict-num');
-    var pt = g.timeline({ scrollTrigger: { trigger: dev, start: 'top 60%', once: true } });
-    pt.from(rows, { y: 14, autoAlpha: 0, stagger: 0.09, duration: 0.6, ease: 'power3.out' });
-    target.then(function (t) { if (t && phoneNum) pt.add(countUp(phoneNum, t, 1.4), 0.45); });
-    $$('.u16-chip').forEach(function (c, i) {
-      g.from(c, { y: 30, autoAlpha: 0, scale: 0.9, duration: 0.9, ease: 'back.out(1.6)', delay: 0.2 + i * 0.15, scrollTrigger: { trigger: dev, start: 'top 65%', once: true } });
-      g.to(c, { y: i % 2 ? 10 : -10, duration: 2.6 + i * 0.4, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 1.4 });
+    var scr = $$('.u16-phone .record-stage > *:not(.record-topbar), .u16-phone .u16-rgrid > *, .u16-phone .u16-evchips li').filter(function (e) { return !e.classList.contains('u16-rgrid') && !e.classList.contains('u16-evchips'); });
+    var phoneNum = $('.u16-phone .record-verdict-num'), chips = $$('.u16-phone .u16-chip'), glow = $('.u16-glow');
+    var build = function (tl) {
+      tl.from(scr, { y: 12, autoAlpha: 0, stagger: 0.06, duration: 0.35, ease: 'power2.out' }, 0)
+        .fromTo(glow, { autoAlpha: 0, scale: 0.6 }, { autoAlpha: 1, scale: 1.15, duration: 0.5, ease: 'power2.out' }, 0.8)
+        .to(glow, { autoAlpha: 0.5, scale: 1, duration: 0.6, ease: 'power2.inOut' }, 1.3)
+        .from(chips, { y: 30, autoAlpha: 0, scale: 0.9, stagger: 0.12, duration: 0.5, ease: 'back.out(1.6)' }, 1.0);
+      return tl;
+    };
+    var countDone = false;
+    var count = function () { if (countDone || !phoneNum) return; countDone = true; target.then(function (t) { if (t) countUp(phoneNum, t, 1.2); }); };
+    /* rise + rotate in while the section scrolls up to the pin; copy reveals once on entry */
+    g.from('.u16-phone .ms-copy > *', { y: 24, autoAlpha: 0, stagger: 0.07, duration: 0.8, ease: 'expo.out', scrollTrigger: { trigger: '.u16-phone', start: 'top 70%', once: true } });
+    g.fromTo(dev, { rotationX: 32, rotationY: -24, rotationZ: 6, y: 180, scale: 0.82, transformPerspective: 1400 }, { rotationX: 0, rotationY: 0, rotationZ: 0, y: 0, scale: 1, ease: 'none', scrollTrigger: { trigger: '.u16-phone', start: 'top 95%', end: 'top 5%', scrub: 0.8 } });
+    mm.add('(min-width: 901px)', function () {
+      var pin = ST.create({ trigger: '.u16-phone', start: 'top top', end: '+=80%', pin: true, anticipatePin: 1 });
+      var tl = build(g.timeline({ scrollTrigger: { trigger: '.u16-phone', start: 'top 55%', end: 'top -60%', scrub: 0.8,
+        onUpdate: function (self) { if (self.progress > 0.35) count(); } } }));
+      return function () { tl.kill(); pin.kill(); };
     });
+    mm.add('(max-width: 900px)', function () {
+      var tl = build(g.timeline({ scrollTrigger: { trigger: dev, start: 'top 85%', once: true, onEnter: function () { setTimeout(count, 900); } } }));
+      return function () { tl.kill(); };
+    });
+    chips.forEach(function (c, i) { g.to(c, { yPercent: i % 2 ? 18 : -18, duration: 2.6 + i * 0.4, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 3 }); });
   }
 
   /* ---------- fine-pointer extras: magnetic CTA + cursor ring ---------- */

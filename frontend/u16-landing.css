@@ -265,3 +265,41 @@ body.v3 .u16-notes .ms-features{padding:0;list-style:none}
 .u16-orbit{position:static!important;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:28px 0 8px;pointer-events:none}
 .u16-chip{position:static!important}
 body.v3 .ms-section .ms-lede{font-size:18px;line-height:1.6;color:var(--u-text)!important;max-width:46ch}
+/* ---------- phone v3: one viewport, copy left / phone right, full screen ---------- */
+body.v3 .u16-phone{min-height:100svh;display:flex;align-items:center;padding:64px 40px!important;box-sizing:border-box;overflow:hidden}
+body.v3 .u16-phone .ms-layout{width:100%;max-width:1120px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) auto!important;gap:80px;align-items:center}
+body.v3 .u16-phone .ms-device-fig{position:relative!important;top:auto!important;margin:0;display:flex;flex-direction:column;align-items:center}
+body.v3 .u16-phone .ms-device{width:clamp(250px,calc((100svh - 190px) * 0.46),310px);max-width:none;margin:0}
+body.v3 .u16-phone .ms-copy{max-width:520px}
+body.v3 .u16-phone .ms-copy>*{margin-top:0}
+body.v3 .u16-phone h2{margin:12px 0 20px!important}
+body.v3 .u16-phone .ms-lede{margin:0 0 28px!important}
+body.v3 .u16-phone .u16-honest{margin:22px 0 0!important}
+body.v3 .u16-phone .u16-notes{margin-top:14px}
+body.v3 .u16-phone .record-stage{padding:42px 14px 14px;gap:0;font-size:12px}
+body.v3 .u16-phone .record-label{font-size:10.5px;padding:5px 8px;border-radius:999px;text-align:center;margin:0 0 10px}
+.u16-rgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+body.v3 .u16-phone .u16-rgrid .record-row{display:flex;flex-direction:column;gap:1px;margin:0;padding:7px 9px;border:1px solid oklch(78% 0 0 / .14);border-radius:9px;background:oklch(14% .006 95)}
+body.v3 .u16-phone .record-field{font-size:9.5px}
+body.v3 .u16-phone .record-value{font-size:12.5px;font-weight:500}
+body.v3 .u16-phone .record-verdict-num{font-size:54px!important;line-height:1;margin:12px 0 0}
+body.v3 .u16-phone .record-verdict-label{font-size:12.5px;margin:2px 0 0}
+body.v3 .u16-phone .record-math{font-size:10.5px;margin:4px 0 0;padding-bottom:8px;border-bottom:1px solid oklch(84% 0.19 80.46 / .45)}
+.u16-scr-h{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:oklch(84% 0.19 80.46)!important;margin:10px 0 4px!important}
+.u16-rcpt{display:flex;justify-content:space-between;gap:6px;margin:0!important;padding:4px 0;border-bottom:1px solid oklch(78% 0 0 / .1);font-size:10.5px}
+.u16-rcpt span{color:oklch(72% 0 0)}
+.u16-rcpt b{font-family:ui-monospace,Consolas,monospace;font-weight:400;color:oklch(90% .03 85)}
+.u16-evchips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px}
+.u16-evchips li{font-size:10px;padding:3px 7px;border-radius:999px;border:1px solid oklch(70% 0.12 188 / .5);color:oklch(84% 0.08 188)}
+body.v3 .u16-phone .record-verdict-sub{font-size:10px;margin-top:auto!important;padding-top:6px}
+.u16-glow{position:absolute;left:50%;top:45%;width:140%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,oklch(84% 0.19 80.46 / .28),transparent 70%);pointer-events:none;z-index:0;opacity:.5}
+body.v3 .u16-phone .ms-device-fig::before{display:none}
+body.v3 .u16-phone .ms-device{position:relative;z-index:1}
+body.v3 .u16-phone .u16-orbit{margin:22px 0 0}
+@media (max-width:900px){
+ body.v3 .u16-phone{min-height:0;display:block;padding:80px 20px!important}
+ body.v3 .u16-phone .ms-layout{grid-template-columns:minmax(0,1fr)!important;gap:40px}
+ body.v3 .u16-phone .ms-device{width:min(300px,82vw)}
+ body.v3 .u16-phone .ms-lede{font-size:16px}
+}
+@media (min-width:901px){body.v3 .u16-phone .record-verdict-sub{display:none}}
