@@ -353,7 +353,11 @@ test('U20: trial cards carry a tally computed from the data, three picks and a W
   assert.match(html, /<b>3<\/b><span>recorded trials/);
   assert.match(html, /<b>0\/3<\/b><span>Gut agreed with Graph/);
   assert.match(html, /Gut pick[\s\S]*Qloo pick[\s\S]*Web pick/);
-  assert.match(html, /<summary>Why<\/summary>/);
+  // U20c: a Why line only where the record carries a reason; never empty.
+  assert.match(html, /<p class="u20-why-line"><span>Why:<\/span> Her intimate, moody indie-pop/);
+  assert.doesNotMatch(html, /<span>Why:<\/span>\s*<\/p>/);
+  const graphTiles = html.split('u20-pick--graph').slice(1).map((x) => x.split('</div>')[0]);
+  assert.ok(graphTiles.every((t) => !t.includes('Why:')), 'bare Graph names get no Why line');
   assert.doesNotMatch(html, /<table/);
 });
 test('U20: sources checked is one row per check with a pill, method and summary', () => {

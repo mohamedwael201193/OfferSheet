@@ -66,7 +66,7 @@ async function loadBench() {
     const runs = Array.isArray(b.runs) ? b.runs : [];
     $('benchBlock').innerHTML = runs.length === 0
       ? `<p class="empty">${esc(b.note || 'No benchmark runs recorded yet.')}</p><p class="empty"><span class="next-action">Next action:</span> run a live verdict, then record a trial — nothing is listed here until a real run exists.</p>`
-      : `<p>${runs.length} recorded trial(s).</p><ul>${runs.map((t) => `<li>${esc(t.question || '')} — Graph: ${esc(t.graphPick || '')}, misses: ${(t.misses || []).length}${(t.misses || []).map((m) => ` (${esc(m.arm)} picked “${esc(m.pick)}”)`).join('')}</li>`).join('')}</ul>`;
+      : `<p class="u20c-bench-sum">${runs.length} recorded trial(s).</p><ul class="u20c-rows">${runs.map((t) => `<li><span class="u20c-k">${esc((t.input && t.input.artist) || '')} · ${esc((t.input && t.input.city) || '')}</span><span class="u20c-v">Graph: ${esc(t.graphPick || '')} · misses: ${(t.misses || []).length}</span><details class="u20c-more"><summary>Question and recorded picks</summary><p>${esc(t.question || '')}</p>${(t.misses || []).map((m) => `<p>${esc(m.arm)} picked “${esc(m.pick)}”</p>`).join('')}</details></li>`).join('')}</ul>`;
     // SHIP items 3 + 13: recorded-trial cards + Gut-vs-Graph tally, from
     // the same bench data. Recorded, not live; prefill only, never auto-run.
     renderTrialCards(runs);
@@ -846,6 +846,13 @@ function renderReceipts(v) {
     div.innerHTML = `<div><div class="claim">${esc(r.claim)}</div><div class="meta">${esc(r.operation)} · requestId: ${esc(r.requestId == null || r.requestId === '' ? '—' : r.requestId)} · results: ${esc(r.resultCount ?? '—')}</div></div>${replayBtn}${stepLogHtml(r, v)}`;
     list.appendChild(div);
   });
+  // U20c: one summary row for the receipt list (counts from the receipts themselves).
+  const rsum = $('receiptSummaryText');
+  if (rsum) {
+    const n = receipts.length;
+    const rep = receipts.filter((r) => r && r.replay).length;
+    rsum.textContent = `${n} receipt${n === 1 ? '' : 's'} · ${rep === n ? 'all replayable' : `${rep} of ${n} replayable`}`;
+  }
   const receiptTag = $('receiptSourceTag');
   if (receiptTag) receiptTag.innerHTML = sourceTagHtml('receipt-backed — each row below is its own receipt');
   list.querySelectorAll('[data-replay]').forEach((btn) => {
@@ -1486,17 +1493,21 @@ function renderTrialTally(runs) {
   const line = $('tallyLine');
   if (!table || !line) return;
   const t = computeTrialTally(runs);
+  // U20c: the reason is the recorded text after the pick's name. If the
+  // record carries no reason (e.g. the Graph pick is a bare name), no
+  // "Why" line renders at all — never an empty label, never invented.
   const why = (text) => {
-    const t = String(text || '');
+    const t = String(text || '').trim();
     const m = t.match(/^(.+?)(?:[.!?](?=\s|$)| — | - )/s);
     let head = m ? m[1].trim() : t;
-    if (head.length > 70) head = head.slice(0, 70) + '…';
-    const rest = head !== t && head + '.' !== t ? t : '';
+    let rest = m ? t.slice(m[0].length).trim() : '';
+    if (head.length > 70) { rest = t; head = head.slice(0, 70) + '…'; }
     return { head, rest };
   };
-  const tile = (label, text, badge, kind) => {
+  const tile = (label, text, badge, kind, reasonOverride) => {
     const w = why(text);
-    return `<div class="u20-pick u20-pick--${kind}"><p class="u20-pick-k">${label}</p><p class="u20-pick-v">${esc(w.head || '—')}</p>${badge ? `<span class="u20-badge u20-badge--${badge.cls}">${badge.text}</span>` : ''}${w.rest ? `<details class="u20-why"><summary>Why</summary><p>${esc(w.rest)}</p></details>` : ''}</div>`;
+    const reason = reasonOverride !== undefined ? reasonOverride : w.rest;
+    return `<div class="u20-pick u20-pick--${kind}"><p class="u20-pick-k">${label}</p><p class="u20-pick-v">${esc(w.head || '—')}</p>${badge ? `<span class="u20-badge u20-badge--${badge.cls}">${badge.text}</span>` : ''}${reason ? `<p class="u20-why-line"><span>Why:</span> ${esc(reason)}</p>` : ''}</div>`;
   };
   const cards = (runs || []).map((run, i) => {
     const input = run.input || {};
@@ -1513,7 +1524,7 @@ function renderTrialTally(runs) {
     const webBadge = webRefused ? { cls: 'declined', text: 'declined (no pick)' } : (webMiss ? { cls: 'diff', text: 'different' } : { cls: 'same', text: 'same' });
     return `<article class="u20-trial" aria-label="Trial ${i + 1}">
       <header class="u20-trial-h"><span class="u20-trial-n">Trial ${i + 1}</span><strong>${esc(input.artist || '')} · ${esc(input.city || '')}</strong><span class="u20-trial-m">${money(input.guarantee ?? 0)} / ${money(input.ticketPrice ?? 0)} → ${fmt(run.breakEvenTickets ?? 0)} tickets</span></header>
-      <div class="u20-picks">${tile('Gut pick', gutPick, gutBadge, 'gut')}${tile('Qloo pick', run.graphPick || '', { cls: 'ref', text: 'reference' }, 'graph')}${tile('Web pick', webRefused ? 'No pick — declined.' : webPick, webBadge, 'web')}</div>
+      <div class="u20-picks">${tile('Gut pick', gutPick, gutBadge, 'gut')}${tile('Qloo pick', run.graphPick || '', { cls: 'ref', text: 'reference' }, 'graph')}${webRefused ? tile('Web pick', 'No pick', webBadge, 'web', String(webPick || '').trim()) : tile('Web pick', webPick, webBadge, 'web')}</div>
       <p class="u20-miss"><span>Named miss</span> ${missNames.length ? esc(missNames.join(' · ')) : 'No miss — both arms matched Graph.'}</p>
       <button type="button" class="btn u20-rerun" data-rerun='${esc(JSON.stringify(input))}'>Use these inputs</button>
     </article>`;
