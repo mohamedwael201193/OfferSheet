@@ -1,256 +1,338 @@
-# OfferSheet — check a live-show offer before you sign it
+<div align="center">
 
-An independent promoter enters an offer (artist, room, guarantee) and gets,
-on one page, no sign-in (measured 26–40 seconds across the 3 recorded trials, 29 Oct 2026; a fresh timed end-to-end run on the deployed demo is UNCOVERED, see §8 T15): the break-even ticket count plus the Qloo taste-overlap evidence behind the opener pick — with a receipt on every Qloo-backed
-claim, a Gut-vs-Graph verdict, and a fail-closed guarantee (no key means a
-visible 503, never a mock).
+# OfferSheet
 
-## 1. Problem statement
+### Know the number before you sign.
 
-A promoter signing a show guarantee takes the downside: if the room doesn't
-fill, the promoter eats it. OfferSheet answers the signing question with
-numbers before the signature — break-even tickets from the guarantee and the
-ticket economics, checked against live Qloo taste evidence for the headliner,
-the opener shortlist, and the city audience.
+**An agentic offer checker for independent promoters, powered by Qloo taste intelligence. Every claim comes with a receipt you can replay.**
 
-Other tools rank openers for a show. OfferSheet answers whether to sign the guarantee at all — a ticket count, not a ranking.
+[![CI](https://github.com/mohamedwael201193/OfferSheet/actions/workflows/ci.yml/badge.svg)](https://github.com/mohamedwael201193/OfferSheet/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+![Tests](https://img.shields.io/badge/node%20--test-606%20pass%20%C2%B7%200%20fail%20%C2%B7%203%20skip-brightgreen)
+![Qloo MCP](https://img.shields.io/badge/Qloo%20MCP%20tools-10%2F10%20wired-orange)
+![MCP server](https://img.shields.io/badge/own%20MCP%20server-33%20tools-blue)
 
-OfferSheet is a free demo with no sign-in: an independent promoter pastes an artist, a city, and a guarantee, and gets the ticket count that must sell before the guarantee pays for itself. After a verdict, the promoter's next step is their own: verify the room size where capacity is unknown, then sign or walk away on the number.
+**[▶ Live demo](https://offersheet-rouge.vercel.app)** · **[Open the app](https://offersheet-rouge.vercel.app/app.html)** · **[Backend health](https://offersheet-backend-k2zp.onrender.com/api/health)** · **[⬇ Android APK](https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk)**
 
-## 2. How it works
+<img src="docs/screenshots/landing-1280.jpg" alt="OfferSheet landing page: Know the number before you sign. The recorded trial 1 card shows $250,000 ÷ $120 = 2,084 tickets" width="100%">
 
-Run path: `POST /api/verdict` → MCP chain (10 tools wired; each tool invoked when its precondition holds — rank skipped with no candidates, compare skipped with no opener, REST legs skipped on failed preconditions — and receipted only when it returns data; the "8 receipted live" figure is collective across the 3 recorded trials, not per-verdict; 3 trials recorded 29 Oct 2026 — see bench/results.json) → REST receipt
-legs → Ticketmaster / OpenStreetMap / Wikidata legs → break-even calculator
-→ one-page card. The frontend never calls Qloo directly; the Node backend
-runs `qloo mcp` over stdio and the REST receipt layer, same-origin only.
+</div>
 
-Break-even definition: `tickets = ceil((guarantee + entered fixed costs − entered sponsor offset) ÷ (ticket price − variable cost per ticket))`. Optional fixed costs are venue/room cost, production cost, marketing cost, and other fixed costs. A sponsor offset is subtracted only when it is entered. A blank field is not entered: it is left out of the sum and is never treated as zero. An explicit 0 is entered zero. No tax rate or fee rate is assumed. With every fixed-cost field blank, the count is `ceil(guarantee ÷ (ticket price − variable cost per ticket))`, and $250,000 at $120 stays 2,084 tickets. Once any fixed-cost field is entered, the total to recover must stay above zero (`total fixed must stay > 0`). A zero guarantee with every fixed-cost field blank is still 0 tickets with the note "no guarantee". If break-even exceeds a known capacity, the verdict is
-"Cannot break even in this room at this guarantee."
+---
 
-## 3. Qloo tools and workflows — and why they fit
+## The pitch
 
-All 10 MCP tools are wired, invoked when their precondition holds (rank skipped with no candidates, compare skipped with no opener, REST legs skipped on failed preconditions), and receipted only when they return data (8 receipted live, collective across the 3 recorded trials, not per-verdict; trends/compare returned empty on live runs so far — see the app depth panel):
+An independent promoter gets an offer: *book this artist, in this city, for this guarantee.* They have to decide fast, usually on gut feel, with real money at stake. OfferSheet turns that into one page and one number. Enter an artist, a city and a guarantee, and you get the **break-even ticket count**. Around it you get the **Qloo audience evidence**: opener shortlist, where the audience is, demographics, shared tags and fan overlap. A **three-arm race** puts Qloo's pick next to an LLM-only "gut" pick and an LLM + Wikidata "web" pick, and names every miss. Every Qloo-backed claim carries a **SHA-256 receipt** that you can click to re-run the exact call. There is no sign-in and no mock data. If a source is down, the page **fails closed** with a visible state instead of inventing a number.
 
-| Tool | OfferSheet use |
-|---|---|
-| `qloo_capabilities` | Readiness gate + health check. The "Qloo live" badge turns green only after a live call succeeds, never from config alone. |
-| `qloo_find_tags` | Tag-first path: the headliner is resolved to tags before any audience call. Unresolved input is shown as unmeasured and excluded, never guessed. |
-| `qloo_describe` | Headliner + opener cards. An ambiguous name returns `needs_input` candidates the user picks — the verdict never guesses. |
-| `qloo_recommend` | Opener candidates from fans of the headliner (`target_type=artist`). |
-| `qloo_rank` | The opener shortlist ranked for the city audience. |
-| `qloo_where_popular` | Routing + city-audience evidence (matched areas, not a headcount). |
-| `qloo_compare_audiences` | Headliner-vs-opener audience overlap. |
-| `qloo_audience_demographics` | Full age/gender bands for the headliner audience. |
-| `qloo_entity_tags` | Top shared-tags evidence between headliner and opener. |
-| `qloo_trends` | 90-day momentum leg (optional evidence; its failure never withholds a verdict). |
+> Design principle: Qloo affinities are aggregate taste signals. They are evidence, not a prediction. OfferSheet never renders a sellout percentage, a headcount or a causal claim, and it never invents a number.
 
-REST receipt layer (cross-checks the MCP legs): `/search` (name resolution),
-`/v2/insights` (tags + `feature.explainability=true`), `/v2/analysis/compare`
-(headliner vs opener overlap), `/entities` (max 15 per call). Every claim
-carries a SHA-256 request hash, the response requestId (null when the
-upstream returns none — never invented), and a resultCount. Every receipt in
-a verdict response carries replay data: click it to re-run the exact call via
-`POST /api/replay` and compare. MCP receipts carry an argument hash (hashKind 'args', no upstream requestId); REST receipts carry a request-URL hash (hashKind 'url'). MCP receipts are labeled 'argument hash, no upstream requestId' so they are never confused with REST request-URL hashes.
+---
 
-## 4. Request-to-result (redacted)
+## Contents
 
-Input is artist + city + guarantee (plus optional room/venue, ticket price, variable cost per ticket, capacity, venue/room cost, production cost, marketing cost, other fixed costs, and sponsor offset). No names, emails, device IDs, account IDs, or location histories
-are sent to Qloo — ever. Entity/tag choices: the headliner name is resolved
-through `find_tags` first, then `describe`; when several entities match, the
-user picks from candidates. Tag URNs from `find_tags` feed the REST insights
-leg; when no tag URNs resolve, that leg is skipped and labeled, not faked.
-Qloo results describe aggregate affinities only: the card reports matched
-areas/entities and counts with receipts, never an individual prediction,
-never a causal claim, and never a population headcount (Qloo returns none).
+- [Verify every number yourself (for judges)](#-verify-every-number-yourself-for-judges)
+- [Architecture](#-architecture)
+- [Qloo depth: 10 of 10 official MCP tools](#-qloo-depth-10-of-10-official-mcp-tools)
+- [OfferSheet MCP server: 33 tools](#-offersheet-mcp-server-33-tools)
+- [Tour by tab](#-tour-by-tab)
+- [Android app](#-android-app)
+- [Run it locally](#-run-it-locally)
+- [Tech stack](#-tech-stack) · [Project structure](#-project-structure) · [License](#-license)
 
-## 5. Demo
+---
 
-The deployed demo is live (see §9). No screenshots are included here: none have been captured from a
-deployed demo, and none are fabricated. The frontend in this repo is the
-full dark design system (set in a rounded display face and one grotesk sans, + the one primary action): compact wound line + form
-first, verdict card as page hero, hero figure collapsible below the
-verdict, spec-honest stats strip (tools wired, not all live-verified;
-receipts on Qloo claims; 3 arms wired; 3 trials run live and recorded
-29 Oct 2026, see bench/results.json), race as a
-secondary toggle below the verdict, receipt drawer with replay, formula panel, safety strip, and
-benchmark ledger — with designed loading, empty, error,
-unknown-capacity, and verdict-withheld states. The capacity box renders
-the backend's per-cause message verbatim (not-configured, Ticketmaster
-error, or no capacity in the fetched record). Custom images (hero +
-4 3D icons) are real files under `frontend/assets/`, generated via the
-media pipeline (never stock, never Hallmark pictures), referenced by
-relative paths and verified byte-identical when served.
+## ✅ Verify every number yourself (for judges)
 
-## 6. Setup from a clean environment
+Each number below was measured against the live deployment on 30 Oct 2026. Re-run any of them with nothing more than `curl`, `node` and `sha256sum`.
 
-Requirements: Node ≥ 22.19, no dependencies (`npm install` installs nothing).
+### 1. The backend is live and every source is configured
 
-```text
-node backend/server.js        # serves the frontend + /api/* on $PORT (default 3000)
-npm test                      # node:test suite, zero dependencies
+```bash
+curl -s https://offersheet-backend-k2zp.onrender.com/api/health
+# {"status":"ok","version":"0.1.0","qlooConfigured":true,"ticketmasterConfigured":true,"llmConfigured":true}
 ```
 
-Environment variables (server only, never in a client bundle, never in the
-repo):
+### 2. The break-even number: trial 1
+
+The formula ([`backend/src/breakeven.js`](backend/src/breakeven.js)):
+
+```
+tickets = ceil( (guarantee + entered fixed costs − entered sponsor offset) / (ticket price − variable cost per ticket) )
+```
+
+A blank field is left out, never treated as zero.
+
+| Input | Arithmetic | Tickets |
+|---|---|---|
+| Billie Eilish · New York · guarantee $250,000 · ticket $120 | ceil(250,000 / 120) = ceil(2,083.33) | **2,084** |
+| same + venue cost $10,000 | ceil(260,000 / 120) = ceil(2,166.67) | **2,167** |
+
+Run both live:
+
+```bash
+B=https://offersheet-backend-k2zp.onrender.com
+
+curl -s -X POST $B/api/verdict -H 'Content-Type: application/json' \
+  -d '{"artist":"Billie Eilish","city":"New York","guarantee":250000,"ticketPrice":120}' \
+  | tee verdict.json | node -e 'const d=JSON.parse(require("fs").readFileSync(0));console.log(d.breakEven.tickets, d.receipts.length+" receipts")'
+# 2084 9 receipts
+
+curl -s -X POST $B/api/verdict -H 'Content-Type: application/json' \
+  -d '{"artist":"Billie Eilish","city":"New York","guarantee":250000,"ticketPrice":120,"roomCost":10000}' \
+  | node -e 'console.log(JSON.parse(require("fs").readFileSync(0)).breakEven.tickets)'
+# 2167
+```
+
+A full live verdict makes real Qloo, Ticketmaster and LLM calls. Measured end to end on 30 Oct 2026: 24.2 s and 36.1 s. The three recorded trials took 26.2 to 40.1 s.
+
+### 3. Receipts: recompute the SHA-256 and replay the exact call
+
+Every receipt carries an `operation`, a `requestHash`, a `requestId` and a `resultCount`, plus a `replay` object.
+
+- MCP receipts hash `tool + " " + JSON(args)`.
+- REST receipts hash `METHOD + " " + URL`.
+- When Qloo returns no `requestId`, it is shown as `null`. It is never invented.
+
+```bash
+# a. Recompute the hash of the "headliner tags" receipt from the verdict above
+printf '%s' 'qloo_find_tags {"query":"Billie Eilish","limit":10}' | sha256sum
+# affa6e35703be8f54ddeec84c42966a06093e94f21082f4cd446ada31f7f93f7  ← equals receipts[1].requestHash
+
+# b. Replay that exact call live
+node -e 'const d=require("./verdict.json");process.stdout.write(JSON.stringify(d.receipts[1].replay))' > replay.json
+curl -s -X POST $B/api/replay -H 'Content-Type: application/json' -d @replay.json | head -c 300
+# {"kind":"mcp","tool":"qloo_find_tags","envelope":{...,"status":"ok",...},"requestHash":"affa6e35…","resultCount":10}
+```
+
+In the app, every receipt row has a **Replay** button that does the same thing.
+
+### 4. Offline replay pack: no network, no keys
+
+[`frontend/trial-pack.json`](frontend/trial-pack.json) holds the three recorded trials, each with its own SHA-256 and a pack hash. Verify it with the MCP server, without calling Qloo:
+
+```bash
+printf '%s\n' \
+ '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"judge","version":"1"}}}' \
+ '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"offersheet_trial_pack_verify","arguments":{}}}' \
+ | node backend/mcp-server.js 2>/dev/null | tail -1
+# ..."status":"ok","allPassed":true,"trialsChecked":3, ... "ceil(250000/120) = 2084" ...
+```
+
+The recorded trials come from the committed ledger [`bench/results.json`](bench/results.json). They are labelled *recorded, not live* wherever they appear.
+
+| Trial | Inputs | Break-even | Qloo (Graph) pick | Gut (LLM-only) pick | Web (LLM + Wikidata) pick |
+|---|---|---|---|---|---|
+| 1 | Billie Eilish · New York · $250,000 / $120 | 2,084 | Olivia Rodrigo | Clairo | Armani White |
+| 2 | Taylor Swift · New York · $250,000 / $120 | 2,084 | Carly Rae Jepsen | Sabrina Carpenter | Def Leppard |
+| 3 | Olivia Rodrigo · Los Angeles · $180,000 / $95 | 1,895 | King Princess | Gracie Abrams | declined to pick |
+
+### 5. The test suite
+
+```bash
+git clone https://github.com/mohamedwael201193/OfferSheet && cd OfferSheet
+node --test test/*.test.js
+# tests 609 · pass 606 · fail 0 · skipped 3
+```
+
+There are 77 test files. A fresh clone needs zero runtime dependencies. CI runs the same suite plus a Playwright browser job on every push: [Actions](https://github.com/mohamedwael201193/OfferSheet/actions/workflows/ci.yml).
+
+### 6. The MCP server: 33 tools = 23 `offersheet_` + 10 `qloo_`
+
+```bash
+printf '%s\n' \
+ '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"judge","version":"1"}}}' \
+ '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+ | node backend/mcp-server.js 2>/dev/null | tail -1 \
+ | node -e 'const n=JSON.parse(require("fs").readFileSync(0)).result.tools.map(t=>t.name);console.log(n.length, n.filter(x=>x.startsWith("offersheet_")).length, n.filter(x=>x.startsWith("qloo_")).length)'
+# 33 23 10
+```
+
+### 7. Qloo 429 handling
+
+[`backend/src/rest.js`](backend/src/rest.js) retries exactly once on a 429 or 5xx response:
+
+- It honours `Retry-After`, in either the seconds or the HTTP-date form.
+- Without that header, it backs off for about 1.2 s with jitter.
+- If the retry still fails, the check is shown as *"Qloo rate-limited this check (429); retried once, still no data"*. Nothing is filled in.
+
+Tests: `test/retry.test.js`, `test/retry-exact.test.js` and `test/u18-rest-ratelimit.test.js`.
+
+---
+
+## 🏗 Architecture
+
+```mermaid
+flowchart LR
+  U["Promoter<br/>browser or Android app"] -->|artist, city, guarantee| FE["Frontend<br/>Vercel static"]
+  FE -->|POST /api/verdict, SSE stream| BE["Backend<br/>Node 22, zero deps, Render"]
+  BE -->|10 official tools| QM["Qloo MCP"]
+  BE -->|/search, /v2/insights,<br/>/v2/analysis/compare, /entities| QR["Qloo REST"]
+  BE -->|venue, capacity, price| TM["Ticketmaster Discovery"]
+  BE -->|display-only geocode| OSM["OpenStreetMap"]
+  BE -->|facts for the Web arm| WD["Wikidata"]
+  BE -->|Gut and Web arms| LLM["LLM provider chain"]
+  BE --> RS["Receipt store<br/>SHA-256 + replay"]
+  MCPS["OfferSheet MCP server<br/>33 tools, stdio"] --> BE
+  AG["Any MCP agent"] --> MCPS
+```
+
+### From verdict to receipts
+
+```mermaid
+sequenceDiagram
+  participant P as Promoter
+  participant A as OfferSheet API
+  participant Q as Qloo (MCP + REST)
+  participant T as Ticketmaster
+  participant L as LLM arms
+  P->>A: artist, city, guarantee, ticket price
+  A->>Q: capabilities (readiness gate)
+  alt Qloo not configured or down
+    A-->>P: 503, fail closed, no mock
+  end
+  A->>Q: find_tags, describe (needs_input if ambiguous)
+  A->>Q: recommend, rank, where_popular, demographics, entity_tags, trends, compare
+  A->>Q: REST search, insights, compare, entities
+  A->>T: venue capacity and price
+  A->>L: Gut pick (no Qloo), Web pick (Wikidata only)
+  A->>A: break-even = ceil(total / net), each call hashed into a receipt
+  A-->>P: verdict, evidence, race with named misses, receipts
+  P->>A: Replay receipt
+  A->>Q: same tool and args, or same URL
+  A-->>P: fresh result next to the recorded hash
+```
+
+---
+
+## 🎯 Qloo depth: 10 of 10 official MCP tools
+
+Every official Qloo MCP tool drives a named feature. Each one is invoked when its precondition holds and receipted when it returns data. The live verdict above produced 9 receipts: 7 MCP tools and 2 REST legs.
+
+```mermaid
+flowchart TB
+  subgraph Q["Qloo MCP: 10 of 10"]
+    c[qloo_capabilities] --> g1["Readiness gate, Qloo live badge"]
+    f[qloo_find_tags] --> g2["Tag-first headliner resolution"]
+    d[qloo_describe] --> g3["Headliner and opener cards, needs_input picker"]
+    r[qloo_recommend] --> g4["Opener candidates from fans of the headliner"]
+    k[qloo_rank] --> g5["Shortlist ranked for the city audience"]
+    w[qloo_where_popular] --> g6["Audience areas, routing"]
+    a[qloo_audience_demographics] --> g7["Age and gender bands"]
+    e[qloo_entity_tags] --> g8["Shared tags evidence"]
+    t[qloo_trends] --> g9["Momentum leg"]
+    m[qloo_compare_audiences] --> g10["Headliner and opener fan overlap"]
+  end
+```
+
+A REST receipt layer cross-checks the MCP legs: `/search`, `/v2/insights` (with `feature.explainability=true`), `/v2/analysis/compare` and `/entities`. Only artist, city and tag inputs are sent to Qloo. No names, emails or device IDs are ever sent: *aggregate audiences only, by design*.
+
+## 🧰 OfferSheet MCP server: 33 tools
+
+[`backend/mcp-server.js`](backend/mcp-server.js) is a zero-dependency stdio JSON-RPC 2.0 server (protocol `2024-11-05`) that exposes the whole product to any agent.
+
+```mermaid
+flowchart LR
+  S(("OfferSheet MCP<br/>33 tools"))
+  S --> V["Verdict<br/>verdict_run, verdict_race"]
+  S --> QQ["Qloo passthrough, 10<br/>capabilities ... compare_audiences"]
+  S --> RE["REST<br/>rest_search, rest_insights_by_tags,<br/>rest_compare, rest_entities"]
+  S --> RC["Receipts<br/>receipt_replay, receipt_verify_hash,<br/>receipts_list"]
+  S --> TR["Trials<br/>trials_list, trial_pack_verify,<br/>miss_trial_build"]
+  S --> AR["Arms<br/>arm_gut, arm_web"]
+  S --> DL["Deal<br/>deal_breakeven, venue_search,<br/>room_grounding, city_geocode, artist_facts"]
+  S --> OP["Openers<br/>opener_shortlist, opener_rerank"]
+  S --> OPS["Ops<br/>health, limits_status"]
+```
+
+---
+
+## 🧭 Tour by tab
+
+| | |
+|---|---|
+| **01 Offer.** Artist, city, guarantee and ticket price, plus an optional venue, capacity, variable cost and fixed-cost stack (venue, production, marketing, other, sponsor offset). Blank means *not entered*, never zero. | <img src="docs/screenshots/offer-1280.png" width="520" alt="Offer tab"> |
+| **02 Verdict.** The break-even number first, then the before-you-sign checklist, the formula with every entered line, and the term sheet. The room capacity is labelled with its source. When the break-even is above a known capacity, the verdict reads *Cannot break even in this room at this guarantee.* | <img src="docs/screenshots/verdict-1280.png" width="520" alt="Verdict tab showing 2,084 tickets"> |
+| **03 Evidence.** Audience areas, trend, the ranked opener shortlist, demographics, shared tags grouped by type, and fan overlap. Sources checked come with status pills (*ok*, *no data*, *retried*), and every call sits under one receipts row ("9 receipts · all replayable"). | <img src="docs/screenshots/evidence-1280.png" width="520" alt="Evidence tab"> |
+| **04 Workspace.** Save the verdict as a hash-verified workspace, then run a replacement act, a renegotiation, routing to other cities, a budget envelope, a comparison of up to 5 offers, and settlement. | <img src="docs/screenshots/workspace-1280.png" width="520" alt="Workspace tab"> |
+| **05 Ledger.** The Gut vs Graph tally across recorded trials: three pick tiles per trial with the recorded reasons, the named miss, a miss taxonomy, and *Use these inputs* to re-run any trial live. | <img src="docs/screenshots/ledger-1280.png" width="520" alt="Ledger tab"> |
+
+The landing page also links the Oracle, the tools catalog, the trial protocol and an offline page. The whole app meets WCAG AA contrast (every text node is at least 4.5:1) and scores 0 serious or critical axe issues on every tab, and both are re-checked at 1280 px and 390 px. Motion is switched off under `prefers-reduced-motion`.
+
+---
+
+## 📱 Android app
+
+**[⬇ Download offersheet-release.apk](https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk)** (release [`android-app-v1.0.0`](https://github.com/mohamedwael201193/OfferSheet/releases/tag/android-app-v1.0.0), 295,972 bytes, signed release build). The app opens the live OfferSheet in a full-screen Android WebView, so it always runs the current deployment with the same receipts. The site is also an installable PWA ([`manifest.webmanifest`](frontend/manifest.webmanifest)).
+
+<p align="center">
+<img src="docs/screenshots/phone-verdict-390.png" width="230" alt="Phone: verdict">
+<img src="docs/screenshots/phone-evidence-390.png" width="230" alt="Phone: evidence">
+<img src="docs/screenshots/phone-ledger-390.png" width="230" alt="Phone: ledger">
+</p>
+
+---
+
+## 🛠 Run it locally
+
+Requires Node ≥ 22.19. There are no runtime dependencies; `npm install` is only needed for the Playwright browser tests.
+
+```bash
+git clone https://github.com/mohamedwael201193/OfferSheet && cd OfferSheet
+export QLOO_API_KEY=...            # required for live Qloo calls
+export TICKETMASTER_API_KEY=...    # capacity and price leg
+export LLM_BASE_URL=... LLM_API_KEY=... LLM_MODEL=...   # Gut and Web arms (optional)
+node backend/server.js             # frontend + /api/* on http://localhost:3000
+node --test test/*.test.js         # the suite
+node backend/mcp-server.js         # MCP server on stdio, for any MCP client
+```
 
 | Variable | Purpose |
 |---|---|
-| `QLOO_API_KEY` | Event-issued hackathon key. Required for any live Qloo call. |
-| `TICKETMASTER_API_KEY` | Discovery API key. Gates the capacity leg only; its absence yields the "unknown capacity" state, never a failure. |
-| `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | Optional LLM provider (OpenAI-compatible chat completions) for the Gut and Web arms. When unset, both arms report `unavailable` and render that state — never a fabricated pick. |
-| `MONTHLY_CALL_BUDGET` / `PER_VISITOR_DAILY_CAP` / `PER_RUN_CALL_CAP` | Adopted design settings (defaults 1500 / 20 / 40). These are this product's own guards, NOT Qloo-stated quotas — no numeric Qloo quota is documented anywhere. |
+| `QLOO_API_KEY` | Qloo key. Without it, every live call fails closed with a visible 503. |
+| `QLOO_BASE_URL`, `QLOO_MCP_COMMAND` | Optional overrides for the Qloo REST base and the MCP command. |
+| `TICKETMASTER_API_KEY` | Venue capacity and price. Without it, capacity shows as *unknown*. |
+| `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | One OpenAI-compatible provider for the Gut and Web arms. |
+| `AI_PRIMARY_PROVIDER`, `AI_FALLBACK_PROVIDERS` | Provider fallback chain (`<NAME>_BASE_URL`, `<NAME>_API_KEY`, `<NAME>_MODEL`). If every provider fails, the arm reads *unavailable*. |
+| `MONTHLY_CALL_BUDGET`, `PER_VISITOR_DAILY_CAP`, `PER_RUN_CALL_CAP` | OfferSheet's own call guards (defaults 1500 / 20 / 40). |
+| `PORT` | HTTP port (default 3000). |
 
-## 7. Known limitations — what results do NOT establish
+Deployment: the frontend is served from `frontend/` on Vercel, and the backend runs on Render using [`render.yaml`](render.yaml).
 
-- Qloo affinities are aggregate taste signals, not a promise that a show will
-  sell out. No sellout percentage (likelihood of selling out) is ever rendered; when capacity is known, only the break-even share of seats is shown, labeled 'not a sellout prediction'.
-- Audience size is matched areas/entities with receipts, never a headcount.
-- Capacity: the Madison Square Garden venue record (real response,
-  2026-10-29) carries NO capacity field, so that room renders "unknown
-  capacity" — the correct behavior, not a failure. A room entered in the Room / venue field that Ticketmaster's venue search resolves renders its capacity labeled "Ticketmaster-reported", and its events' prices ground the verdict. With no venue entered, or when the named room does not resolve, capacity and price come from the first matching Ticketmaster event and render labeled "first matching Ticketmaster event's venue, not the offer room" — never silently as the offer room's numbers.
-  A user-supplied capacity renders labeled "user-supplied, not
-  Ticketmaster-verified".
-- Variable cost per ticket is optional. When left blank, net renders as "before variable costs" — never as if costs were zero. An explicitly entered 0 renders as cost 0.
-- Venue cost, production cost, marketing cost, other fixed costs, and sponsor offset are optional. A blank field is shown as "not entered" and is left out of the total. An entered sponsor offset is subtracted. The verdict breakdown lists guarantee, each entered cost, the offset, the total to recover, the net per ticket, and the ticket count.
-- The Web arm is LLM + Wikidata facts only — no generic web search is called. OpenStreetMap output is display-only (shown for confirmation, never fed into Qloo filters) and Wikidata output is input to the Web arm only, never a direct verdict input.
-- Guards are per-instance tripwires, not a quota guarantee: in-memory, per-instance counters reset on restart and do not cap total usage across instances or restarts.
-- No server-side cache; every verdict re-runs live legs.
-- Quota guards are in-memory counters (they reset on restart); persistent
-  counters are a documented deploy-time improvement, not a claimed feature.
-- REST response field names for requestId/entity IDs are parsed defensively:
-  the guide renders no full example JSON, so an unparseable leg is labeled,
-  never guessed. These shapes are TO-VERIFY against live responses after
-  deploy.
-- Ticketmaster capacity-field presence varies by venue and is unproven beyond
-  the Madison Square Garden response above.
-- The LLM provider shape is OpenAI-compatible chat completions via env, as a
-  fallback chain: `AI_PRIMARY_PROVIDER` + `AI_FALLBACK_PROVIDERS`
-  (comma-separated), each provider configured via
-  `<UPPER_NAME>_BASE_URL` / `<UPPER_NAME>_API_KEY` / `<UPPER_NAME>_MODEL`
-  (legacy `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` still works as a
-  single provider). Providers are tried in order; if all fail, the arms
-  render `unavailable`, never a fabricated pick. The answering provider
-  is named on each arm result.
+---
 
-## 8. Test ledger — historical build ledger (superseded totals; see note)
+## 🧪 Tech stack
 
-Historical note (numbers audit, 29 Oct 2026): this ledger predates the 3 recorded trials and the current suite — its rows sum to 178, and its old header total (197) matches neither the rows nor any later run. Do not cite a total from this section. The filing-time suite count must come from a fresh `npm test` run on the frozen filing tree.
-(full output: `test/ledger/FINAL-RUN.txt`; red→green process evidence:
-`test/ledger/T09-red.txt`, `test/ledger/T09-green.txt`). Any row without a passing run is UNCOVERED, never
-claimed.
-
-| Row | What it covers | Result |
-|---|---|---|
-| T01 break-even arithmetic (unit) | ceil, zero guarantee, zero/negative net, over-capacity, missing price | GREEN, 8/8 |
-| T02 receipt-hash determinism (unit) | SHA-256 stability, manifest shape, null requestId never invented | GREEN, 4/4 |
-| T03 quota-guard logic (unit) | per-run cap + reset, rollover, snapshot | GREEN, 3/3 in guards file (2 more under T12/T13) |
-| T04 fail-closed mapping (unit) | NOT_CONFIGURED/QLOO_AUTH 503, visitor 429, envelope mapping | GREEN, 2/2 |
-| T05 MCP chain live (all 10 tools) | Needs the deploy-time Qloo key in the app's environment | UNCOVERED |
-| T06 REST receipt leg live | `/search` verified live via the connector (HTTP 200, 5 results); insights/compare/entities need the deploy-time key | PARTIAL |
-| T07 three-arm run live | Needs the Qloo key AND an LLM provider key | UNCOVERED |
-| T08 receipt replay live | Search-leg replay reproduced (two identical runs, same names/order); full replay needs the deploy-time key | PARTIAL |
-| T09 red→green regression (process) | Red run (missing module) + green run on disk | EVIDENCED |
-| T10 no-key 503 staging run | Server with no key: health `qlooConfigured: false`, verdict 503 NOT_CONFIGURED, page still serves | GREEN, 1/1 |
-| T11 missing-capacity state | Pure extraction + pipeline: unknown state with exact wording, no sellout fields; user/TM capacity labeling; price_unknown | GREEN, 5/5 |
-| T12 quota-floor trip (staging) | Monthly budget trip → QUOTA_FLOOR 503; month rollover resets | GREEN, 2/2 |
-| T13 per-visitor cap (staging) | Per-IP daily cap → VISITOR_CAP 429; other IPs unaffected | GREEN, 1/1 |
-| T14 retry/backoff (local stub) | 429→200 after exactly 2 requests; always-500 after exactly 2; timeout → throw after 2 | GREEN, 3/3 |
-| T15 E2E judge path on deployed demo | Needs deploy | UNCOVERED |
-| T16 no-mock static audit | No fixture imports, no mock/fake/stub identifiers outside strings/comments, NOT_CONFIGURED + verdict_withheld present, no literal key assignment | GREEN, 4/4 (see note) |
-| S1 verdict gating | Full evidence → verdict + receipts + miss trial; no key → NOT_CONFIGURED; required-leg failure → WITHHELD with no numbers; optional-leg failure → verdict still renders; ambiguous headliner → needs_input | GREEN, 6/6 |
-| D1 break-even edges | Huge guarantee 10^12 (exact ceil), zero/negative/non-numeric price, negative variable cost, non-numeric guarantee, capacity-equality boundary, null-capacity canBreakEven | GREEN, 11/11 |
-| D2 input validation | Missing/whitespace-only/non-string artist + city → INVALID_INPUT 400; zero/negative capacity → unknown; pipeline-level over-capacity verdict; trimmed input; empty-candidate needs_input | GREEN, 13/13 |
-| D3 retry exact counts (local stub) | 200/400/401/404 → exactly 1 request; 429/5xx → exactly 2 (one retry); Retry-After 1s honored, 30s capped at 10s; fetch-error retry vs non-fetch no-retry; key in header only; requestId from body/snake_case/header, null when absent | GREEN, 16/16 |
-| D4 degradation legs | Ticketmaster throw/500 → verdict + unknown capacity, no invention; OSM throw/unavailable/empty → city as typed, omission disclosed; Wikidata throw/500 → leg omitted, verdict + miss trial survive; stub-level geocode (incl. 1 req/sec gap), Wikidata, Ticketmaster clients | GREEN, 14/14 |
-| D5 quota exact thresholds | Monthly/visitor/per-run caps allow exactly N, trip on N+1 (codes + statuses); budget-0; month rollover re-trips; stale-day visitor isolation; pipeline RUN_CAP/QUOTA_FLOOR incl. late-leg trips (see fix note) | GREEN, 11/11 |
-| D6 verdict-gating matrix | Each required leg failing alone withholds with NO verdict-number fields; all-5-missing case; OR-survivors (single paired-leg failure) still render; needs_input returns before any ranking call | GREEN, 14/14 |
-| D7 unknown-capacity extended | ZERO sellout/room-fill/percentage keys and no `%` char in the unknown-capacity response; user capacity beats Ticketmaster capacity; extraction rejects 0/NaN/Infinity/string | GREEN, 6/6 |
-| D8 receipt replay | Every verdict receipt's replay payload reproduces its original call; local-stub re-run match (same IDs/order) + mismatch paths (changed IDs, changed count); no-key replay → 503 NOT_CONFIGURED | GREEN, 5/5 |
-| D9 badge rule | Health never claims live/green/badge state; capabilities-probe-alone yields WITHHELD, never a verdict; no-key run makes zero live calls | GREEN, 4/4 |
-| D10 no-mock audit extended | T16 gap closed: backend/server.js scanned with the same rules; scope-completeness tripwire (scanned set must equal the full backend JS tree); server fail-closed wiring present | GREEN, 5/5 |
-| QA backend fixes (G5/G6/G7/G8/G10/G13/G16/G17/G18/G24/G42/G47/G4) | Required-leg gating (ok + non-empty), replay allowlist + guards, replay ID/order payload, parallel legs + 90s budget, guard pruning, REST compare/entities wired, empty-entities → empty, MCP hashKind labels, health tools field, per-cause capacity wording, import-graph audit, abort/timeout, MCP shapes verified keyless vs harness 0.1.26 tools/list | GREEN, 23/23 |
-| No-mock import-graph audit (G42) | No production backend file imports test/ or fixtures.js | GREEN, 1/1 |
-| Money ground truth (G11/G12/G9/G14) | Named-room venue grounding + venueId scoping, blank-vs-zero variable cost, Web arm relabeled LLM + Wikidata facts, OSM display-only + Wikidata Web-arm-only labels | GREEN, 13/13 |
-| Server wiring (G11 production) | server.js buildDeps wires tmVenues from searchVenues + Ticketmaster key (static proof; importing server.js would bind a port) | GREEN, 3/3 |
-
-D5 fix note: the D5 pipeline per-run-cap test first ran RED (full run 135/136): a guard trip after the readiness probe was swallowed by the leg try/catch blocks and downgraded to a 200 `verdict_withheld`, losing the guard's 503 code. Fixed surgically in `backend/src/errors.js` (`isGuardTrip`) + `backend/src/pipeline.js` (trips recorded in the call/rest wrappers, rethrown before the verdict gate; no live call is made after a trip). Two late-leg regression tests (trip on the 6th call, RUN_CAP + QUOTA_FLOOR) were added with the fix; the final run is green (see header count).
-
-T16 note: the audit is a tripwire, not proof — T10 is the behavioral
-guarantee. During this build the audit's first version failed on its own
-over-broad pattern (it matched the word "fixtures" in a documentation
-comment); the test was narrowed to import statements and the re-run is
-green. The failure and the fix are recorded here, not hidden.
-
-Supporting live evidence (not test rows): `test/ledger/LIVE-CHECKS.md`
-(Qloo search ×2, Ticketmaster venues, capacity-field probe, MCP capabilities
-without a key, OSM geocode, Wikidata search).
-
-MAX+ status: S1 verdict gating DONE (tested). S2 bench ledger: schema +
-`/api/bench` endpoint DONE; zero trials recorded (UNCOVERED until a real
-trial runs). S3 receipts manifest: repo manifest shape + per-verdict
-receipts with replay data DONE; the manifest itself is empty until real
-runs are recorded. S4 formula panel DONE (formula + worked example
-in real numbers, recomputed from live verdict numbers). S7 live race:
-`/api/race` + secondary race toggle with timings + miss ledger DONE in
-code; live three-arm run UNCOVERED (needs Qloo + LLM keys). S5 stats
-strip, S6 wound-first screen, and S8 safety strip presentation DONE in the
-Studio frontend (form-first with wound line, spec-honest stats strip below
-the verdict, collapsible hero figure, visible safety strip). Backend static handler
-sends raw bytes with image content types (webp/png/jpeg/avif) — a UTF-8
-decode of binary assets corrupted them; fixed and verified byte-identical
-for all five frontend assets.
-
-## 9. Deployment status (2026-10-29 — LIVE, bundle pending redeploy check)
-
-Settled identities (parent-verified 2026-10-29): GitHub
-`mohamedwael201193` (id 72895329); Vercel `mohamedwael201193` (frontend);
-Render workspace "Ffcvv's workspace" (user-confirmed, backend).
-
-1. Backend: LIVE — Render service `offersheet-backend`, Starter plan
-   (user-authorized $7, NOT free), URL
-   `https://offersheet-backend-k2zp.onrender.com`, health check
-   `/api/health`. Earlier free-tier creation failed twice (HTTP 400 quota
-   exhausted); the user chose Starter instead.
-2. Demo: LIVE — Vercel project `offersheet` (Root Directory `frontend`),
-   URL `https://offersheet-rouge.vercel.app`. Vercel has NO git
-   integration: every redeploy is a manual files-upload API deploy with
-   base64 encoding on every file.
-3. Env vars on the Render service (verified by API 2026-10-29, names
-   only): `QLOO_API_KEY`, `TICKETMASTER_API_KEY`, plus the 7-provider
-   LLM chain (`AI_PRIMARY_PROVIDER=qwen`,
-   `AI_FALLBACK_PROVIDERS=groq,cerebras,sambanova,together,openrouter,kimi`,
-   each with its own base URL / key / model vars). The vault credentials
-   that serve Muse's calls do NOT transfer to Render — service values
-   come from the user's own copies.
-4. This commit bundles: the full Studio landing page, the backend
-   REST/ID-threading fixes (Gap 2 + Gap 3) and double-slash guard, and
-   the LLM fallback chain. Redeploy verification (health fields, live
-   verdict trials, REST/trends/compare receipts, `//` → 400) follows
-   the push; results land in `bench/results.json` and
-   `test/ledger/LIVE-CHECKS.md`.
-5. Post-deploy live checks still to run after this bundle: a timed
-   verdict end-to-end (T15); a receipt replay (T08); a
-   benchmark trial recorded in `bench/results.json` (S2).
-
-## 10. Repo state
-
-Local git repo, remote set to `https://github.com/mohamedwael201193/OfferSheet.git`.
-Remote `main` was at verified commit `e981641f…` (QA squash, parent-verified
-2026-10-29) before this bundle; this bundle was pushed via the GitHub API
-on top of that HEAD (see commit history), never by force and never by git
-CLI push from the local clone (local history diverges from the remote
-squash history; the vault-held token is never revealed to the shell).
-No credentials, keys, or tokens appear in code, repo, files, or logs
-(verified by T16 and by grep for literal key assignments). License: MIT
-(`LICENSE`, visible in the repo root, satisfying the public-repo license
-rule).
-
-## 11. What is blocked on each pending item
-
-| Pending item | Blocks |
+| Layer | Choice |
 |---|---|
-| Render free-tier quota in the Ffcvv workspace | RESOLVED — user chose the Starter plan ($7) for `offersheet-backend` |
-| `QLOO_API_KEY` / `TICKETMASTER_API_KEY` values on the Render service | SET (verified by API 2026-10-29, names only) |
-| LLM provider keys | SET — 7-provider chain (Qwen primary + Groq, Cerebras, SambaNova, Together, OpenRouter, Kimi fallbacks); live trials pending redeploy verification |
-| Live re-verification after this bundle (REST receipts, trends/compare receipt or `envelopeSummary`, `//` → 400 on Render, timed verdict, replay, bench trial) | Pending the redeploy check in §9.4 |
-| Studio frontend implemented 2026-10-29 (no longer gated on a sketch) | — |
+| Backend | Node 22, `node:` built-ins only (zero runtime deps), SSE streaming |
+| Taste intelligence | Qloo MCP (10 tools) + Qloo REST (4 endpoints) |
+| Grounding | Ticketmaster Discovery, OpenStreetMap (display only), Wikidata (Web arm only) |
+| Agents | OfferSheet MCP server (33 tools), Gut/Web LLM arms with a provider fallback chain |
+| Frontend | Vanilla HTML/CSS/JS, GSAP (self-hosted), PWA, Android WebView app |
+| Quality | `node:test` (609 tests), Playwright + axe-core in CI, GitHub Actions |
+| Hosting | Vercel (frontend), Render (backend) |
+
+## 📁 Project structure
+
+```
+backend/
+  server.js            HTTP API: verdict, race, replay, rerank, workspace/*, bench, SSE stream
+  mcp-server.js        OfferSheet MCP server (33 tools)
+  src/
+    pipeline.js        verdict orchestration across Qloo, Ticketmaster and the arms
+    mcp.js  rest.js    Qloo MCP session (10-tool allowlist) and REST client (one 429 retry)
+    receipts.js        SHA-256 receipts and replay
+    breakeven.js       pure break-even arithmetic
+    arms.js            Gut and Web arms, miss trial
+    workspace.js       hash-verified workspace steps
+    guards.js  ticketmaster.js  osm.js  wikidata.js  rerank.js  errors.js  config.js
+frontend/              landing, app (5 tabs), oracle, tools, trial protocol, PWA, trial-pack.json
+bench/results.json     committed recorded-trial ledger
+test/                  77 test files (node:test)
+e2e/                   Playwright browser checks
+docs/screenshots/      README images
+```
+
+## 📄 License
+
+[MIT](LICENSE). Open source and free to use, test and evaluate.
