@@ -10,7 +10,14 @@ test('S1: full evidence renders a verdict with receipts and a miss trial', async
   assert.equal(v.breakEven.tickets, 2084);
   assert.equal(v.openers.topPick, 'Test Opener One');
   assert.equal(v.arms.gut.status, 'ok');
-  assert.equal(v.arms.web.status, 'ok');
+  // Validity-gate flip (patch 04): the fixture's Wikidata facts name only
+  // the headliner, so the fixture Web pick names no non-headliner fact
+  // entity and abstains instead of standing. The miss trial still exists
+  // on the gut miss; the abstention travels on the trial, not as a miss.
+  assert.equal(v.arms.web.status, 'cannot-select');
+  assert.equal(v.missTrial.abstentions.length, 1);
+  assert.equal(v.missTrial.abstentions[0].arm, 'web');
+  assert.match(v.missTrial.abstentions[0].reason, /no non-headliner entity/);
   assert.equal(v.missTrial.misses.length, 1);
   assert.equal(v.missTrial.misses[0].arm, 'gut');
   assert.ok(Array.isArray(v.receipts) && v.receipts.length >= 10, 'every leg must leave a receipt');

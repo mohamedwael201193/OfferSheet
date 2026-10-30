@@ -31,7 +31,7 @@ import { notConfigured, invalidInput, isGuardTrip } from './errors.js';
 import { breakEven } from './breakeven.js';
 import { argsHashFor } from './receipts.js';
 import { extractCapacity, extractPrice, extractFirstVenue, extractVenueForCity, venueCityOf } from './ticketmaster.js';
-import { classifyMisses } from './rerank.js';
+import { classifyMisses, pickMatchesName } from './rerank.js';
 
 function itemId(item) {
   if (!item || typeof item !== 'object') return null;
@@ -349,7 +349,9 @@ export async function runVerdict(input, deps) {
   // ID is resolved with one describe call, so compare/trends/REST legs
   // below take an ID instead of a display name. A failed or ambiguous
   // resolution keeps the name signal — never a guessed ID. This call is a
-  // resolution helper, not a verdict leg, so it leaves no receipt; a guard
+  // resolution helper, not a verdict leg; it now leaves a receipt like
+  // every other describe call, so the opener ID threading is auditable
+  // instead of being the one unreceipted hop in the pipeline. A guard
   // trip inside it is recorded by call() and rethrown below, fail-closed.
   let openerId = topOpener?.id || null;
   if (topOpener && !openerId && topOpener.name) {
@@ -357,6 +359,7 @@ export async function runVerdict(input, deps) {
       const resolved = await call('qloo_describe', { entity: topOpener.name, type: 'artist' });
       if (resolved && resolved.status !== 'needs_input' && Array.isArray(resolved.results) && resolved.results.length > 0) {
         openerId = itemId(resolved.results[0]);
+        record('opener description (resolution helper)', 'qloo_describe', resolved);
       }
     } catch (e) {
       // Name-based fallback below; guard trips are rethrown by throwIfGuardTrip.
@@ -631,7 +634,7 @@ export async function runVerdict(input, deps) {
   // G8 fan-out: the Web arm consumes Wikidata facts, but Gut does not — the
   // two arms run together once the facts are in hand.
   const question = `Headliner ${artist} in ${city}. Who is the best opening act for this audience?`;
-  const [gut, web] = await Promise.all([
+  let [gut, web] = await Promise.all([
     deps.gutArm
       ? deps.gutArm({ question }).catch((e) => ({ arm: 'gut', status: 'error', reason: e.message }))
       : Promise.resolve({ arm: 'gut', status: 'unavailable', reason: 'arm not wired' }),
@@ -639,6 +642,33 @@ export async function runVerdict(input, deps) {
       ? deps.webArm({ question, webFacts }).catch((e) => ({ arm: 'web', status: 'error', reason: e.message }))
       : Promise.resolve({ arm: 'web', status: 'unavailable', reason: 'arm not wired' }),
   ]);
+  // Validity gate (future runs only — recorded trial wording is historical
+  // and is never rewritten): a Web pick stands only if it names a
+  // non-headliner entity present in the supplied Wikidata facts. The gate
+  // is string containment against the fact labels only — it proves
+  // presence in the facts, not truth, and a pick that merely mentions a
+  // fact entity in passing still passes. Gate failure is an abstention,
+  // not a pick and not a miss: status 'cannot-select', no pick string
+  // rendered as a pick, no miss recorded.
+  // Interaction with the Web fail-closed rule (track3 patch 03): empty
+  // facts via runWebArm yield UNAVAILABLE before this gate runs, so the
+  // gate's empty-facts branch is unreachable on that path; the gate's
+  // live branch is pick-present-but-ungrounded -> cannot-select. The
+  // gate never calls a gated pick "Wikidata-verified": it proves only
+  // lead-presence in the supplied facts. When gut is also unavailable,
+  // no missTrial exists and the abstention travels only on the arm object.
+  // (Gate body inserted before the arms-region checkAbort + gutPick lines.)
+  let webAbstention = null;
+  if (web.status === 'ok') {
+    const factLabels = (wikidataState.matches || []).map((m) => m.label).filter((l) => typeof l === 'string' && l.trim() !== '');
+    const nonHeadlinerLabels = factLabels.filter((l) => !pickMatchesName(l, artist));
+    if (factLabels.length === 0) {
+      webAbstention = { arm: 'web', status: 'cannot-select', reason: 'no Wikidata facts were supplied to the Web arm — no pick rendered' };
+    } else if (!nonHeadlinerLabels.some((l) => pickMatchesName(web.pick, l))) {
+      webAbstention = { arm: 'web', status: 'cannot-select', reason: 'Web pick names no non-headliner entity from the supplied Wikidata facts — no pick rendered' };
+    }
+    if (webAbstention) web = { arm: 'web', status: 'cannot-select', reason: webAbstention.reason };
+  }
   { const aborted = checkAbort(); if (aborted) return aborted; }
   const gutPick = gut.status === 'ok' ? gut.pick : null;
   const webPick = web.status === 'ok' ? web.pick : null;
@@ -662,6 +692,7 @@ export async function runVerdict(input, deps) {
         graphPick,
         gutPick,
         webPick,
+        abstentions: webAbstention ? [webAbstention] : [],
         misses: missTaxonomy.misses,
         taxonomy: { counts: missTaxonomy.counts, total: missTaxonomy.total },
         recordedAt: new Date().toISOString(),

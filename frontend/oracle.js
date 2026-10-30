@@ -149,6 +149,19 @@
     var repro = await computeBenchRepro(state.pack.trials);
     var rowsHtml = stats.rows.map(function (r, i) {
       var p = repro[i] || {};
+      // Bench evidence already fetched via /api/bench (no new call):
+      // the provider that answered each arm + the recorded leg notes,
+      // joined on recordedAt exactly as coverage already does. Prose is
+      // rendered verbatim and labelled as prose, never parsed into
+      // counts. Missing data renders as not loaded, never invented.
+      var benchMatch = null;
+      if (state.benchRuns) {
+        for (var bi = 0; bi < state.benchRuns.length; bi++) {
+          if (state.benchRuns[bi] && state.benchRuns[bi].recordedAt === r.recordedAt) { benchMatch = state.benchRuns[bi]; break; }
+        }
+      }
+      var providerLine = benchMatch && benchMatch.providers ? 'Providers: ' + esc(JSON.stringify(benchMatch.providers)) : 'Providers: Not loaded — run evaluation to load';
+      var legNotesLine = benchMatch && benchMatch.liveLegNotes ? 'Recorded leg notes (prose, not counts): ' + esc(benchMatch.liveLegNotes) : 'Recorded leg notes: Not loaded — run evaluation to load';
       var hashLine = p.recordHash
         ? 'Record hash (SHA-256 of canonical trial JSON): <span class="hash">' + esc(p.recordHash) + '</span>'
         : 'Record hash: cannot verify — SHA-256 is unavailable in this browser.';
@@ -160,6 +173,8 @@
         '<p class="check-detail">Wall time ' + fmt(r.timingMs) + ' ms (' + benchSecs(r.timingMs) + ') · ' +
         fmt(r.breakEvenTickets) + ' tickets · misses recorded: ' + r.misses +
         ' · recorded ' + esc((r.recordedAt || '').slice(0, 10)) + '</p>' +
+        '<p class="check-detail">' + providerLine + '</p>' +
+        '<p class="check-detail">' + legNotesLine + '</p>' +
         '<p class="check-detail">' + hashLine + '</p>' +
         '<p class="check-detail">' + recomputeLine + '</p></div>';
     }).join('');
@@ -376,6 +391,17 @@
       graphPick: v.graphPick || (v.openers && v.openers.topPick) || null,
       gutPick: v.gutPick || null, webPick: v.webPick || null,
       misses: Array.isArray(misses) ? misses : [],
+      // Carried evidence (no new call): audience areas (names only),
+      // demographics bands, shared tags, overlap/trend presence, capacity
+      // state and timing — as recorded, never recomputed. Absent fields
+      // stay null and render as not recorded.
+      audienceAreas: v.audience && Array.isArray(v.audience.areas) ? v.audience.areas.map(function (a) { return a.name || a.id || ''; }).filter(Boolean) : null,
+      demographics: v.demographics || null,
+      sharedTags: v.sharedTags || null,
+      overlapPresent: v.overlap !== null && v.overlap !== undefined,
+      trendsPresent: v.trends !== null && v.trends !== undefined,
+      capacity: v.capacity || null,
+      timingMs: v.timingMs || null,
       recordedAt: v.recordedAt || new Date().toISOString()
     };
   }
@@ -397,7 +423,11 @@
         return '<li class="history-item"><div class="history-text"><p class="check-title">' +
           esc(e.artist) + ', ' + esc(e.city) + '</p>' +
           '<p class="check-detail">Guarantee ' + money(e.guarantee) + ' · ticket price ' + money(e.ticketPrice) +
-          ' · ' + fmt(e.tickets) + ' tickets · recorded ' + esc((e.recordedAt || '').slice(0, 10)) + '</p></div>' +
+          ' · ' + fmt(e.tickets) + ' tickets · recorded ' + esc((e.recordedAt || '').slice(0, 10)) + '</p>' +
+          '<p class="check-detail">' +
+          (e.audienceAreas ? 'Audience areas: ' + esc(e.audienceAreas.slice(0, 10).join(', ')) + '. ' : 'Audience areas: not recorded. ') +
+          (e.capacity ? 'Capacity: ' + esc(e.capacity.state || '') + (e.capacity.source ? ' (' + esc(e.capacity.source) + ')' : '') + '. ' : 'Capacity: not recorded. ') +
+          (e.timingMs ? 'Run time: ' + fmt(e.timingMs) + ' ms.' : '') + '</p></div>' +
           '<button class="btn" type="button" data-delete-id="' + esc(e.id) + '">Delete</button></li>';
       }).join('');
       list.querySelectorAll('[data-delete-id]').forEach(function (b) {
@@ -710,6 +740,14 @@
     loadPack().then(function (pack) {
       state.pack = pack;
       renderRecordedTrials();
+      // D20 boot load: bench evidence loads on page load (not only on
+      // the evaluation click), then the bench panel re-renders with it.
+      // A failed bench fetch leaves state.benchRuns null and the panel
+      // keeps its not-loaded lines — never an invented value.
+      loadBenchRuns().then(function (bench) {
+        if (bench.runs) state.benchRuns = bench.runs;
+        renderBenchPanel();
+      });
       renderBenchPanel();
       renderCompareOptions();
     }).catch(function () {

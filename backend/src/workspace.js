@@ -469,6 +469,18 @@ export async function runReplacement(workspace, stepInput, deps, { visitorIp } =
     deltaMoneyLabel: DELTA_MONEY_LABEL,
     audience: verdict.audience,
     openers: verdict.openers,
+    // Carried legs (no new call): the replacement verdict already computed
+    // these; the row previously dropped them. Each renders independently —
+    // a missing leg renders as unavailable in its slot, never filled from
+    // the base verdict's legs (different artists, never mixed), never a
+    // forecast, and never re-sorting or re-basing the delta.
+    demographics: verdict.demographics ?? null,
+    trends: verdict.trends ?? null,
+    sharedTags: verdict.sharedTags ?? null,
+    overlap: verdict.overlap ?? null,
+    restInsights: verdict.legs?.restInsights?.entities ?? null,
+    restCompare: verdict.legs?.restCompare?.comparison ?? null,
+    ticketmaster: verdict.ticketmaster ?? null,
     missTrial: verdict.missTrial ?? null,
     legs: verdict.legs,
     receipts: verdict.receipts || [],
@@ -617,6 +629,7 @@ function trialView(trial) {
     graphPick: trial.graphPick ?? null,
     gutPick: trial.gutPick ?? null,
     webPick: trial.webPick ?? null,
+    abstentions: trial.abstentions ?? [],
     misses: trial.misses ?? [],
     recordedAt: trial.recordedAt ?? null,
   };
@@ -744,6 +757,35 @@ export async function runComparison(workspace, stepInput, makeDeps, { checkVisit
         verdict: verdict.breakEven.verdict,
         capacity: capacityView(verdict.capacity),
         openers: { topPick: verdict.openers.topPick },
+        // Carried legs (no new call) + comparability flag, computed only
+        // from fields already on the row and the base row: rows can look
+        // comparable while differing on price source, capacity state, or
+        // variable-cost-provided state. The flag makes that visible; it
+        // never changes the tickets-ascending sort and never awards a
+        // badge. A missing field renders the flag as unknown, never as
+        // comparable. Refused rows keep their refusal shape, unchanged.
+        demographics: verdict.demographics ?? null,
+        trends: verdict.trends ?? null,
+        sharedTags: verdict.sharedTags ?? null,
+        overlap: verdict.overlap ?? null,
+        restInsights: verdict.legs?.restInsights?.entities ?? null,
+        restCompare: verdict.legs?.restCompare?.comparison ?? null,
+        ticketmaster: verdict.ticketmaster ?? null,
+        variableCostProvided: verdict.breakEven.variableCost?.provided ?? null,
+        // Comparability flag, from fields already on the row and the base
+        // row: capacity state and variable-cost-provided state are known
+        // for the base; the base price source is NOT recorded in
+        // baseVerdict, so price-source comparability to base is unknown
+        // (never claimed comparable) and the row's own source is carried
+        // for the reader to compare across rows. Never changes the
+        // tickets-ascending sort, never awards a badge.
+        comparability: {
+          capacityStateDiffersFromBase: capacityView(verdict.capacity).state !== workspace.baseVerdict.capacityState,
+          variableCostProvidedDiffersFromBase: (verdict.breakEven.variableCost?.provided ?? null) !== workspace.baseOffer.variableCostProvided,
+          priceSourceComparableToBase: null,
+          priceSource: verdict.breakEven.price?.source ?? null,
+          capacityCause: capacityView(verdict.capacity).cause ?? null,
+        },
         missTrial: trialView(verdict.missTrial ?? null),
         receipts: verdict.receipts || [],
         status: 'verdict',

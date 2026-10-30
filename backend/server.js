@@ -246,12 +246,16 @@ async function handleReplay(req, res) {
       // would report 0 against a recorded 9 and mislead the comparator's
       // count note. requestHash lets the frontend prove the replayed call
       // IS the recorded call (call fidelity), distinct from result equality.
+      // requestHashMatch: when the caller supplies the recorded
+      // requestHash, the replay reports whether the replayed call hashes
+      // to it; when no hash is supplied it is null, never a guess.
       const operationsCount = Array.isArray(envelope?.operations) ? envelope.operations.length : null;
       send(res, 200, {
         kind: 'mcp',
         tool: body.tool,
         envelope,
         requestHash: argsHashFor(body.tool, body.args || {}),
+        requestHashMatch: typeof body.requestHash === 'string' ? argsHashFor(body.tool, body.args || {}) === body.requestHash : null,
         // Both names: the replay comparator reads `ids` first, `entityIds` second.
         ids: orderedEntityIds(results),
         entityIds: orderedEntityIds(results),
@@ -308,6 +312,7 @@ async function handleReplay(req, res) {
       path: body.path,
       result,
       requestHash: result.requestHash,
+      requestHashMatch: typeof body.requestHash === 'string' ? result.requestHash === body.requestHash : null,
       // Both names: the replay comparator reads `ids` first, `entityIds` second.
       ids: orderedEntityIds(result.entities),
       entityIds: orderedEntityIds(result.entities),

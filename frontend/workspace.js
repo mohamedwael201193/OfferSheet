@@ -697,7 +697,8 @@
     return '<svg class="ws-mapstrip-svg" viewBox="0 0 600 150" role="img" aria-label="Routing cities located on a strip">' + dots + '</svg>' +
       '<p class="ws-label">Pins show city locations only — rank comes from the table below. Base city in orange; candidates in ink.</p>' +
       '<ul class="ws-mapstrip-caption">' + caption + '</ul>' +
-      (failures && failures.length ? '<p class="ws-label">Not located (omitted from the strip): ' + failures.map(function (f) { return esc(f); }).join(', ') + '.</p>' : '');
+      (failures && failures.length ? '<p class="ws-label">Not located (omitted from the strip): ' + failures.map(function (f) { return esc(f); }).join(', ') + '.</p>' : '') +
+      '<p class="ws-label">Map data © OpenStreetMap contributors, available under the Open Database License (ODbL).</p>';
   }
   async function loadMapStrip() {
     var holder = $('wsMapStrip');

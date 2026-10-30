@@ -241,6 +241,9 @@ function armLane(label, arm, tag) {
   if (arm.status === 'ok') {
     return `<div class="lane"><div class="lane-head"><strong>${label}</strong></div><p class="lane-pick">${esc(arm.pick)}</p><div class="lane-bar" aria-hidden="true"></div>${tagHtml}</div>`;
   }
+  if (arm.status === 'cannot-select') {
+    return `<div class="lane"><div class="lane-head"><strong>${label}</strong></div><p class="lane-unavailable">Declined to pick — ${esc(arm.reason || arm.status)}</p><div class="lane-bar lane-bar--empty" aria-hidden="true"></div>${tagHtml}</div>`;
+  }
   return `<div class="lane"><div class="lane-head"><strong>${label}</strong></div><p class="lane-unavailable">Unavailable — ${esc(arm.reason || arm.status)}</p><div class="lane-bar lane-bar--empty" aria-hidden="true"></div>${tagHtml}</div>`;
 }
 
@@ -900,6 +903,11 @@ function legRowHtml(key, l) {
     const raw = typeof l.comparison === 'string' ? l.comparison : JSON.stringify(l.comparison);
     payload = ` — comparison: ${esc(raw.length > 400 ? raw.slice(0, 400) + '…' : raw)}`;
   }
+  // Labelled emptiness: an empty leg shows Qloo's own envelope summary
+  // verbatim, and the sentence that emptiness does not change the
+  // break-even number. Empty is the normal case, not an error.
+  if ((l.status === 'empty' || l.status === 'skipped') && l.envelopeSummary) payload += ` — ${esc(l.envelopeSummary)} — does not change break-even`;
+  if (l.retryAfterObserved !== null && l.retryAfterObserved !== undefined) payload += ` — 429 retry: observed Retry-After ${esc(String(l.retryAfterObserved))}, waited ${l.retrySpentMs !== null && l.retrySpentMs !== undefined ? l.retrySpentMs + ' ms' : 'unknown'} (one retry only, then discarded)`;
   return `<div><dt>${esc(plain)}${secondary}</dt><dd>${state} ${esc(l.status)}${l.reason ? ` — ${esc(l.reason)}` : ''}${l.note ? ` — ${esc(l.note)}` : ''}${payload}</dd></div>`;
 }
 
@@ -914,7 +922,7 @@ function plainLegRows(legs, tm, osm, wd) {
     : '';
   // G14: OSM/Wikidata scope is rendered with every leg row — display-only /
   // Web-arm-only, never a claim either one changes a verdict number.
-  const osmRow = osm ? `<div><dt>city confirmation</dt><dd>${esc(osm.status)}${osm.displayName ? ` — ${esc(osm.displayName)}` : ''}${osm.note ? ` — ${esc(osm.note)}` : ''}${osm.reason ? ` — ${esc(osm.reason)}` : ''} — ${esc(osm.scope || 'display-only — shown for confirmation, never fed into Qloo filters')}</dd></div>` : '';
+  const osmRow = osm ? `<div><dt>city confirmation</dt><dd>${esc(osm.status)}${osm.displayName ? ` — ${esc(osm.displayName)}` : ''}${osm.note ? ` — ${esc(osm.note)}` : ''}${osm.reason ? ` — ${esc(osm.reason)}` : ''} — ${esc(osm.scope || 'display-only — shown for confirmation, never fed into Qloo filters')} — Map data © OpenStreetMap contributors (ODbL)</dd></div>` : '';
   const wdRow = wd ? `<div><dt>public facts cross-check</dt><dd>${esc(wd.status)}${wd.note ? ` — ${esc(wd.note)}` : ''}${wd.reason ? ` — ${esc(wd.reason)}` : ''} — ${esc(wd.scope || 'input to the Web arm only, never a direct verdict input')}</dd></div>` : '';
   return rows + tmRow + osmRow + wdRow;
 }
@@ -981,6 +989,7 @@ function renderProofSummary(v) {
   const trend = trendArrow(v.trends) || (typeof v.trends === 'string' ? v.trends : null);
   const tag = Array.isArray(v.sharedTags) ? firstName(v.sharedTags[0]) : firstName(v.sharedTags);
   const overlap = Array.isArray(v.overlap) ? firstSummary(v.overlap[0]) : firstSummary(v.overlap);
+  const restCompare = v.legs && v.legs.restCompare && v.legs.restCompare.comparison !== null && v.legs.restCompare.comparison !== undefined ? firstSummary(v.legs.restCompare.comparison) : null;
   // Phase 3 D: each summary line carries its own source tag. A line with
   // no value this run is tagged as not backed, never receipt-backed.
   const line = (label, value, tagHtml) => `<li><strong>${label}:</strong> ${value ? esc(value) : 'not returned this run'} ${value ? tagHtml : sourceTagHtml('not receipt-backed this run')}</li>`;
@@ -988,7 +997,8 @@ function renderProofSummary(v) {
     line('Top audience band', band, receiptTagFor(v, ['qloo_audience_demographics']))
     + line('Trend', trend, receiptTagFor(v, ['qloo_trends']))
     + line('Top shared tag', tag, receiptTagFor(v, ['qloo_entity_tags']))
-    + line('Overlap', overlap, receiptTagFor(v, ['qloo_compare_audiences']));
+    + line('Overlap', overlap, receiptTagFor(v, ['qloo_compare_audiences']))
+    + line('REST comparison (second witness)', restCompare, receiptTagFor(v, ['rest:/v2/analysis/compare']));
 }
 
 // Count-up (vanilla rAF + easeOutQuart) for RECORDED numbers only.
@@ -1991,7 +2001,7 @@ async function submitVerdict(race, entityHint) {
   const timer = setInterval(() => {
     $('raceTimer').textContent = `Running live… ${((Date.now() - t0) / 1000).toFixed(1)}s elapsed`;
   }, 100);
-  showStatus('<p><span class="spinner" aria-hidden="true"></span>Running live…</p><div class="progress" aria-hidden="true"></div><p class="label">Every number below will come from a live call, or nothing will render.</p>', '');
+  showStatus('<p><span class="spinner" aria-hidden="true"></span>Running live…</p><div class="progress" aria-hidden="true"></div><p class="label">Every number below will come from a live call, or nothing will render.</p><p class="label">Recorded verdicts took 26.2–40.1 seconds.</p>', '');
   const body = {
     artist: $('artist').value.trim(),
     city: $('city').value.trim(),
@@ -2024,7 +2034,7 @@ async function submitVerdict(race, entityHint) {
       // retrying — once, and only when a stream was actually attempted
       // (non-race). No verdict has been delivered at this point, so this is
       // a single retry of an undelivered run, never a second verdict.
-      if (!race) showStatus('<p><span class="spinner" aria-hidden="true"></span>Running live…</p><div class="progress" aria-hidden="true"></div><p class="label">The live-progress stream failed before delivering a verdict, so this run is retrying once via the standard path. Every number below will come from a live call, or nothing will render.</p>', '');
+      if (!race) showStatus('<p><span class="spinner" aria-hidden="true"></span>Running live…</p><div class="progress" aria-hidden="true"></div><p class="label">The live-progress stream failed before delivering a verdict, so this run is retrying once via the standard path. Every number below will come from a live call, or nothing will render.</p><p class="label">Recorded verdicts took 26.2–40.1 seconds.</p>', '');
       // T3: a failed stream leaves its first-attempt leg lines in #status;
       // clear them before the POST fallback run so the progress display
       // never mixes two attempts. (On success/failure of the POST path the

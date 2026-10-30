@@ -372,7 +372,7 @@ export function createMcpApp(deps = {}) {
         guards.checkCall();
         const envelope = await mcpCall(a.tool, a.args || {});
         const ids = orderedEntityIds(envelope?.results);
-        return { kind: 'mcp', tool: a.tool, envelope, ids, entityIds: ids, resultCount: envelope?.result_count ?? ids.length, comparison: compareIds(ids, a.originalIds), quotaSpent: true };
+        return { kind: 'mcp', tool: a.tool, envelope, ids, entityIds: ids, resultCount: envelope?.result_count ?? ids.length, comparison: compareIds(ids, a.originalIds), requestHashMatch: typeof a.requestHash === 'string' ? argsHashFor(a.tool, a.args || {}) === a.requestHash : null, quotaSpent: true };
       }
       if (a.kind === 'rest') {
         if (typeof a.path !== 'string' || !a.path.startsWith('/') || a.path.includes('://') || a.path.startsWith('//')) throw invalidInput('Replay REST paths must be relative paths');
@@ -381,7 +381,7 @@ export function createMcpApp(deps = {}) {
         guards.checkCall();
         const result = await restFn({ path: a.path, params: a.params || {} });
         const ids = orderedEntityIds(result?.entities);
-        return { kind: 'rest', path: a.path, result, ids, entityIds: ids, resultCount: result?.resultCount ?? ids.length, comparison: compareIds(ids, a.originalIds), quotaSpent: true };
+        return { kind: 'rest', path: a.path, result, ids, entityIds: ids, resultCount: result?.resultCount ?? ids.length, comparison: compareIds(ids, a.originalIds), requestHashMatch: typeof a.requestHash === 'string' ? result?.requestHash === a.requestHash : null, quotaSpent: true };
       }
       throw invalidInput('Replay requires kind mcp (tool + args) or kind rest (path + params)');
     },

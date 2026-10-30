@@ -40,9 +40,13 @@ test('T1: an unknown MCP arg key is rejected (silently-ignored-key false match c
   }
 });
 
-test('T1: capabilities takes no keys — operation_ids has no caller and no receipt', () => {
+test('T1: capabilities allowlist matches the proxy definition — operation_ids replayable', () => {
+  // Receipt-gap closure (patch 09): the MCP server's qloo_capabilities
+  // proxy tool declares operation_ids, so a proxy capabilities receipt
+  // carrying it must replay under the allowlist; the verdict readiness
+  // probe still sends {}.
   assert.doesNotThrow(() => validateMcpReplayArgs('qloo_capabilities', {}));
-  assert.throws(() => validateMcpReplayArgs('qloo_capabilities', { operation_ids: ['rank'] }), /not allowlisted/);
+  assert.doesNotThrow(() => validateMcpReplayArgs('qloo_capabilities', { operation_ids: ['rank'] }));
 });
 
 test('T1: unknown tool and non-object args are rejected', () => {

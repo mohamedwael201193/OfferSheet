@@ -35,8 +35,13 @@ export const MCP_TOOLS = [
 // probe sends {}); the capabilities() helper's operation_ids has no caller
 // and no receipt, so it is deliberately NOT allowlisted — if a caller is
 // ever added, this table must gain it in the same change.
+// CORRECTION (receipt-gap closure): the MCP server's qloo_capabilities
+// proxy tool DOES accept operation_ids (its tool definition declares it),
+// so a proxy capabilities receipt carrying operation_ids could not be
+// replayed under the old [] allowlist. The table now matches the proxy
+// definition exactly; the verdict readiness probe still sends {}.
 export const MCP_ARG_ALLOWLIST = {
-  qloo_capabilities: [],
+  qloo_capabilities: ['operation_ids'],
   qloo_find_tags: ['query', 'limit'],
   qloo_describe: ['entity', 'type'],
   qloo_recommend: ['target_type', 'signals', 'limit'],

@@ -63,7 +63,16 @@ export async function geocodeCities(cities, { fetchImpl = fetch, baseUrl, maxCac
         pins.push({ city, displayName: hit.displayName, lat: hit.lat, lon: hit.lon });
         continue;
       }
-      const out = await geocode({ query: city, baseUrl, fetchImpl });
+      // One city's thrown fetch (abort, network error) must not kill the
+      // whole strip: HTTP errors and empty results are already handled
+      // inside geocode(), but a thrown exception propagates. Treat a
+      // throw exactly like an unresolvable city — omitted + listed.
+      let out = null;
+      try {
+        out = await geocode({ query: city, baseUrl, fetchImpl });
+      } catch {
+        out = null;
+      }
       const lat = out?.result ? Number(out.result.lat) : NaN;
       const lon = out?.result ? Number(out.result.lon) : NaN;
       if (out?.ok && out.result && Number.isFinite(lat) && Number.isFinite(lon)) {
