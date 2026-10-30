@@ -12,70 +12,62 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<style>
-  /* M1 (second round): nav/toolbar links to verdict sections are
-     aria-disabled until their section is visible (see app.js
-     setVerdictNavState). Dimmed + not-allowed cursor so a pending
-     link never looks live; the explanatory title/aria-label on the
-     link itself carries the reason. No dashboard.css change: this
-     rule is scoped to the two link containers on this page only. */
-  #appNav a[aria-disabled="true"], .glass-toolbar a[aria-disabled="true"] {
-    opacity: .55; cursor: not-allowed;
-  }
-  #appNav a[aria-disabled="true"]:hover, .glass-toolbar a[aria-disabled="true"]:hover {
-    background: transparent; color: inherit;
-  }
-</style>
 </head>
 <body class="app-page">
-<header class="nav proof appbar">
-  <div class="wrap nav-inner">
+<!-- SIDEBAR CONSOLIDATION: the dashboard has ONE navigation, the
+     persistent sidebar panel below. The former slim top header bar
+     (wordmark + status pill + Menu button) and the floating
+     bottom-center glass toolbar are REMOVED entirely — their wordmark,
+     status badge, primary CTA, Run button and every jump target now
+     live in this one panel, each exactly once. The panel wrapper is
+     not a nav: it exists so the wordmark, badge, "Check an offer" CTA
+     and "Run the verdict" button (previously OUTSIDE the nav) do not
+     duplicate the #tool link inside the nav. The sidebar IS the one
+     nav element on this page (exactly one nav, aria-label
+     "App sections", class .nav-links as before). On narrow screens
+     this same panel becomes a left drawer (toggle + scrim + close +
+     focus into the drawer on open, return on close). The skip link is
+     injected by app.js as the first element of <body>, ahead of this
+     panel, so it stays the first Tab stop. -->
+<button class="btn nav-toggle sidebar-toggle" type="button" aria-expanded="false" aria-controls="appNav" aria-label="Open navigation">Menu</button>
+<div class="nav-scrim" aria-hidden="true"></div>
+<div class="sidebar-panel" id="sidebarPanel">
+  <div class="sidebar-head">
     <div class="wordmark">OfferSheet <span class="app-kicker">App</span></div>
     <div id="qlooBadge" class="badge">Qloo status: checking…</div>
-    <button class="btn nav-toggle" type="button" aria-expanded="false" aria-controls="appNav" aria-label="Open navigation">Menu</button>
-    <!-- Exactly ONE nav element on this page. The former second nav (proof
-         index) is folded in as the second group of this nav — same
-         targets, each exactly once, no duplicated link set. Every entry
-         opens its target's collapsed ancestors before scrolling (see
-         the disc glue script at the end of the body). The skip link is
-         injected by app.js as the first element of <body>, ahead of
-         this header, so it stays the first Tab stop. On narrow screens
-         this same element slides in from the right as a drawer. -->
-    <nav class="nav-links wrap" id="appNav" aria-label="App sections">
-      <button class="btn nav-close" type="button" aria-label="Close navigation">Close</button>
-      <div class="nav-group nav-group--main">
-        <a href="#tool">Tool</a>
-        <a href="#verdict" aria-disabled="true" title="Appears after a verdict runs" aria-label="Verdict — appears after a verdict runs">Verdict</a>
-        <a href="#evidence">Evidence</a>
-        <a href="#formula">Formula</a>
-        <a href="#depth">Proof</a>
-        <a href="#workspace">Workspace</a>
-        <a href="#ledger">Ledger</a>
-      </div>
-      <div class="nav-group nav-group--proof">
-        <span class="nav-group-label">Proof index</span>
-        <a href="#receiptSection" aria-disabled="true" title="Appears after a verdict runs" aria-label="Receipts — appears after a verdict runs">Receipts</a>
-        <a href="#verdictSheet" aria-disabled="true" title="Appears after a verdict runs" aria-label="Sheet — appears after a verdict runs">Sheet</a>
-        <a href="#raceSection" aria-disabled="true" title="Appears after a verdict runs" aria-label="Race — appears after a verdict runs">Race</a>
-        <a href="#trialTally">Trials</a>
-        <a href="#limits">Limits</a>
-      </div>
-      <div class="nav-group nav-group--main">
-        <a href="oracle.html" target="_top">Oracle</a>
-        <a href="index.html" target="_top">Landing</a>
-      </div>
-    </nav>
     <a class="btn btn--primary nav-cta" href="#tool">Check an offer</a>
+    <button type="submit" form="offerForm" class="btn btn--primary sidebar-run">Run the verdict</button>
   </div>
-</header>
-<div class="nav-scrim" aria-hidden="true"></div>
-<div class="glass-toolbar" aria-label="Quick actions">
-  <button type="submit" form="offerForm" class="btn btn--primary">Run the verdict</button>
-  <a href="#receiptSection" aria-disabled="true" title="Appears after a verdict runs" aria-label="Receipts — appears after a verdict runs">Receipts</a>
-  <a href="#verdictSheet" aria-disabled="true" title="Appears after a verdict runs" aria-label="Sheet — appears after a verdict runs">Sheet</a>
-  <a href="#workspace">Workspace</a>
+  <nav class="nav-links" id="appNav" aria-label="App sections">
+    <button class="btn nav-close" type="button" aria-label="Close navigation">Close</button>
+    <div class="nav-group nav-group--main">
+      <span class="nav-group-label">Sections</span>
+      <a href="#tool">Tool</a>
+      <a href="#verdict" class="nav-verdict-link" data-verdict-link aria-disabled="true" title="Appears after a verdict runs" aria-label="Verdict — appears after a verdict runs" aria-describedby="verdictNavNote">Verdict</a>
+      <a href="#evidence">Evidence</a>
+      <a href="#formula">Formula</a>
+      <a href="#depth">Proof</a>
+      <a href="#workspace">Workspace</a>
+      <a href="#ledger">Ledger</a>
+    </div>
+    <div class="nav-group nav-group--proof">
+      <span class="nav-group-label">Proof index</span>
+      <a href="#receiptSection" class="nav-verdict-link" data-verdict-link aria-disabled="true" title="Appears after a verdict runs" aria-label="Receipts — appears after a verdict runs" aria-describedby="verdictNavNote">Receipts</a>
+      <a href="#verdictSheet" class="nav-verdict-link" data-verdict-link aria-disabled="true" title="Appears after a verdict runs" aria-label="Sheet — appears after a verdict runs" aria-describedby="verdictNavNote">Sheet</a>
+      <a href="#raceSection" class="nav-verdict-link" data-verdict-link aria-disabled="true" title="Appears after a verdict runs" aria-label="Race — appears after a verdict runs" aria-describedby="verdictNavNote">Race</a>
+      <a href="#trialTally">Trials</a>
+      <a href="#limits">Limits</a>
+      <p class="sidebar-note" id="verdictNavNote">Verdict, Receipts, Sheet and Race are not shown yet — they appear with a verdict. Run a verdict first; these links will not jump to empty sections.</p>
+      <p class="sidebar-status" id="verdictNavStatus" aria-live="polite"></p>
+    </div>
+    <div class="nav-group nav-group--main">
+      <span class="nav-group-label">Project</span>
+      <a href="oracle.html" target="_top">Oracle</a>
+      <a href="index.html" target="_top">Landing</a>
+    </div>
+  </nav>
 </div>
-
+<div class="app-shell">
 <main class="wrap">
   <p class="breadcrumb"><a href="index.html">OfferSheet</a> / App</p>
   <section class="title-block" aria-label="Introduction">
@@ -693,6 +685,7 @@
       </div>
     </div>
   </footer>
+</div>
 
 <script src="app.js"></script>
 <script src="workspace.js"></script>
@@ -809,23 +802,33 @@
   })();
 </script>
 <script>
-  // Drawer for the single app nav (narrow screens only; the desktop nav
-  // is a plain row). Same element, never a second nav.
+  // Drawer for the single sidebar (narrow screens only; on desktop
+  // the sidebar panel is persistent and the toggle is hidden). Same
+  // panel, never a second nav: .is-open is set on BOTH the panel and
+  // the nav so the drawer rules and the reduced-motion hiding rule
+  // keep working. Focus moves into the drawer on open (Close button);
+  // every close path returns focus to the toggle, so no trap is
+  // introduced. Inert verdict links (aria-disabled, see app.js
+  // wireSidebarNav) stop their click before this handler runs, so an
+  // explained-but-inert click never closes the drawer.
   (function () {
     var toggle = document.querySelector('.nav-toggle');
+    var panel = document.querySelector('.sidebar-panel');
     var nav = document.querySelector('.nav-links');
     var scrim = document.querySelector('.nav-scrim');
     var closeBtn = document.querySelector('.nav-close');
-    if (!toggle || !nav) return;
+    if (!toggle || !panel || !nav) return;
     function closeDrawer() {
+      panel.classList.remove('is-open');
       nav.classList.remove('is-open');
       if (scrim) scrim.classList.remove('is-open');
       toggle.setAttribute('aria-expanded', 'false');
       document.body.style.overflow = '';
     }
     toggle.addEventListener('click', function () {
-      if (nav.classList.contains('is-open')) { closeDrawer(); toggle.focus(); }
+      if (panel.classList.contains('is-open')) { closeDrawer(); toggle.focus(); }
       else {
+        panel.classList.add('is-open');
         nav.classList.add('is-open');
         if (scrim) scrim.classList.add('is-open');
         toggle.setAttribute('aria-expanded', 'true');
@@ -837,12 +840,13 @@
       }
     });
     if (closeBtn) closeBtn.addEventListener('click', function () { closeDrawer(); toggle.focus(); });
-    if (scrim) scrim.addEventListener('click', closeDrawer);
+    if (scrim) scrim.addEventListener('click', function () { closeDrawer(); toggle.focus(); });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && nav.classList.contains('is-open')) { closeDrawer(); toggle.focus(); }
+      if (e.key === 'Escape' && panel.classList.contains('is-open')) { closeDrawer(); toggle.focus(); }
     });
     nav.querySelectorAll('a').forEach(function (a) {
       a.addEventListener('click', function () {
+        panel.classList.remove('is-open');
         nav.classList.remove('is-open');
         if (scrim) scrim.classList.remove('is-open');
         toggle.setAttribute('aria-expanded', 'false');

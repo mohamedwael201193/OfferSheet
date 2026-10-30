@@ -45,14 +45,14 @@ async function loadHealth() {
       $('configBanner').hidden = false;
       $('formDisabledNote').hidden = false;
       document.querySelectorAll('#offerForm input, #offerForm button').forEach((el) => { el.disabled = true; });
-      document.querySelectorAll('.glass-toolbar button[type=submit]').forEach((el) => { el.disabled = true; });
+      document.querySelectorAll('.glass-toolbar button[type=submit], .sidebar-run[type=submit]').forEach((el) => { el.disabled = true; });
     } else {
       // "Configured" alone is amber, never green: green requires a live verdict.
       setBadge('Qloo configured — awaiting first live call', 'amber');
       $('configBanner').hidden = true;
       $('formDisabledNote').hidden = true;
       document.querySelectorAll('#offerForm input, #offerForm button').forEach((el) => { el.disabled = false; });
-      document.querySelectorAll('.glass-toolbar button[type=submit]').forEach((el) => { el.disabled = false; });
+      document.querySelectorAll('.glass-toolbar button[type=submit], .sidebar-run[type=submit]').forEach((el) => { el.disabled = false; });
     }
   } catch {
     setBadge('Backend unreachable', 'red');
@@ -193,6 +193,10 @@ function hideVerdict() {
     if (typeof el.remove === 'function') el.remove();
     else if (el.parentNode && typeof el.parentNode.removeChild === 'function') el.parentNode.removeChild(el);
   }
+  // SIDEBAR NAV SYNC (mirrors f-a11y-nav setVerdictNavState): runs
+  // AFTER every hidden flag above is set, so the derived state is
+  // final — every verdict-section link returns to inert-but-explained.
+  try { syncVerdictNav(); } catch { /* verdict-nav sync never breaks a verdict reset */ }
 }
 function setRunning(on) {
   document.querySelectorAll('#offerForm button').forEach((b) => { b.disabled = on; });
@@ -201,7 +205,7 @@ function setRunning(on) {
   // a second tap started a second live verdict. Toggling it here, inside
   // setRunning itself, covers every existing setRunning(true/false) call
   // site with no per-site change.
-  document.querySelectorAll('.glass-toolbar button[type=submit]').forEach((b) => { b.disabled = on; });
+  document.querySelectorAll('.glass-toolbar button[type=submit], .sidebar-run[type=submit]').forEach((b) => { b.disabled = on; });
   const rt = $('raceToggleBtn');
   if (rt) rt.disabled = on;
 }
@@ -1730,6 +1734,7 @@ function wireVerdictAids(v) {
     const skip = document.querySelector('.skip-link');
     if (skip) { skip.href = '#verdict'; skip.textContent = 'Skip to verdict'; }
   } catch { /* skip-link retarget never breaks a verdict */ }
+  try { syncVerdictNav(); } catch { /* verdict-nav sync never breaks a verdict */ }
   // M1 (second round): same site, same pattern — the verdict's
   // sections are visible now (renderVerdictSheet already ran above),
   // so their nav/toolbar links go live; the Race link goes live only
@@ -2044,7 +2049,7 @@ async function submitVerdict(race, entityHint) {
         $('configBanner').hidden = false;
         $('formDisabledNote').hidden = false;
         document.querySelectorAll('#offerForm input, #offerForm button').forEach((el) => { el.disabled = true; });
-      document.querySelectorAll('.glass-toolbar button[type=submit]').forEach((el) => { el.disabled = true; });
+      document.querySelectorAll('.glass-toolbar button[type=submit], .sidebar-run[type=submit]').forEach((el) => { el.disabled = true; });
       } else {
         showStatus(`<p class="big">${esc(v.error?.code || res.status)}</p><p>${esc(v.error?.message || 'Request failed')}</p><p>No verdict numbers are shown in this state. Nothing is mocked or invented.</p>`, 'red');
       }
@@ -2191,9 +2196,83 @@ function wirePageAids() {
   } catch { /* prefill never breaks the page */ }
 }
 
+
+// SIDEBAR CONSOLIDATION — inert-but-explained verdict nav.
+// The four verdict-section links (#verdict, #receiptSection,
+// #verdictSheet, #raceSection) point at sections that are hidden
+// before a verdict renders, so a plain jump pre-run is a dead jump
+// to hidden content. Instead: pre-run (and Race until a race runs)
+// the link carries aria-disabled="true" + a sidebar note explaining
+// why, and a click is intercepted with a spoken/written explanation
+// — the hidden section is NEVER unhidden to fake this. After a
+// verdict renders, syncVerdictNav() lifts aria-disabled exactly for
+// the sections that are actually visible (Race only when a race
+// ran), mirroring the existing skip-link retarget sites:
+// renderVerdict (live) and hideVerdict (revert) both call it, and
+// load calls it after wirePageAids for the pre-run state. Fully
+// guarded: any failure leaves plain links, never a broken verdict.
+const VERDICT_NAV_IDS = ['verdict', 'receiptSection', 'verdictSheet', 'raceSection'];
+// Explanatory strings mirrored exactly from the f-a11y-nav fix
+// (setVerdictNavState): a live link loses ONLY these exact strings,
+// never an attribute it did not come from.
+const VERDICT_NAV_LABELS = { verdict: 'Verdict', receiptSection: 'Receipts', verdictSheet: 'Sheet', raceSection: 'Race' };
+const VERDICT_NAV_EXPLAIN = 'appears after a verdict runs';
+function syncVerdictNav() {
+  try {
+    if (typeof document === 'undefined' || typeof document.querySelector !== 'function') return;
+    let anyLive = false;
+    let raceLive = false;
+    for (const id of VERDICT_NAV_IDS) {
+      const target = $(id);
+      const link = document.querySelector('#appNav a[href="#' + id + '"]');
+      if (!link) continue;
+      const live = !!(target && !target.hidden);
+      if (live) { anyLive = true; if (id === 'raceSection') raceLive = true; }
+      if (live) {
+        if (typeof link.removeAttribute === 'function') link.removeAttribute('aria-disabled');
+        if (typeof link.getAttribute === 'function' && link.getAttribute('title') === 'Appears after a verdict runs' && typeof link.removeAttribute === 'function') link.removeAttribute('title');
+        if (typeof link.getAttribute === 'function' && link.getAttribute('aria-label') === VERDICT_NAV_LABELS[id] + ' — ' + VERDICT_NAV_EXPLAIN && typeof link.removeAttribute === 'function') link.removeAttribute('aria-label');
+        link.setAttribute('data-verdict-nav', 'live');
+      } else {
+        link.setAttribute('aria-disabled', 'true');
+        link.setAttribute('title', 'Appears after a verdict runs');
+        link.setAttribute('aria-label', VERDICT_NAV_LABELS[id] + ' — ' + VERDICT_NAV_EXPLAIN);
+        link.setAttribute('data-verdict-nav', 'pending');
+      }
+    }
+    const note = document.getElementById('verdictNavNote');
+    if (note) {
+      if (!anyLive) note.textContent = 'Verdict, Receipts, Sheet and Race are not shown yet — they appear with a verdict. Run a verdict first; these links will not jump to empty sections.';
+      else if (!raceLive) note.textContent = 'Verdict sections are open — Verdict, Receipts and Sheet jump to this verdict\u2019s content. The Race link opens only after you run the live Gut-vs-Graph race.';
+      else note.textContent = 'Verdict sections are open — Verdict, Receipts, Sheet and Race jump to this verdict\u2019s content.';
+    }
+  } catch { /* verdict-nav sync never breaks the page */ }
+}
+function wireSidebarNav() {
+  try {
+    if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') return;
+    const links = document.querySelectorAll('#appNav a[data-verdict-link]');
+    links.forEach((link) => {
+      link.addEventListener('click', (e) => {
+        if (link.getAttribute('aria-disabled') !== 'true') return;
+        e.preventDefault();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        const status = document.getElementById('verdictNavStatus');
+        if (!status) return;
+        const href = link.getAttribute('href');
+        status.textContent = href === '#raceSection'
+          ? 'The race section is not shown yet — it appears only when you run the live Gut-vs-Graph race. Nothing empty is shown.'
+          : 'Not shown yet — run a verdict first. The verdict, its receipts and its sheet appear only with a live verdict; nothing empty is shown.';
+      });
+    });
+  } catch { /* sidebar nav wiring never breaks the page */ }
+}
+
 loadHealth();
 loadBench();
 wirePageAids();
+try { wireSidebarNav(); } catch { /* sidebar nav never breaks load */ }
+try { syncVerdictNav(); } catch { /* verdict-nav sync never breaks load */ }
 
 // ---- Redesign v2 motion layer (transform/opacity only, all guarded) ----
 // Scroll progress is page state (like a scrollbar) and updates always;

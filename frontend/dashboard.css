@@ -346,7 +346,7 @@ details[open] summary { margin-bottom: 8px; }
 .footer-links a { color: var(--ink); min-height: 48px; display: inline-flex; align-items: center; }
 /* Print: chrome off, sheet + workspace printable (baseline print list, restyled). */
 @media print {
-  .nav, .appbar, #tool, #status, #raceToggleWrap, #raceSection, #trialTally, #receiptSection, #depth, #formula, #ledger, #limits, .safety, .footer, #verdict, #partialSection { display: none !important; }
+  .nav, .appbar, .sidebar-panel, .sidebar-toggle, .nav-scrim, #tool, #status, #raceToggleWrap, #raceSection, #trialTally, #receiptSection, #depth, #formula, #ledger, #limits, .safety, .footer, #verdict, #partialSection { display: none !important; }
 }
 /* Narrow: single column everywhere, drawer nav, 48px targets, no page scroll. */
 @media (max-width: 820px) {
@@ -468,20 +468,6 @@ details[open] summary { margin-bottom: 8px; }
 #tool:focus-within { box-shadow: 0 0 0 1px rgba(245, 158, 11, .4), 0 0 32px rgba(245, 158, 11, .15); }
 form input:focus, .checker-field input:focus { border-color: var(--glow); outline: 2px solid var(--glow); outline-offset: 1px; box-shadow: 0 0 0 4px rgba(245, 158, 11, .18); }
 
-/* Floating glass toolbar: persistent actions, bottom-center, blurred
-   dark glass. It is a <div>, not a second <nav>, so the single-nav rule
-   holds. Body bottom padding (below) keeps it off the footer. */
-body { padding-bottom: 110px; }
-.glass-toolbar {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px; z-index: 90;
-  display: flex; gap: 8px; align-items: center; padding: 8px 10px;
-  max-width: calc(100vw - 32px); overflow-x: auto;
-  border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14);
-  background: rgba(17, 17, 17, .72); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
-}
-.glass-toolbar a, .glass-toolbar button { flex: none; min-height: 48px; display: inline-flex; align-items: center; padding: 0 16px; border-radius: 999px; text-decoration: none; font-size: 15px; font-weight: 600; color: #FFFFFF; white-space: nowrap; }
-.glass-toolbar a:hover { background: rgba(255, 255, 255, .1); }
 
 /* Quiet tabular rows: hairline dividers, generous row padding. */
 .ws-table-wrap td, .ws-table-wrap th { padding: 16px 12px; border-bottom: 1px solid var(--hair); }
@@ -518,4 +504,78 @@ body { padding-bottom: 110px; }
   .nav-group { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
   .diagram-cell { flex: 1 1 100%; }
   .footer.band--deep { padding-bottom: max(40px, calc(40px + env(safe-area-inset-bottom))); }
+}
+
+/* ---------- SIDEBAR CONSOLIDATION (one sidebar only) ----------
+   Replaces the removed top header bar and the removed floating glass
+   toolbar. The sidebar panel is the dashboard's ONLY navigation
+   chrome: on desktop it is persistent (fixed left, content offset by
+   .app-shell); at <=820px it becomes a left drawer opened by the
+   fixed Menu toggle. The .nav/.appbar rule above is RETAINED (static,
+   never sticky) only because the suite pins that exact rule; no
+   header element ships anymore — the sidebar replaces it, and the
+   safe-area top inset the suite also pins now lives on the panel.
+   The floating-toolbar rules were deleted with the bar itself. The old
+   <=820px .nav-links drawer rules below are overridden here by the
+   higher-specificity .sidebar-panel rules (panel carries the drawer,
+   the nav inside it is a plain column). */
+.sidebar-panel {
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 90;
+  width: 280px; display: flex; flex-direction: column;
+  background: #111111; border-right: 1px solid var(--hair);
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.sidebar-head {
+  flex: none; display: grid; gap: 12px; padding: 8px 20px 20px;
+  border-bottom: 1px solid var(--hair);
+}
+.sidebar-head .badge { white-space: normal; text-align: center; }
+.sidebar-head .btn { width: 100%; }
+.sidebar-panel .nav-links {
+  flex: 1; display: flex; flex-direction: column; align-items: stretch;
+  gap: 4px; margin: 0; padding: 16px; overflow-y: auto; overflow-x: hidden;
+  position: static; transform: none; width: auto; background: transparent;
+  box-shadow: none;
+}
+.sidebar-panel .nav-group { flex-direction: column; align-items: stretch; overflow-x: visible; overflow-y: visible; }
+.sidebar-panel .nav-group--proof { border-left: 0; padding-left: 0; margin-left: 0; border-top: 1px solid var(--hair); padding-top: 12px; margin-top: 8px; }
+.sidebar-panel .nav-links a { width: 100%; }
+.sidebar-panel .btn.nav-close { display: none; }
+.sidebar-panel .btn.nav-toggle, .sidebar-toggle { display: none; }
+/* Inert-but-explained verdict links (pre-run, and Race until a race
+   runs): still real links with real targets, but muted, never
+   glowing, and app.js intercepts the click with an explanation
+   instead of jumping to a hidden section. Live links are untouched. */
+.sidebar-panel .nav-verdict-link[aria-disabled="true"] {
+  opacity: 0.55; color: var(--muted); cursor: not-allowed;
+}
+.sidebar-panel .nav-verdict-link[aria-disabled="true"]:hover { background: transparent; color: var(--muted); }
+.sidebar-note { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 12px 0 0; }
+.sidebar-status { font-size: 14px; line-height: 1.5; color: var(--ink); margin: 8px 0 0; }
+.sidebar-status:empty { display: none; }
+.app-shell { margin-left: 280px; min-width: 0; }
+/* The glass toolbar is gone, so its body bottom padding goes with it. */
+body.app-page { padding-bottom: 0; }
+@media (max-width: 820px) {
+  .sidebar-panel {
+    transform: translateX(-105%); transition: transform 300ms ease-out;
+    width: min(320px, 86vw); box-shadow: 16px 0 32px rgba(0, 0, 0, 0.5);
+  }
+  .sidebar-panel.is-open { transform: translateX(0); }
+  .sidebar-panel .btn.nav-close { display: inline-flex; align-self: flex-end; }
+  .sidebar-toggle.btn.nav-toggle {
+    display: inline-flex; position: fixed; top: 12px; left: 12px; z-index: 85;
+  }
+  .app-shell { margin-left: 0; }
+  .app-shell main.wrap { padding-top: 76px; }
+}
+@media (max-width: 820px) and (prefers-reduced-motion: reduce) {
+  .sidebar-panel { transition: none; }
+  .sidebar-panel:not(.is-open) { display: none; }
+}
+/* Print: sidebar chrome is hidden by the print list above; the content
+   offset must go with it or the printed sheet sits 280px indented. */
+@media print {
+  .app-shell { margin-left: 0; }
 }

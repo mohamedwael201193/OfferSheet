@@ -70,14 +70,21 @@ test('M1 pre-run (static): the four sections are NOT unhidden to fix this', () =
   }
 });
 
-test('M1 pre-run (static): the toolbar duplicates of Receipts/Sheet share the same state', () => {
-  const bar = APP_HTML.match(/<div class="glass-toolbar"[^>]*>([\s\S]*?)<\/div>/);
-  assert.ok(bar, 'glass-toolbar must exist');
+test('M1 pre-run (static): no duplicate verdict links survive the sidebar consolidation', () => {
+  // SUPERSEDED BY DESIGN 6 (sidebar consolidation, judged batch):
+  // the floating glass toolbar this test used to pin is REMOVED —
+  // its Receipts/Sheet duplicates no longer exist, so "duplicates
+  // share the same state" becomes the STRICTER "no duplicates exist
+  // at all": exactly one link per verdict target in the whole page,
+  // and that single copy is the inert-but-explained sidebar link.
+  // (The sidebar pinning test independently pins the same contract.)
+  assert.ok(!APP_HTML.includes('glass-toolbar'), 'the floating glass toolbar must be gone after the sidebar consolidation');
+  const page = stripComments(APP_HTML);
   for (const [id, label] of [['receiptSection', 'Receipts'], ['verdictSheet', 'Sheet']]) {
-    const tag = anchorsIn(bar[1]).find((a) => attrOf(a, 'href') === `#${id}`);
-    assert.ok(tag, `toolbar must contain a link to #${id}`);
-    assert.equal(attrOf(tag, 'aria-disabled'), 'true', `toolbar #${id} link must be aria-disabled pre-run`);
-    assert.equal(attrOf(tag, 'aria-label'), `${label} — ${EXPLAIN}`);
+    const copies = anchorsIn(page).filter((a) => attrOf(a, 'href') === `#${id}`);
+    assert.equal(copies.length, 1, `#${id} must have exactly one link on the page (no toolbar duplicate)`);
+    assert.equal(attrOf(copies[0], 'aria-disabled'), 'true', `the single #${id} link must be aria-disabled pre-run`);
+    assert.equal(attrOf(copies[0], 'aria-label'), `${label} — ${EXPLAIN}`);
   }
 });
 
