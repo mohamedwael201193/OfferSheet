@@ -32,3 +32,6 @@ body.u16-page .footer-wordmark{font-family:"Albert Sans",sans-serif!important;fo
 @media (max-width:820px){body.u16-page .site-head,body.u16-page .appbar{padding:8px 20px;flex-wrap:wrap}body.u16-page .sheet{padding:20px 16px}}
 @media (max-width:820px){body.u16-page main{padding:20px 16px!important}body.u16-page h1{margin-top:8px}}
 body.u16-page main{max-width:960px;margin:0 auto;padding:40px 40px 80px}
+/* U17 · plain-language intro above dense pages */
+body.u16-page .u17-intro{font-size:17px;line-height:1.55;color:oklch(92% 0 0);max-width:62ch;margin:10px 0 22px;padding:14px 18px;border-left:2px solid oklch(84% 0.19 80.46);background:oklch(84% 0.19 80.46 / .06);border-radius:0 10px 10px 0}
+body.u16-page .u17-intro strong{color:oklch(88% 0.12 85);font-weight:500}

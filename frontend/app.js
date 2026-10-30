@@ -1987,18 +1987,52 @@ function renderHeadlinerImage(v) {
   fig.hidden = false;
 }
 
+// U17: a plain-language progress line for people, the raw call lines in a
+// "Technical log" expander for judges. A leg that came back empty or failed
+// is worded "no data returned" — never hidden, never upgraded.
+const PLAIN_STAGES = ['Finding the artist in Qloo', 'Checking venue and ticket prices', 'Reading the headliner\'s taste tags', 'Finding opener candidates from the headliner\'s fans', 'Ranking openers for this city', 'Checking the city audience', 'Measuring audience overlap'];
+function plainStage(call) {
+  const c = String(call || '').toLowerCase();
+  if (c.includes('ticketmaster') || c.includes('venue') || c.includes('event')) return 1;
+  if (c.includes('tag')) return 2;
+  if (c.includes('recommend')) return 3;
+  if (c.includes('rank') || c.includes('llm') || c.includes('gut')) return 4;
+  if (c.includes('where') || c.includes('popular') || c.includes('heatmap') || c.includes('demograph') || c.includes('geocode') || c.includes('locality')) return 5;
+  if (c.includes('compare') || c.includes('insight')) return 6;
+  return 0;
+}
+function plainLegStatus(status) {
+  if (status === 'ok') return 'done';
+  if (status === 'empty' || status === 'skipped') return 'no data returned';
+  if (status === 'error') return 'no data returned (call failed)';
+  return String(status || '');
+}
 function appendLegProgress(leg) {
   let ul = $('legProgress');
   if (!ul) {
+    const human = document.createElement('p');
+    human.className = 'leg-human';
+    human.setAttribute('aria-live', 'polite');
+    const det = document.createElement('details');
+    det.className = 'tech-log';
+    const sum = document.createElement('summary');
+    sum.textContent = 'Technical log';
     ul = document.createElement('ul');
     ul.id = 'legProgress';
     ul.className = 'leg-progress';
     ul.setAttribute('aria-label', 'Live verdict progress');
-    $('status').appendChild(ul);
+    det.appendChild(sum);
+    det.appendChild(ul);
+    $('status').appendChild(human);
+    $('status').appendChild(det);
   }
   const li = document.createElement('li');
-  li.textContent = `${leg.call || 'leg'} — ${leg.status} (${leg.elapsedMs ?? '?'}ms)`;
+  li.textContent = `${leg.call || 'leg'} — ${plainLegStatus(leg.status)} (${leg.elapsedMs ?? '?'}ms)`;
   ul.appendChild(li);
+  const human = $('status').querySelector('.leg-human');
+  const stage = Math.max(Number(ul.dataset.stage || 0), plainStage(leg.call));
+  ul.dataset.stage = String(stage);
+  if (human) human.textContent = `${PLAIN_STAGES[stage]}… step ${stage + 1} of 7 · ${ul.children.length} live checks so far`;
 }
 
 // Streamed verdict legs (LEGENDARY): GET /api/verdict/stream emits one
@@ -2315,9 +2349,9 @@ function syncVerdictNav() {
     }
     const note = document.getElementById('verdictNavNote');
     if (note) {
-      if (!anyLive) note.textContent = 'Verdict, Receipts, Sheet and Race are not shown yet — they appear with a verdict. Run a verdict first; these links will not jump to empty sections.';
-      else if (!raceLive) note.textContent = 'Verdict sections are open — Verdict and Receipts jump to this verdict\u2019s content.';
-      else note.textContent = 'Verdict sections are open — Verdict and Receipts jump to this verdict\u2019s content.';
+      if (!anyLive) note.textContent = 'Not shown yet — run a verdict to unlock these.';
+      else if (!raceLive) note.textContent = 'Unlocked — each link opens this verdict\u2019s view.';
+      else note.textContent = 'Unlocked — each link opens this verdict\u2019s view.';
     }
   } catch { /* verdict-nav sync never breaks the page */ }
 }
