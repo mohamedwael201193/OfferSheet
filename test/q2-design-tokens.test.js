@@ -50,11 +50,14 @@ function pageCascade(page) {
   const html = read(page);
   const hrefs = [...html.matchAll(/<link[^>]*rel="stylesheet"[^>]*href="([^"]+)"/g)].map((m) => m[1])
     .concat([...html.matchAll(/<link[^>]*href="([^"]+)"[^>]*rel="stylesheet"/g)].map((m) => m[1]));
-  const local = hrefs.filter((h) => !/^https?:\/\//.test(h) && h.endsWith('.css'));
+  // U12 cache-busting: local hrefs may carry a ?v= token (same file, fresh
+  // URL). Strip the query before the .css check and the disk resolution;
+  // the cascade still reads exactly the linked files, nothing else.
+  const local = hrefs.filter((h) => !/^https?:\/\//.test(h) && h.split('?')[0].endsWith('.css'));
   assert.ok(local.length >= 1, `${page} must link at least one local stylesheet`);
   const parts = [];
   for (const href of local) {
-    const file = href.split('/').pop();
+    const file = href.split('?')[0].split('/').pop();
     assert.ok(existsSync(frontendPath(file)), `${page} stylesheet ${href} must exist in frontend/`);
     parts.push(read(file));
   }

@@ -27,7 +27,7 @@ test('landing is display-only: no verdict machinery, no data calls', () => {
     assert.ok(!landing.includes(`id="${id}"`), `landing must not contain id="${id}"`);
   }
   assert.ok(!landing.includes('<script src="app.js"'), 'landing must not load app.js');
-  assert.ok(landing.includes('<script src="landing.js"'), 'landing must load landing.js');
+  assert.ok(/<script src="landing\.js(\?[^"]*)?"/.test(landing), 'landing must load landing.js');
   assert.ok(!landingJs.includes('fetch('), 'landing.js must never fetch');
   assert.ok(!landingJs.includes('/api'), 'landing.js must never name a data endpoint');
   // NOSIM NARROWING (30 Oct 2026): the bare-string check below used to
@@ -81,7 +81,7 @@ test('app carries every id app.js queries (minus runtime + landing-only guards)'
   for (const id of [...landingOnly]) {
     assert.ok(!app.includes(`id="${id}"`), `app must not carry landing-only id="${id}"`);
   }
-  assert.ok(app.includes('<script src="app.js"'), 'app must load app.js');
+  assert.ok(/<script src="app\.js(\?[^"]*)?"/.test(app), 'app must load app.js');
   assert.ok(!app.includes('<script src="landing.js"'), 'app must not load landing.js');
   assert.ok(app.includes('href="index.html"'), 'app must link back to the landing');
   assert.ok(!app.includes('generic web'), 'app must not contain a generic-web claim');

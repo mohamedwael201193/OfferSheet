@@ -118,7 +118,7 @@ test('landing invariants still hold after the redesign', () => {
     'landing markup must make no data calls');
   assert.ok(!landing.includes('<script src="app.js"'), 'landing must not load app.js');
   assert.ok(!landing.includes('id="offerForm"'), 'landing must not carry the app form');
-  assert.ok(landing.includes('<script src="landing.js"'), 'landing must still load landing.js');
+  assert.ok(/<script src="landing\.js(\?[^"]*)?"/.test(landing), 'landing must still load landing.js');
   assert.ok(!landing.includes('<script src="sim-animation.js"'), 'landing must not load the removed staged-film script');
   assert.ok(!landing.includes('sim-animation.css'), 'landing must not load the removed staged-film stylesheet');
 });
