@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="mobile-section.css?v=u12">
 <link rel="stylesheet" href="kinpaku.css?v=u12">
 <link rel="stylesheet" href="v3-landing.css?v=u14">
-<link rel="stylesheet" href="u16-landing.css?v=u16">
+<link rel="stylesheet" href="u16-landing.css?v=u16b">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0A0A0A">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -285,11 +285,14 @@
     <div class="ms-layout">
       <div class="ms-copy">
         <p class="ms-lede">The real app takes an offer — artist, city, guarantee, ticket price — and returns a break-even verdict with receipted Qloo evidence beside it, plus a workspace to save and compare offers.</p>
-        <p class="ms-frame-note">This landing section itself runs no verdict and makes no verdict call. The phone shows only the static record below — the same numbers already stated on this page. It is not the app, it runs no verdict, and nothing inside it can be tapped as if it were live.</p>
         <div class="ms-actions">
           <a class="apk-button ms-apk" href="https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk">Download the Android app (APK)</a>
           <a class="ms-fullapp" href="app.html">Try the live demo</a>
         </div>
+        <p class="u16-honest">A static record of the 29 Oct 2026 trial — not a live verdict. Live verdicts run in the app.</p>
+        <details class="ms-details u16-notes">
+          <summary>About this record, the APK and offline use</summary>
+        <p class="ms-frame-note">This landing section itself runs no verdict and makes no verdict call. The phone shows only the static record below — the same numbers already stated on this page. It is not the app, it runs no verdict, and nothing inside it can be tapped as if it were live.</p>
         <p class="apk-note">Android APK via GitHub Release. Live verdicts run in the app — this landing page never runs a verdict.</p>
         <p class="pwa-note">PWA note: OfferSheet is installable as an app — installing adds it to your home screen. Offline, the app shows its honest offline page with no number and no stale result; /api/* calls are network-only.</p>
         <ul class="ms-features" aria-label="On your phone">
@@ -306,13 +309,13 @@
             <span class="ms-feature-text">Every button and link in this section is at least 48px tall, and the section respects safe-area insets.</span>
           </li>
         </ul>
+        </details>
         <details class="ms-details">
           <summary>Why the phone shows a record, not a live verdict</summary>
           <p>A picture of a verdict looks like a verdict, and this page refuses to show one that nobody ran. So the phone shows a clearly labelled record of a trial that did run — 29 Oct 2026 — and nothing else. For a live verdict on your own offer, use “Try the live demo” or the Android app.</p>
         </details>
       </div>
       <figure class="ms-device-fig" aria-label="Static record of the 29 Oct 2026 trial inside a phone frame">
-        <div class="u16-orbit" aria-hidden="true"><span class="u16-chip u16-chip--a">Android APK · android-app-v1.0.0</span><span class="u16-chip u16-chip--b">Installable PWA</span><span class="u16-chip u16-chip--c">Offline: honest page, no number</span></div>
         <div class="ms-dim" aria-hidden="true"><span class="ms-dim-label">Recorded demo, at phone width — not live</span></div>
         <div class="ms-device">
           <span class="ms-key ms-key--volume-up" aria-hidden="true"></span>
@@ -334,6 +337,7 @@
           </div>
           <span class="ms-homebar" aria-hidden="true"></span>
         </div>
+        <div class="u16-orbit" aria-hidden="true"><span class="u16-chip u16-chip--a">Android APK · android-app-v1.0.0</span><span class="u16-chip u16-chip--b">Installable PWA</span><span class="u16-chip u16-chip--c">Offline: honest page, no number</span></div>
         <figcaption class="ms-figcaption">Static record inside the phone frame — the recorded 29 Oct 2026 trial, not a live verdict. The phone frame is not clickable as the app. For a live verdict, use “Try the live demo” or the Android app.</figcaption>
         <a class="ms-fullapp ms-fullapp--under" href="app.html">Try the live demo</a>
       </figure>
@@ -361,7 +365,7 @@
 <script src="landing.js?v=u12"></script>
 <script src="vendor/gsap.min.js?v=3.15.0"></script>
 <script src="vendor/ScrollTrigger.min.js?v=3.15.0"></script>
-<script src="u16-landing.js?v=u16"></script>
+<script src="u16-landing.js?v=u16b"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

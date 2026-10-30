@@ -256,3 +256,12 @@ body.v3 .footer a:hover{color:var(--u-gold)}
 .u16-fig{border-bottom:1px solid oklch(84% 0.19 80.46 / .7)}
 .u16-mark{display:none}
 @media (max-width:820px){.u16-fig-num b,.u16-fig-num span{font-size:44px}}
+/* phone section v2: one honest line visible, notes folded, chips below the device (no overlap) */
+.u16-honest{font-size:14px;color:oklch(82% 0.1 188)!important;display:flex;gap:10px;align-items:center;margin:20px 0 0!important}
+.u16-honest::before{content:"";width:6px;height:6px;border-radius:50%;background:oklch(70% 0.12 188);flex:none}
+body.v3 .u16-notes{margin-top:16px}
+body.v3 .u16-notes>*:not(summary){margin:12px 16px!important}
+body.v3 .u16-notes .ms-features{padding:0;list-style:none}
+.u16-orbit{position:static!important;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:28px 0 8px;pointer-events:none}
+.u16-chip{position:static!important}
+body.v3 .ms-section .ms-lede{font-size:18px;line-height:1.6;color:var(--u-text)!important;max-width:46ch}
