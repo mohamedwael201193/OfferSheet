@@ -174,6 +174,8 @@ function hideVerdict() {
   ['diagramGuarantee', 'diagramNet', 'diagramNetBuild', 'diagramQuotient', 'diagramCeil'].forEach((id) => {
     const el = $(id); if (el) el.textContent = '—';
   });
+  const numLabel = $('diagramNumeratorLabel'); if (numLabel) numLabel.textContent = 'guarantee';
+  const costLines = $('fixedCostBreakdown'); if (costLines) { costLines.innerHTML = ''; costLines.hidden = true; }
   // T3: verdict aids created OUTSIDE the hidden verdict section must also
   // go, or they survive a later withheld/price-unknown/needs-input run as
   // stale content from the previous verdict. The 'howMade' summary is
@@ -520,6 +522,7 @@ function buildProofPackObject(v) {
       net: be.net ?? null,
       formula: 'ceil(guarantee ÷ net per ticket)',
       arithmetic: { guarantee: v.guarantee ?? null, net: be.net ?? null },
+      ...(be.fixedCosts ? { fixedCosts: be.fixedCosts } : {}),
       // T3: the pack previously carried no capacity and no cannot verdict,
       // so a pack reader could not tell whether the ticket count fits the
       // room. Both fields come from this same verdict object; no % is
@@ -1317,6 +1320,11 @@ function prefillForm(input) {
   set('venue', '');
   set('variableCost', '');
   set('capacity', '');
+  set('roomCost', input.roomCost);
+  set('productionCost', input.productionCost);
+  set('marketingCost', input.marketingCost);
+  set('otherFixedCosts', input.otherFixedCosts);
+  set('sponsorOffset', input.sponsorOffset);
   set('entityHint', '');
   const form = $('offerForm');
   if (form && form.scrollIntoView) form.scrollIntoView({ behavior: smoothBehavior(), block: 'start' });
@@ -1431,6 +1439,39 @@ function renderTrialTally(runs) {
   renderTallyTaxonomy(runs);
 }
 
+const FIXED_COST_LINES = [
+  ['roomCost', 'Venue cost'],
+  ['productionCost', 'Production cost'],
+  ['marketingCost', 'Marketing cost'],
+  ['otherFixedCosts', 'Other fixed costs'],
+  ['sponsorOffset', 'Sponsor offset'],
+];
+
+// Line-by-line break-even. A field the promoter left blank is "not entered"
+// and is left out of the total. An explicit 0 is shown as $0.
+function renderFixedCostBreakdown(v) {
+  const list = $('fixedCostBreakdown');
+  if (!list) return;
+  const be = (v && v.breakEven) || {};
+  const fc = be.fixedCosts || null;
+  const guarantee = typeof v.guarantee === 'number' ? v.guarantee : null;
+  const total = fc && typeof fc.totalToRecover === 'number' ? fc.totalToRecover : guarantee;
+  const net = typeof be.net === 'number' ? be.net : null;
+  const rows = [`<li><span class="cost-label">Guarantee</span> <span class="cost-value">${guarantee === null ? 'not entered' : money(guarantee)}</span></li>`];
+  for (const [key, label] of FIXED_COST_LINES) {
+    const line = fc && fc[key];
+    const shown = line && line.entered === true && typeof line.value === 'number' ? money(line.value) : 'not entered';
+    rows.push(`<li><span class="cost-label">${esc(label)}</span> <span class="cost-value">${shown}</span></li>`);
+  }
+  rows.push(`<li><span class="cost-label">Total to recover</span> <span class="cost-value">${typeof total === 'number' ? money(total) : 'not entered'}</span></li>`);
+  rows.push(`<li><span class="cost-label">Net per ticket</span> <span class="cost-value">${typeof net === 'number' ? money(net) : 'not entered'}</span></li>`);
+  if (typeof total === 'number' && typeof net === 'number' && typeof be.tickets === 'number') {
+    rows.push(`<li><span class="cost-label">Tickets</span> <span class="cost-value">ceil(${fmt(total)} ÷ ${fmt(net)}) = ${fmt(be.tickets)}</span></li>`);
+  }
+  list.innerHTML = rows.join('');
+  list.hidden = false;
+}
+
 // MERGE (P2 checklist): data-bound formula diagram. Fills the diagram
 // spans from the live verdict object only — it never recomputes the
 // verdict, and the ticket count is the verdict's own number. Until this
@@ -1452,12 +1493,16 @@ function renderDiagram(v) {
   } else if (price !== null) {
     netBuild = `${money(price)} − ${money(price - be.net)} per ticket`;
   }
+  const fc = be.fixedCosts;
+  const total = fc && typeof fc.totalToRecover === 'number' ? fc.totalToRecover : v.guarantee;
   const set = (id, text) => { const el = $(id); if (el && text !== null) el.textContent = text; };
-  set('diagramGuarantee', money(v.guarantee));
+  set('diagramGuarantee', money(total));
+  const numLabel = $('diagramNumeratorLabel');
+  if (numLabel) numLabel.textContent = fc && typeof fc.totalToRecover === 'number' ? 'total to recover' : 'guarantee';
   set('diagramNet', money(be.net));
   if (netBuild) set('diagramNetBuild', netBuild);
   set('diagramQuotient', be.net > 0
-    ? (v.guarantee / be.net).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    ? (total / be.net).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : '—');
   set('diagramCeil', `${fmt(be.tickets)} tickets`);
   live.hidden = false;
@@ -1541,7 +1586,10 @@ function renderVerdict(v, race) {
   // no "− 0" at all — the formula divides by the price alone and says
   // plainly the result is before variable costs. Explicit 0 shows "− 0".
   const vc = be.variableCost;
-  if (vc && typeof vc.provided === 'boolean') {
+  const recover = be.fixedCosts && typeof be.fixedCosts.totalToRecover === 'number' ? be.fixedCosts.totalToRecover : null;
+  if (recover !== null) {
+    $('workedExample').textContent = `ceil(${fmt(recover)} ÷ ${fmt(be.net)}) = ${fmt(be.tickets)} tickets`;
+  } else if (vc && typeof vc.provided === 'boolean') {
     $('workedExample').textContent = vc.provided
       ? `ceil(${fmt(v.guarantee)} ÷ (${fmt(be.price.value)} − ${fmt(vc.value)})) = ${fmt(be.tickets)} tickets`
       : `ceil(${fmt(v.guarantee)} ÷ ${fmt(be.price.value)}) = ${fmt(be.tickets)} tickets — before variable costs: no variable cost was entered, so this net is before variable costs, not net of zero costs`;
@@ -1549,6 +1597,7 @@ function renderVerdict(v, race) {
     const variableCost = be.price.value - be.net;
     $('workedExample').textContent = `ceil(${fmt(v.guarantee)} ÷ (${fmt(be.price.value)} − ${fmt(variableCost)})) = ${fmt(be.tickets)} tickets`;
   }
+  renderFixedCostBreakdown(v);
   // MERGE (P2 checklist): live diagram from this verdict's numbers.
   renderDiagram(v);
 
@@ -1686,6 +1735,9 @@ function wireVerdictAids(v) {
         artist: read('artist'), city: read('city'), venue: read('venue'),
         guarantee: read('guarantee'), ticketPrice: read('ticketPrice'),
         variableCost: read('variableCost'), capacity: read('capacity'),
+        roomCost: read('roomCost'), productionCost: read('productionCost'),
+        marketingCost: read('marketingCost'), otherFixedCosts: read('otherFixedCosts'),
+        sponsorOffset: read('sponsorOffset'),
       });
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1760,7 +1812,7 @@ function wireVerdictAids(v) {
 // the browser and in the minimal test DOM shims.
 function buildShareUrl(origin, pathname, inputs) {
   const parts = [];
-  for (const [k, val] of [['artist', inputs.artist], ['city', inputs.city], ['venue', inputs.venue], ['guarantee', inputs.guarantee], ['ticketPrice', inputs.ticketPrice], ['variableCost', inputs.variableCost], ['capacity', inputs.capacity]]) {
+  for (const [k, val] of [['artist', inputs.artist], ['city', inputs.city], ['venue', inputs.venue], ['guarantee', inputs.guarantee], ['ticketPrice', inputs.ticketPrice], ['variableCost', inputs.variableCost], ['capacity', inputs.capacity], ['roomCost', inputs.roomCost], ['productionCost', inputs.productionCost], ['marketingCost', inputs.marketingCost], ['otherFixedCosts', inputs.otherFixedCosts], ['sponsorOffset', inputs.sponsorOffset]]) {
     if (val !== undefined && val !== null && String(val) !== '') parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(val))}`);
   }
   return `${origin}${pathname}?${parts.join('&')}`;
@@ -2017,6 +2069,10 @@ async function submitVerdict(race, entityHint) {
   if (venueInput !== '') body.venue = venueInput;
   const cap = $('capacity').value;
   if (cap !== '') body.capacity = Number(cap);
+  for (const id of ['roomCost', 'productionCost', 'marketingCost', 'otherFixedCosts', 'sponsorOffset']) {
+    const el = $(id);
+    if (el && el.value !== '') body[id] = Number(el.value);
+  }
   if (entityHint) body.entityHint = entityHint;
   try {
     // Streamed legs first (non-race only): real per-call progress events.
@@ -2205,6 +2261,11 @@ function wirePageAids() {
     set('ticketPrice', 'ticketPrice');
     set('variableCost', 'variableCost');
     set('capacity', 'capacity');
+    set('roomCost', 'roomCost');
+    set('productionCost', 'productionCost');
+    set('marketingCost', 'marketingCost');
+    set('otherFixedCosts', 'otherFixedCosts');
+    set('sponsorOffset', 'sponsorOffset');
   } catch { /* prefill never breaks the page */ }
 }
 

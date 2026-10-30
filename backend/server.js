@@ -541,6 +541,12 @@ async function handleVerdictStream(req, res, url) {
     ticketPrice: num(q.get('ticketPrice')),
     variableCost: num(q.get('variableCost')),
     capacity: num(q.get('capacity')),
+    // Empty query params stay undefined (blank), never zero.
+    roomCost: num(q.get('roomCost')),
+    productionCost: num(q.get('productionCost')),
+    marketingCost: num(q.get('marketingCost')),
+    otherFixedCosts: num(q.get('otherFixedCosts')),
+    sponsorOffset: num(q.get('sponsorOffset')),
     venue: q.get('venue') ?? undefined,
     entityHint: q.get('entityHint') ?? undefined,
     visitorIp: visitorIpFor(req),

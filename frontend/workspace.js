@@ -19,6 +19,13 @@
   var ROUTE_LABEL = 'affinity-ranked, not demand-proven';
   var ROUTE_NOTE = 'Ranking reflects how many areas Qloo matched for this headliner in each city. It is not a sales forecast, not an attendance estimate, and not evidence of sales.';
   var DELTA_LABEL = 'arithmetic on the two break-evens at the recorded net — not a forecast of money made or lost';
+  var FIXED_KEYS = [
+    ['roomCost', 'venue cost'],
+    ['productionCost', 'production cost'],
+    ['marketingCost', 'marketing cost'],
+    ['otherFixedCosts', 'other fixed costs'],
+    ['sponsorOffset', 'sponsor offset']
+  ];
   var mismatchKeys = new Set();
   var compareCount = 1;
   // In-flight guard for Compare: setBusy() alone only disables a DOM
@@ -96,6 +103,11 @@
     if (!(b.capacity === null || b.capacity === undefined || (isNum(b.capacity) && b.capacity > 0))) return false;
     if (!(b.venue === null || b.venue === undefined || isStr(b.venue))) return false;
     if (!(b.capacitySource === null || b.capacitySource === undefined || isStr(b.capacitySource))) return false;
+    for (var fi = 0; fi < FIXED_KEYS.length; fi++) {
+      var fv = b[FIXED_KEYS[fi][0]];
+      if (fv === undefined || fv === null) continue;
+      if (!isNum(fv) || fv < 0) return false;
+    }
     var bv = o.baseVerdict;
     if (bv !== null && bv !== undefined) {
       if (!isObj(bv)) return false;
@@ -178,6 +190,9 @@
       variableCost: b.variableCost, variableCostProvided: !!b.variableCostProvided,
       capacity: b.capacity, capacitySource: b.capacitySource || null
     };
+    ['roomCost', 'productionCost', 'marketingCost', 'otherFixedCosts', 'sponsorOffset'].forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(b, k)) o[k] = b[k];
+    });
     // Sorted-key order, matching the server's canonicalBaseOffer exactly:
     // JSON.stringify preserves insertion order, so the fixed field order
     // above would hash differently from the server and every browser-seeded
@@ -221,7 +236,7 @@
     var be = v.breakEven || {};
     var cap = v.capacity || {};
     var known = cap.state === 'known' && typeof cap.value === 'number';
-    return {
+    var offer = {
       artist: v.artist || '',
       city: v.city || '',
       venue: v.venue || (v.ticketmaster && v.ticketmaster.venueName) || null,
@@ -232,6 +247,14 @@
       capacity: known ? cap.value : null,
       capacitySource: known ? (cap.source || null) : null
     };
+    var fc = be.fixedCosts;
+    if (fc) {
+      FIXED_KEYS.forEach(function (pair) {
+        var line = fc[pair[0]];
+        if (line && line.entered === true && typeof line.value === 'number') offer[pair[0]] = line.value;
+      });
+    }
+    return offer;
   }
   async function seed(v) {
     var rej = seedRejection(v);
@@ -271,6 +294,45 @@
 
   // ---- shared rendering helpers ----
   function guaranteeLine(g) { return '<span class="ws-g">guarantee at stake: ' + money(g) + '</span>'; }
+  function fixedInputsHtml(idFor, source) {
+    return FIXED_KEYS.map(function (pair) {
+      var val = source && typeof source[pair[0]] === 'number' ? String(source[pair[0]]) : '';
+      var label = pair[1].charAt(0).toUpperCase() + pair[1].slice(1);
+      return '<label>' + label + ' (USD, optional)<input id="' + idFor(pair[0]) + '" type="number" min="0" step="0.01" value="' + esc(val) + '" inputmode="decimal"></label>';
+    }).join('');
+  }
+  function enteredFixedParts(source) {
+    if (!source) return [];
+    var parts = [];
+    if (source.fixedCosts && typeof source.fixedCosts.totalToRecover === 'number') {
+      FIXED_KEYS.forEach(function (pair) {
+        var line = source.fixedCosts[pair[0]];
+        if (line && line.entered === true && typeof line.value === 'number') parts.push(pair[1] + ' ' + money(line.value));
+      });
+      parts.push('total to recover ' + money(source.fixedCosts.totalToRecover));
+      return parts;
+    }
+    FIXED_KEYS.forEach(function (pair) {
+      if (typeof source[pair[0]] === 'number') parts.push(pair[1] + ' ' + money(source[pair[0]]));
+    });
+    return parts;
+  }
+  function applyFixedInputs(target, idFor) {
+    FIXED_KEYS.forEach(function (pair) {
+      var n = numVal(idFor(pair[0]));
+      if (n != null) target[pair[0]] = n;
+    });
+    return target;
+  }
+  function fixedSame(a, b) {
+    for (var i = 0; i < FIXED_KEYS.length; i++) {
+      var k = FIXED_KEYS[i][0];
+      var av = typeof a[k] === 'number' ? a[k] : null;
+      var bv = typeof b[k] === 'number' ? b[k] : null;
+      if (av !== bv) return false;
+    }
+    return true;
+  }
   function costLabel() {
     return ws && ws.baseOffer && !ws.baseOffer.variableCostProvided ? ' <span class="ws-label">before variable costs</span>' : '';
   }
@@ -354,13 +416,29 @@
     var b = ws.baseOffer;
     return b.ticketPrice - (b.variableCostProvided ? b.variableCost : 0);
   }
+  function fixedExtraOf() {
+    var b = ws.baseOffer;
+    var extra = 0;
+    for (var i = 0; i < FIXED_KEYS.length; i++) {
+      var k = FIXED_KEYS[i][0];
+      if (typeof b[k] !== 'number') continue;
+      if (k === 'sponsorOffset') extra -= b[k];
+      else extra += b[k];
+    }
+    return extra;
+  }
   function renegotiateLocal(target) {
-    var b = ws.baseOffer, n = netOf();
+    var b = ws.baseOffer, n = netOf(), extra = fixedExtraOf();
+    var lower = extra === 0 ? target * n : target * n - extra;
+    var cost = b.variableCostProvided ? b.variableCost : 0;
+    var higher = extra === 0
+      ? Math.ceil((cost + b.guarantee / target) * 100) / 100
+      : Math.ceil((cost + (b.guarantee + extra) / target) * 100 - 1e-9) / 100;
     return {
       targetTickets: target, targetSource: (b.capacity != null && target === b.capacity) ? 'known capacity' : 'promoter-supplied',
       levers: {
-        lowerGuarantee: { value: target * n, reduction: b.guarantee - target * n, holdsFixed: 'holding price and costs fixed' },
-        higherPrice: { value: Math.ceil(((b.variableCostProvided ? b.variableCost : 0) + b.guarantee / target) * 100) / 100, increase: null, holdsFixed: 'holding guarantee and costs fixed', roundingRule: 'rounded UP to the smallest currency unit (cent), because any price below the exact value fails to cover the guarantee at the target tickets' },
+        lowerGuarantee: { value: lower, reduction: b.guarantee - lower, holdsFixed: 'holding price and costs fixed' },
+        higherPrice: { value: higher, increase: null, holdsFixed: 'holding guarantee and costs fixed', roundingRule: 'rounded UP to the smallest currency unit (cent), because any price below the exact value fails to cover the guarantee at the target tickets' },
         differentCity: { action: 'run routing for candidate cities, then a replacement or comparison run for the chosen city' }
       },
       baseRef: { recordedAt: ws.baseVerdict ? ws.baseVerdict.recordedAt : null, receiptCount: ws.baseVerdict ? ws.baseVerdict.receipts.length : 0 },
@@ -368,14 +446,15 @@
     };
   }
   function envelopeLocal(kind, value) {
-    var b = ws.baseOffer, n = netOf();
+    var b = ws.baseOffer, n = netOf(), extra = fixedExtraOf();
     var out = { input: { kind: kind, value: value }, net: n, capacityState: b.capacity != null ? 'known' : 'unknown', derivedFrom: { baseRecordedAt: ws.baseVerdict ? ws.baseVerdict.recordedAt : null, receiptCount: ws.baseVerdict ? ws.baseVerdict.receipts.length : 0 }, _local: true };
     if (kind === 'maxGuarantee') {
-      out.ticketsNeeded = Math.ceil(value / n);
+      var numerator = extra === 0 ? value : value + extra;
+      out.ticketsNeeded = (extra !== 0 && numerator <= 0) ? 0 : Math.ceil(numerator / n);
       if (b.capacity != null) { out.fits = out.ticketsNeeded <= b.capacity; if (!out.fits) out.note = 'Cannot break even in this room at this guarantee'; }
       else out.note = 'room fit unknown — capacity unknown';
     } else {
-      out.maxAffordableGuarantee = value * n;
+      out.maxAffordableGuarantee = extra === 0 ? value * n : value * n - extra;
       if (b.capacity != null) { out.fits = value <= b.capacity; }
       else out.note = 'room fit unknown — capacity unknown';
     }
@@ -386,7 +465,8 @@
     var cost = (actualCost != null) ? actualCost : (b.variableCostProvided ? b.variableCost : 0);
     var netSettled = b.ticketPrice - cost;
     var gap = att - bv.tickets;
-    var moneyGap = att * netSettled - b.guarantee;
+    var extra = fixedExtraOf();
+    var moneyGap = extra === 0 ? att * netSettled - b.guarantee : att * netSettled - (b.guarantee + extra);
     var flags = [];
     if (b.capacity != null && att > b.capacity) flags.push('reported attendance exceeds recorded capacity — check the count');
     return {
@@ -477,6 +557,7 @@
         '<label>Ticket price (USD)<input id="ws-eb-price" type="number" min="0" step="0.01" value="' + esc(b.ticketPrice == null ? '' : b.ticketPrice) + '" inputmode="decimal"></label>' +
         '<label>Variable cost per ticket (USD, blank = before variable costs)<input id="ws-eb-cost" type="number" min="0" step="0.01" value="' + esc(b.variableCost == null ? '' : b.variableCost) + '" inputmode="decimal"></label>' +
         '<label>Capacity<input id="ws-eb-capacity" type="number" min="1" step="1" value="' + esc(b.capacity == null ? '' : b.capacity) + '" inputmode="numeric"></label>' +
+        fixedInputsHtml(function (k) { return 'ws-eb-' + k; }, b) +
         '<button type="submit" class="ws-btn ws-btn--primary">Save as new workspace</button> <span class="ws-out" id="wsEditBaseOut"></span></form>';
       return;
     }
@@ -491,11 +572,13 @@
       '<label>Ticket price (USD)<input id="ws-eb-price" type="number" min="0" step="0.01" value="' + esc(b.ticketPrice == null ? '' : b.ticketPrice) + '" inputmode="decimal"></label>' +
       '<label>Variable cost per ticket (USD, blank = before variable costs)<input id="ws-eb-cost" type="number" min="0" step="0.01" value="' + esc(b.variableCost == null ? '' : b.variableCost) + '" inputmode="decimal"></label>' +
       '<label>Capacity<input id="ws-eb-capacity" type="number" min="1" step="1" value="' + esc(b.capacity == null ? '' : b.capacity) + '" inputmode="numeric"></label>' +
+      fixedInputsHtml(function (k) { return 'ws-eb-' + k; }, b) +
       '<button type="submit" class="ws-btn ws-btn--primary">Save as new workspace</button> <span class="ws-out" id="wsEditBaseOut"></span></form>';
     // Replacement
     var rep = $('wsReplacement');
     if (rep) {
-      var terms = '<p class="ws-label">Terms carried from the base (read-only here — a replacement with different terms belongs in Comparison): city ' + esc(b.city) + ' · ' + guaranteeLine(b.guarantee) + ' · ticket price ' + money(b.ticketPrice) + ' · variable cost ' + (b.variableCostProvided ? money(b.variableCost) : 'blank (before variable costs)') + ' · capacity ' + (b.capacity != null ? fmt(b.capacity) : 'unknown') + (b.venue ? ' · room ' + esc(b.venue) : '') + '</p>';
+      var carry = enteredFixedParts(b);
+      var terms = '<p class="ws-label">Terms carried from the base (read-only here — a replacement with different terms belongs in Comparison): city ' + esc(b.city) + ' · ' + guaranteeLine(b.guarantee) + ' · ticket price ' + money(b.ticketPrice) + ' · variable cost ' + (b.variableCostProvided ? money(b.variableCost) : 'blank (before variable costs)') + ' · capacity ' + (b.capacity != null ? fmt(b.capacity) : 'unknown') + (b.venue ? ' · room ' + esc(b.venue) : '') + (carry.length ? ' · ' + esc(carry.join(' · ')) : '') + '</p>';
       var list = (st.replacements || []).map(function (e, i) {
         var r = e.result || e;
         var d = (typeof r.deltaTickets === 'number') ? r.deltaTickets : ((typeof r.tickets === 'number' && bv) ? r.tickets - bv.tickets : null);
@@ -745,12 +828,14 @@
       '<label>Ticket price (USD)<input id="ws-comp-price-' + i + '" type="number" min="0" step="0.01" inputmode="decimal"></label>' +
       '<label>Variable cost per ticket (USD, blank = before variable costs)<input id="ws-comp-cost-' + i + '" type="number" min="0" step="0.01" inputmode="decimal"></label>' +
       '<label>Capacity<input id="ws-comp-cap-' + i + '" type="number" min="1" step="1" inputmode="numeric"></label>' +
+      fixedInputsHtml(function (k) { return 'ws-comp-' + k + '-' + i; }, null) +
       '<label>Room / venue<input id="ws-comp-venue-' + i + '"></label></fieldset>';
   }
   function comparisonHtml(r) {
     if (!r) return '';
     var bv = ws.baseVerdict, b = ws.baseOffer;
-    var baseRow = '<tr><td>0 (base — from the verified base, never re-run)</td><td>' + esc(b.artist) + ' · ' + esc(b.city) + '</td><td>' + guaranteeLine(b.guarantee) + '</td><td>' + fmt(bv ? bv.tickets : null) + '</td><td>' + (bv && bv.capacityState === 'known' ? fmt(b.capacity) : 'unknown') + '</td><td>' + (bv ? receiptsHtml(bv.receipts, 'base') : '') + '</td></tr>';
+    var baseParts = enteredFixedParts(b);
+    var baseRow = '<tr><td>0 (base — from the verified base, never re-run)</td><td>' + esc(b.artist) + ' · ' + esc(b.city) + '</td><td>' + guaranteeLine(b.guarantee) + (baseParts.length ? '<br><span class="ws-label">' + esc(baseParts.join(' · ')) + '</span>' : '') + '</td><td>' + fmt(bv ? bv.tickets : null) + '</td><td>' + (bv && bv.capacityState === 'known' ? fmt(b.capacity) : 'unknown') + '</td><td>' + (bv ? receiptsHtml(bv.receipts, 'base') : '') + '</td></tr>';
     // The server result already carries its own base row (offerIndex 0);
     // rendering it as well would show row 0 twice. The row above is the
     // only base row: it carries the verified base receipts, while the
@@ -776,7 +861,8 @@
       // every later offer's button replay the previous offer's receipt
       // (findReceipts indexes the unfiltered rows array).
       var compKey = 'comp' + (row.offerIndex != null ? row.offerIndex : i + 1);
-      return '<tr><td>' + esc(row.offerIndex != null ? row.offerIndex : i + 1) + '</td><td>' + esc(row.artist || '') + ' · ' + esc(row.city || '') + '</td><td>' + guaranteeLine(row.guarantee) + '</td><td>' + fmt(row.tickets) + '</td><td>' + (row.capacity ? (row.capacity.state === 'known' ? fmt(row.capacity.value) : 'unknown') : 'unknown') + '</td><td>' + receiptsHtml(row.receipts || [], compKey) + '</td></tr>';
+      var rowParts = enteredFixedParts(row);
+      return '<tr><td>' + esc(row.offerIndex != null ? row.offerIndex : i + 1) + '</td><td>' + esc(row.artist || '') + ' · ' + esc(row.city || '') + '</td><td>' + guaranteeLine(row.guarantee) + (rowParts.length ? '<br><span class="ws-label">' + esc(rowParts.join(' · ')) + '</span>' : '') + '</td><td>' + fmt(row.tickets) + '</td><td>' + (row.capacity ? (row.capacity.state === 'known' ? fmt(row.capacity.value) : 'unknown') : 'unknown') + '</td><td>' + receiptsHtml(row.receipts || [], compKey) + '</td></tr>';
     }).join('');
     return '<article class="ws-row"><div class="ws-table-wrap"><table class="ws-table"><thead><tr><th>Row</th><th>Offer</th><th>Guarantee</th><th>Tickets needed</th><th>Capacity</th><th>Receipts / refusal</th></tr></thead><tbody>' + baseRow + rows + '</tbody></table></div>' +
       '<p>' + esc(SORT_NOTE) + '</p>' +
@@ -921,8 +1007,9 @@
         capacity: numVal('ws-eb-capacity'),
         capacitySource: numVal('ws-eb-capacity') != null ? 'user-supplied, not Ticketmaster-verified' : null
       };
+      applyFixedInputs(edited, function (k) { return 'ws-eb-' + k; });
       var out = $('wsEditBaseOut');
-      var same = edited.artist === b.artist && edited.city === b.city && (edited.venue || null) === (b.venue || null) && edited.guarantee === b.guarantee && edited.ticketPrice === b.ticketPrice && edited.variableCost === b.variableCost && edited.capacity === b.capacity;
+      var same = edited.artist === b.artist && edited.city === b.city && (edited.venue || null) === (b.venue || null) && edited.guarantee === b.guarantee && edited.ticketPrice === b.ticketPrice && edited.variableCost === b.variableCost && edited.capacity === b.capacity && fixedSame(edited, b);
       if (same) { if (out) out.textContent = 'No change — workspace unchanged.'; return; }
       if (!edited.artist || !edited.city || edited.guarantee == null || edited.guarantee < 0) { if (out) out.textContent = 'Enter an artist, a city, and a guarantee at or above 0.'; return; }
       ws = { workspaceVersion: 1, workspaceId: await computeId(edited, []), baseOffer: edited, baseVerdict: null, steps: { replacements: [], renegotiation: null, routing: null, envelope: null, comparison: null, settlements: [] }, editedFrom: 'previous base' };
@@ -961,7 +1048,7 @@
       var out = $('wsRenegOut'), ref = $('wsRenegRefusal');
       if (target == null || target <= 0 || Math.floor(target) !== target) { if (out) out.textContent = 'Capacity is unknown — enter a target ticket count above 0. No target will be invented.'; return; }
       if (netOf() <= 0) { if (out) out.textContent = 'Net per ticket is not positive — no lever can be computed.'; return; }
-      if (b.guarantee === 0) {
+      if (b.guarantee === 0 && fixedExtraOf() === 0) {
         var noteEntry = { result: { note: 'no guarantee — break-even is already 0 tickets; no lever applies' }, recordedAt: isoNow() };
         var prev = ws.steps.renegotiation; if (prev) noteEntry.result.supersedes = prev.recordedAt;
         ws.steps.renegotiation = noteEntry; save(); render(); return;
@@ -1059,10 +1146,12 @@
       for (var i = 0; i < compareCount; i++) {
         var a = strVal('ws-comp-artist-' + i), c = strVal('ws-comp-city-' + i), g = numVal('ws-comp-g-' + i);
         if (!a || !c || g == null || g < 0) { var o0 = $('wsCompOut'); if (o0) o0.textContent = 'Each offer needs an artist, a city, and a guarantee at or above 0.'; return; }
-        offers.push({ artist: a, city: c, guarantee: g, ticketPrice: numVal('ws-comp-price-' + i), variableCost: numVal('ws-comp-cost-' + i), capacity: numVal('ws-comp-cap-' + i), venue: strVal('ws-comp-venue-' + i) || undefined });
+        var offer = { artist: a, city: c, guarantee: g, ticketPrice: numVal('ws-comp-price-' + i), variableCost: numVal('ws-comp-cost-' + i), capacity: numVal('ws-comp-cap-' + i), venue: strVal('ws-comp-venue-' + i) || undefined };
+        applyFixedInputs(offer, function (k) { return 'ws-comp-' + k + '-' + i; });
+        offers.push(offer);
       }
       var out = $('wsCompOut'), ref = $('wsCompRefusal');
-      var dup = offers.some(function (of) { return of.artist.toLowerCase() === b.artist.toLowerCase() && of.city.toLowerCase() === b.city.toLowerCase() && of.guarantee === b.guarantee && of.ticketPrice === b.ticketPrice && (of.variableCost || null) === (b.variableCost || null) && (of.capacity || null) === (b.capacity || null); });
+      var dup = offers.some(function (of) { return of.artist.toLowerCase() === b.artist.toLowerCase() && of.city.toLowerCase() === b.city.toLowerCase() && of.guarantee === b.guarantee && of.ticketPrice === b.ticketPrice && (of.variableCost || null) === (b.variableCost || null) && (of.capacity || null) === (b.capacity || null) && fixedSame(of, b); });
       if (dup) { if (out) out.textContent = 'An offer identical to the base offer on every commercial term is not a comparison — change at least one term.'; return; }
       var submitWorkspaceId = ws.workspaceId;
       compareInFlight = true;

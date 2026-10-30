@@ -59,6 +59,7 @@
   }
 }</pre>
     <p>Proven 29 Oct 2026: a fresh clone of the public repo answers tools/list with exactly 33 tools (23 offersheet_ + 10 qloo_) with no keys configured, and a live receipt replayed through the deployed backend returned the same ID list in the same order. Artifacts, served on this page's own site: <a href="mcp-fresh-clone-transcript.json">fresh-clone tools/list transcript</a> · <a href="receipt-roundtrip.json">live receipt round-trip record</a>.</p>
+    <p>offersheet_deal_breakeven, offersheet_verdict_run, and offersheet_verdict_race take an optional fixed-cost stack: venue cost (roomCost), production cost, marketing cost, other fixed costs, and a sponsor offset that is subtracted. Omit a field when it is blank. Blank is not entered and is not zero. The catalogue stays 33 tools: 23 OfferSheet tools + 10 guarded Qloo tools.</p>
 
     <h2>Install Qloo's official local server (agent setup)</h2>
     <p>This wires Qloo's own MCP server into your agent — it is not an OfferSheet server, and it adds no new OfferSheet surface. The verdict itself still runs in the hosted app.</p>

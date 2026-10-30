@@ -37,6 +37,7 @@
   <section class="card" aria-label="Protocol">
     <h2>1. The break-even formula</h2>
     <p>Break-even tickets = ceil(guarantee ÷ net per-ticket contribution), where net per-ticket contribution = ticket price − variable cost per ticket. The result is rounded up to the next whole ticket.</p>
+    <p>An optional fixed-cost stack may be entered: venue cost, production cost, marketing cost, other fixed costs, and a sponsor offset that is subtracted. Tickets are then ceil((guarantee + entered fixed costs − entered sponsor offset) ÷ net per-ticket contribution). A blank field is not entered and is not zero. The recorded trials entered none of these fields, so their counts stay ceil(guarantee ÷ net per-ticket contribution).</p>
 
     <h2>2. The miss definition</h2>
     <p>A miss is recorded when a comparison-arm pick differs from the grounded pick. The grounded pick is the Qloo-grounded pick; each comparison arm (Gut, Web) is scored against it, separately.</p>
@@ -55,6 +56,7 @@
 
     <h2>Change log</h2>
     <p>v1 — 29 October 2026: initial publication of this protocol, before any trial under it.</p>
+    <p>v2 — 30 October 2026: an optional fixed-cost stack may be entered (venue cost, production cost, marketing cost, other fixed costs, and a sponsor offset that is subtracted). A blank field is not entered and is not zero. The recorded trials entered none of these fields, so their ticket counts are unchanged.</p>
     <p>Any protocol change is logged here with its date and reason, and never applies retroactively to already-recorded trials. A trial recorded under an earlier version stays judged by the version in force when it ran.</p>
   </section>
 
