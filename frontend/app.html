@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="dashboard.css?v=u15">
 <link rel="stylesheet" href="kinpaku.css?v=u12">
+<link rel="stylesheet" href="u16-dashboard.css?v=u16">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0A0A0A">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -192,6 +193,18 @@
   </section>
 
   <section id="status" class="status" aria-live="polite" hidden></section>
+
+  <!-- U16 empty state: words only, no figure. Hidden by CSS as soon as a real verdict renders. -->
+  <div class="u16-empty" role="note" aria-label="No verdict yet">
+    <span class="u16-empty-ic" aria-hidden="true"></span>
+    <h2>No verdict yet</h2>
+    <p>The number, the formula and every receipt appear here after a real run. Nothing is shown before one — no placeholder figure.</p>
+    <ol>
+      <li>Check artist, city and guarantee</li>
+      <li>Press the gold run button</li>
+      <li>Read the verdict, then the receipts</li>
+    </ol>
+  </div>
 
   <!-- Verdict hero: lavender panel, huge number, chip rows, facts as
        chips. It renders only on a successful run (hidden otherwise) —
@@ -743,6 +756,8 @@
 <script src="workspace.js?v=u15"></script>
 <script src="oracle.js?v=u15"></script>
 <script src="dark-dash.js?v=u12"></script>
+<script src="vendor/gsap.min.js?v=3.15.0"></script>
+<script src="u16-dashboard.js?v=u16"></script>
 <script>
   // Arithmetic checker: pure client-side ceil math on typed inputs.
   // No fetch, no verdict, no Qloo call, no stored state.
