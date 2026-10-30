@@ -9,10 +9,11 @@
   }
   if (!g || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var tl = g.timeline({ defaults: { ease: 'expo.out', duration: 0.7 } });
-  tl.from('.flow-step', { y: 8, autoAlpha: 0, stagger: 0.05, duration: 0.5 }, 0)
-    .from('#tool', { y: 20, autoAlpha: 0 }, 0.1)
-    .from('#tool .field', { y: 10, autoAlpha: 0, stagger: 0.03, duration: 0.45 }, 0.25)
-    .from('.u16-empty', { x: 24, autoAlpha: 0 }, 0.35);
+  /* transform-only intro: text keeps full opacity, so contrast is never reduced mid-animation */
+  tl.from('.flow-step', { y: 8, stagger: 0.05, duration: 0.5 }, 0)
+    .from('#tool', { y: 20 }, 0.1)
+    .from('#tool .field', { y: 10, stagger: 0.03, duration: 0.45 }, 0.25)
+    .from('.u16-empty', { x: 24 }, 0.35);
   if (!v) return;
   var shown = !v.hidden;
   new MutationObserver(function () {
