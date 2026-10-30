@@ -6,6 +6,18 @@
    - Spotlight (idea from Cursify "spotlight cursor", ported as a card
      glow): a soft gold radial light that follows the pointer inside a card. */
 (function () {
+  // U20c layout (not motion, so it runs under reduced motion too): the two
+  // closing discs (integration depth, what Qloo doesn't decide) share one
+  // slim row. Sections move into a wrapper that carries their tab key; ids
+  // and content are unchanged.
+  function slimRow() {
+    var d = document.getElementById('depth'), l = document.getElementById('limits');
+    if (!d || !l || d.parentElement.classList.contains('u20c-slim')) return;
+    var key = d.getAttribute('data-u17'); if (!key) return;
+    var w = document.createElement('div'); w.className = 'u20c-slim'; w.setAttribute('data-u17', key);
+    d.parentElement.insertBefore(w, d); w.appendChild(d); w.appendChild(l);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(slimRow, 0); }); else setTimeout(slimRow, 0);
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var touch = window.matchMedia && window.matchMedia('(hover: none)').matches;
   if (reduce) { document.documentElement.classList.add('u20-still'); return; }

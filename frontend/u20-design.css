@@ -215,3 +215,68 @@ html.u17-tabs main.wrap .flow-title,html.u17-tabs main.wrap .source-tag,html.u17
 html.u17-tabs main.wrap .ws-example,html.u17-tabs main.wrap .ws-example-k,html.u17-tabs main.wrap .u20-pill{font-size:13px!important}
 html.u17-tabs main.wrap .ws-example-k{text-transform:none!important;letter-spacing:0!important}
 @media (max-width:480px){html.u17-tabs main.wrap .flow-title{font-size:12px!important;letter-spacing:-.01em}}
+/* ===== U20c ===== */
+/* Ledger: reasons inline, never an empty label */
+.u20-why-line{margin:4px 0 0!important;font-size:14px!important;line-height:1.55;color:var(--u20-ink-2)!important}
+.u20-why-line span{color:var(--u20-ink-3);font-weight:500}
+/* ruled rows + one expander */
+.u20c-rows{list-style:none;padding:0;margin:8px 0 0;border-top:1px solid var(--u20-rule)}
+.u20c-rows li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;padding:12px 0;border-bottom:1px solid var(--u20-rule);margin:0!important}
+.u20c-k{color:var(--u20-ink);font-size:15px}
+.u20c-v{color:var(--u20-ink-2);font-size:14px;text-align:right}
+.u20c-rows .u20c-more{grid-column:1/-1}
+details.u20c-more>summary{cursor:pointer;font-size:13.5px;color:var(--u20-ink-2);padding:4px 0;list-style:none}
+details.u20c-more>summary::after{content:" ›";color:var(--u20-ink-3)}
+details.u20c-more[open]>summary::after{content:" ⌄"}
+details.u20c-more p{font-size:14px!important;color:var(--u20-ink-2)!important;margin:6px 0 0!important}
+.u20c-tally-more{border-top:1px solid var(--u20-rule);margin-top:20px;padding-top:12px}
+.u20c-bench-sum{margin:0!important}
+html.u17-tabs #ledger .disc-body>p{font-size:14px!important;color:var(--u20-ink-2)!important;border-top:1px solid var(--u20-rule);padding-top:12px;margin-top:12px}
+#trialTally .u20c-tally-more .miss-taxonomy{display:block;margin:8px 0 0}
+#trialTally .u20c-tally-more h3{font-size:15px!important}
+/* Evidence: receipts behind one summary row */
+html.u17-tabs #receiptSection .fig{display:none!important}
+html.u17-tabs #receiptSection .sheet-head .label:nth-of-type(n+2){display:none}
+details.u20c-receipts{border-top:1px solid var(--u20-rule);border-bottom:1px solid var(--u20-rule);margin:8px 0}
+details.u20c-receipts>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;padding:14px 0;list-style:none;font-size:15px;color:var(--u20-ink)}
+details.u20c-receipts>summary::-webkit-details-marker{display:none}
+.u20c-hint{font-size:13.5px;color:var(--u20-ink-3)}
+.u20c-hint::after{content:" ›"}
+details.u20c-receipts[open] .u20c-hint::after{content:" ⌄"}
+/* Sources checked: compact one-line rows */
+.u20-sources .u20-check{grid-template-columns:minmax(0,1fr) auto!important;padding:8px 0!important;gap:0 12px!important}
+.u20-sources .u20-check-l{font-size:14.5px!important}
+.u20-sources .u20-check-m{grid-column:1;grid-row:2;font-size:12px!important}
+.u20-sources .u20-pill{grid-row:1/span 2}
+.u20-sources .u20-check-d{font-size:13px!important;grid-row:3}
+@media (min-width:1100px){.u20-sources .u20-checks{columns:3!important;column-gap:32px!important}}
+.u20-sources .u20-checks-sub{margin:14px 0 2px!important}
+/* the two closing discs as one slim row */
+html.u17-tabs .u20c-slim{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--u20-gap);margin:var(--u20-gap) 0}
+html.u17-tabs .u20c-slim>section{margin:0!important;padding:16px 20px!important;border-radius:14px!important;background:var(--u20-card)!important;border:1px solid var(--u20-rule)!important;min-width:0}
+html.u17-tabs .u20c-slim .eyebrow,html.u17-tabs .u20c-slim .sheet-head img{display:none!important}
+html.u17-tabs .u20c-slim .disc-head-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+html.u17-tabs .u20c-slim h2{font-size:15.5px!important;font-weight:600!important;margin:0!important;line-height:1.35}
+html.u17-tabs .u20c-slim .disc-toggle{min-height:0!important;padding:6px 14px!important;font-size:13.5px!important;white-space:nowrap}
+html.u17-tabs .u20c-slim>section:not(.disc--closed){grid-column:1/-1}
+@media (max-width:820px){html.u17-tabs .u20c-slim{grid-template-columns:1fr}}
+/* Workspace: two-column term-sheet forms at desktop widths */
+@media (min-width:1000px){
+  html.u17-tabs #workspace .ws-panel[aria-label="Base offer"],html.u17-tabs #workspace .ws-panel[aria-label="Comparison"]{grid-column:1/-1}
+  html.u17-tabs #workspace .ws-form{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px 28px!important}
+  html.u17-tabs #workspace .ws-form>label{grid-column:auto!important}
+  html.u17-tabs #workspace .ws-panel[aria-label="Base offer"] .ws-form,html.u17-tabs #workspace .ws-form fieldset.ws-offer{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  html.u17-tabs #workspace .ws-form fieldset.ws-offer{display:grid!important;gap:14px 28px!important}
+  html.u17-tabs #workspace .ws-form fieldset.ws-offer>legend{grid-column:1/-1}
+}
+html.u17-tabs #workspace .ws-form label{gap:2px!important}
+html.u17-tabs #workspace .ws-form fieldset.ws-offer{border-top:1px solid var(--u20-rule)!important}
+html.u17-tabs .u20c-slim .disc-head-row p{font-size:13.5px!important;color:var(--u20-ink-2)!important;margin:4px 0 0!important;line-height:1.45}
+html.u17-tabs .u20c-slim .disc-head-row p strong{font-weight:400}
+.u20-sources .u20-check{break-inside:avoid}
+html.u17-tabs .app-shell main.wrap[data-u17-active="evidence"]>.u20c-slim{display:grid!important}
+@media (max-width:820px){html.u17-tabs .app-shell main.wrap[data-u17-active="evidence"]>.u20c-slim{grid-template-columns:1fr}}
+html.u17-tabs body main.wrap[data-u17-active="evidence"]>div.u20c-slim.u20c-slim.u20c-slim.u20c-slim:not([hidden]){display:grid!important}
+@media (max-width:820px){html.u17-tabs body main.wrap>div.u20c-slim.u20c-slim{grid-template-columns:1fr!important}}
+html.u17-tabs .u20c-slim .disc-head-row{flex-wrap:nowrap!important}
+html.u17-tabs .u20c-slim .disc-head-row>div{flex:1 1 auto;min-width:0}

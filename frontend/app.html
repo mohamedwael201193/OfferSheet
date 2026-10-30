@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="kinpaku.css?v=u12">
 <link rel="stylesheet" href="u16-dashboard.css?v=u17">
 <link rel="stylesheet" href="u17-dashboard.css?v=u20b">
-  <link rel="stylesheet" href="u20-design.css?v=u20b">
+  <link rel="stylesheet" href="u20-design.css?v=u20c">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0A0A0A">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -479,7 +479,9 @@
           <img src="assets/sheet-receipt.webp" alt="Stack of checked proof slips" width="1920" height="1280" loading="lazy">
           <figcaption>Checked proof slips.</figcaption>
         </figure>
+        <details class="u20c-receipts"><summary><span id="receiptSummaryText">Receipts</span> <span class="u20c-hint">Show each call</span></summary>
         <div id="receiptList" class="set"></div>
+        </details>
         <p id="receiptSourceTag" class="source-tag-line"></p>
         <div id="replayOut" class="replay-out"></div>
           </div>
@@ -625,8 +627,10 @@
       <h2>Gut vs Graph — recorded trials</h2>
     </div><button class="btn disc-toggle" type="button" aria-expanded="false" aria-controls="disc-trialTally-body">Show trials</button></div>
     <div class="disc-body" id="disc-trialTally-body"><div id="tallyTable"></div>
+      <details class="u20c-more u20c-tally-more"><summary>How the tally is counted · recorded miss taxonomy</summary>
       <p id="tallyLine" class="tally-line"></p>
       <div id="tallyTaxonomy" class="miss-taxonomy" aria-label="Recorded miss taxonomy"></div>
+      </details>
         </div>
 </section>
 
@@ -780,14 +784,14 @@
   </footer>
 </div>
 
-<script src="app.js?v=u20b"></script>
-<script src="workspace.js?v=u20"></script>
+<script src="app.js?v=u20c"></script>
+<script src="workspace.js?v=u20c"></script>
 <script src="oracle.js?v=u15"></script>
 <script src="dark-dash.js?v=u12"></script>
 <script src="vendor/gsap.min.js?v=3.15.0"></script>
 <script src="u16-dashboard.js?v=u17"></script>
 <script src="u17-tabs.js?v=u20b"></script>
-<script src="u20-fx.js?v=u20b" defer></script>
+<script src="u20-fx.js?v=u20c" defer></script>
 <script>
   // Arithmetic checker: pure client-side ceil math on typed inputs.
   // No fetch, no verdict, no Qloo call, no stored state.
