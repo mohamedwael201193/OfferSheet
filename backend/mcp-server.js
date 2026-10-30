@@ -571,11 +571,23 @@ export function createMcpApp(deps = {}) {
       const provided = a.variableCostProvided !== undefined ? a.variableCostProvided : (a.variableCost !== undefined);
       let be;
       try {
-        be = breakEven({ guarantee: a.guarantee, ticketPrice: a.ticketPrice, variableCost: a.variableCost ?? 0, capacity: a.capacity ?? null });
+        be = breakEven({
+          guarantee: a.guarantee,
+          ticketPrice: a.ticketPrice,
+          variableCost: a.variableCost ?? 0,
+          capacity: a.capacity ?? null,
+          roomCost: a.roomCost,
+          productionCost: a.productionCost,
+          marketingCost: a.marketingCost,
+          otherFixedCosts: a.otherFixedCosts,
+          sponsorOffset: a.sponsorOffset,
+        });
       } catch (e) {
         throw invalidInput(e.message);
       }
-      return { status: 'ok', tickets: be.tickets, net: be.net, note: be.note, verdict: be.verdict, capacity: be.capacity, variableCost: { value: provided ? be.variableCost : null, provided }, quotaSpent: false };
+      const out = { status: 'ok', tickets: be.tickets, net: be.net, note: be.note, verdict: be.verdict, capacity: be.capacity, variableCost: { value: provided ? be.variableCost : null, provided }, quotaSpent: false };
+      if (be.fixedCosts) out.fixedCosts = be.fixedCosts;
+      return out;
     },
     async offersheet_city_geocode(a) {
       const scope = 'display-only — shown for confirmation, never fed into Qloo filters';
@@ -721,6 +733,13 @@ export function createMcpApp(deps = {}) {
 // ---- tool catalogue (spec §1, names character-for-character) ------------
 const Q = 'Spends Qloo quota (guarded).';
 const NQ = 'Spends no Qloo calls.';
+const fixedCostProps = {
+  roomCost: { type: 'number', min: 0, description: 'Optional venue/room cost in USD. Omit when blank. Blank is not entered and is not zero.' },
+  productionCost: { type: 'number', min: 0, description: 'Optional production cost in USD. Omit when blank. Blank is not entered and is not zero.' },
+  marketingCost: { type: 'number', min: 0, description: 'Optional marketing cost in USD. Omit when blank. Blank is not entered and is not zero.' },
+  otherFixedCosts: { type: 'number', min: 0, description: 'Optional other fixed costs in USD. Omit when blank. Blank is not entered and is not zero.' },
+  sponsorOffset: { type: 'number', min: 0, description: 'Optional sponsor offset in USD, subtracted from the total to recover. Omit when blank. Blank is not entered and is not zero.' },
+};
 const verdictProps = {
   artist: { type: 'string', required: true },
   city: { type: 'string', required: true },
@@ -730,6 +749,7 @@ const verdictProps = {
   capacity: { type: 'number', gt: 0 },
   venue: { type: 'string' },
   entityHint: { type: 'string' },
+  ...fixedCostProps,
 };
 function toolDef(name, description, props, handlerKey) {
   const required = Object.entries(props).filter(([, p]) => p.required).map(([k]) => k);
@@ -737,8 +757,8 @@ function toolDef(name, description, props, handlerKey) {
 }
 export function buildToolDefs() {
   return [
-    toolDef('offersheet_verdict_run', `Runs the full OfferSheet verdict (Qloo evidence + Ticketmaster room + money + arms). Does NOT invent numbers: a withheld, price-unknown, or needs-input verdict is a success response with that status, never a number. ${Q}`, verdictProps, 'offersheet_verdict_run'),
-    toolDef('offersheet_verdict_race', `Same verdict as offersheet_verdict_run, plus arm timings (race: gutMs, webMs, totalMs). Does NOT change the verdict; it proves arm timing, which the plain verdict does not report. ${Q}`, verdictProps, 'offersheet_verdict_race'),
+    toolDef('offersheet_verdict_run', `Runs the full OfferSheet verdict (Qloo evidence + Ticketmaster room + money + arms). Does NOT invent numbers: a withheld, price-unknown, or needs-input verdict is a success response with that status, never a number. Optional fixed-cost fields roomCost, productionCost, marketingCost, otherFixedCosts, and sponsorOffset follow offersheet_deal_breakeven: omit a field when blank; blank is not entered and is not zero. ${Q}`, verdictProps, 'offersheet_verdict_run'),
+    toolDef('offersheet_verdict_race', `Same verdict as offersheet_verdict_run, plus arm timings (race: gutMs, webMs, totalMs). Does NOT change the verdict; it proves arm timing, which the plain verdict does not report. Optional fixed-cost fields roomCost, productionCost, marketingCost, otherFixedCosts, and sponsorOffset follow offersheet_deal_breakeven: omit a field when blank; blank is not entered and is not zero. ${Q}`, verdictProps, 'offersheet_verdict_race'),
     toolDef('qloo_capabilities', `Guarded proxy of Qloo's own qloo_capabilities tool (the pipeline readiness probe). Returns the upstream envelope plus an OfferSheet receipt. Does NOT invent a capability list when the harness is down — that errors. ${Q}`, { operation_ids: { type: 'array', itemsType: 'string' } }, 'qloo_capabilities'),
     toolDef('qloo_find_tags', `Guarded proxy of Qloo's own qloo_find_tags tool. Tag URNs returned here feed the REST insights leg. Does NOT resolve an artist by itself. ${Q}`, { query: { type: 'string', required: true }, limit: { type: 'number', integer: true, min: 1 } }, 'qloo_find_tags'),
     toolDef('qloo_describe', `Guarded proxy of Qloo's own qloo_describe tool. An ambiguous name returns needs_input with candidates — it is never resolved by guessing. ${Q}`, { entity: { type: 'string', required: true }, type: { type: 'string' } }, 'qloo_describe'),
@@ -763,7 +783,14 @@ export function buildToolDefs() {
     toolDef('offersheet_miss_trial_build', `Builds a miss-ledger trial from picks, purely offline. Returns null (no trial) unless a graph pick AND at least one comparison pick are present; identical picks yield a trial with empty misses. ${NQ}`, { question: { type: 'string', required: true }, graphPick: { type: 'string', required: true }, gutPick: { type: 'string' }, webPick: { type: 'string' } }, 'offersheet_miss_trial_build'),
     toolDef('offersheet_venue_search', `Raw Ticketmaster venue lookup for a named room. A null result means the room did not resolve — never a guessed venue. This answers the lookup alone, without spending an events call. Spends no Qloo calls.`, { keyword: { type: 'string', required: true } }, 'offersheet_venue_search'),
     toolDef('offersheet_room_grounding', `The composed Ticketmaster room leg: resolve a named room first, then scope the event lookup to its venue ID. Returns events found, venue name, capacity (value or unknown with its cause), price (value + source), and the grounding label — a resolved room's capacity is never borrowed from another room's event, and a first-event price/capacity is never silently labeled as the offer room's. Spends no Qloo calls.`, { artist: { type: 'string', required: true }, city: { type: 'string', required: true }, venue: { type: 'string' } }, 'offersheet_room_grounding'),
-    toolDef('offersheet_deal_breakeven', `Pure break-even arithmetic: tickets = ceil(guarantee / (ticketPrice - variableCost)); guarantee 0 gives 0 tickets with note no guarantee; net <= 0 is an error, never division by zero; tickets over a known capacity give Cannot break even in this room at this guarantee. A missing ticket price is an error, never an invented number. variableCostProvided keeps a blank cost distinct from zero cost. ${NQ}`, { guarantee: { type: 'number', required: true, min: 0 }, ticketPrice: { type: 'number', required: true, gt: 0 }, variableCost: { type: 'number', min: 0 }, capacity: { type: 'number', gt: 0 }, variableCostProvided: { type: 'boolean' } }, 'offersheet_deal_breakeven'),
+    toolDef('offersheet_deal_breakeven', `Pure break-even arithmetic: tickets = ceil((guarantee + entered fixed costs - entered sponsor offset) / (ticketPrice - variableCost)). Optional USD fields roomCost (venue/room cost), productionCost, marketingCost, and otherFixedCosts are added only when present; sponsorOffset is subtracted only when present. A blank or omitted field is not entered — it is left out of the sum and is not zero. An explicit 0 is entered zero. No default tax or fee rate is applied. total fixed (guarantee + entered fixed costs - entered sponsor offset) must stay > 0, except guarantee 0 with every fixed-cost field omitted, which gives 0 tickets with note no guarantee. net <= 0 is an error, never division by zero; tickets over a known capacity give Cannot break even in this room at this guarantee. A missing ticket price is an error, never an invented number. variableCostProvided keeps a blank per-ticket cost distinct from zero cost. ${NQ}`, {
+      guarantee: { type: 'number', required: true, min: 0 },
+      ticketPrice: { type: 'number', required: true, gt: 0 },
+      variableCost: { type: 'number', min: 0 },
+      capacity: { type: 'number', gt: 0 },
+      variableCostProvided: { type: 'boolean' },
+      ...fixedCostProps,
+    }, 'offersheet_deal_breakeven'),
     toolDef('offersheet_city_geocode', `Keyless Nominatim city lookup (display name + lat/lon, or unavailable). Scope label on every response: display-only — shown for confirmation, never fed into Qloo filters. A failure never yields a guessed coordinate. Spends no Qloo calls.`, { query: { type: 'string', required: true } }, 'offersheet_city_geocode'),
     toolDef('offersheet_artist_facts', `Wikidata name-to-entity search only (id / label / description matches). Scope label on every response: input to the Web arm only, never a direct verdict input. No claim is ever derived from Wikidata alone. Spends no Qloo calls.`, { query: { type: 'string', required: true }, limit: { type: 'number', integer: true, min: 1 } }, 'offersheet_artist_facts'),
     toolDef('offersheet_health', `Booleans only — qlooConfigured, ticketmasterConfigured, llmConfigured — plus status ok and version. No keys, no counts, no guard internals. Works with no keys configured; it is the tool that tells a client whether the others can work. ${NQ}`, {}, 'offersheet_health'),

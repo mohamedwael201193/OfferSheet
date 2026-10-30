@@ -122,8 +122,15 @@
       var net = isFiniteNum(inp.ticketPrice)
         ? inp.ticketPrice - (isFiniteNum(inp.variableCost) ? inp.variableCost : 0)
         : null;
-      var expected = (isFiniteNum(inp.guarantee) && net !== null && net > 0)
-        ? Math.ceil(inp.guarantee / net) : null;
+      var stackExtra = 0;
+      var anyStack = false;
+      ['roomCost', 'productionCost', 'marketingCost', 'otherFixedCosts'].forEach(function (k) {
+        if (isFiniteNum(inp[k])) { stackExtra += inp[k]; anyStack = true; }
+      });
+      if (isFiniteNum(inp.sponsorOffset)) { stackExtra -= inp.sponsorOffset; anyStack = true; }
+      var numerator = isFiniteNum(inp.guarantee) ? inp.guarantee + (anyStack ? stackExtra : 0) : null;
+      var expected = (numerator !== null && net !== null && net > 0)
+        ? Math.ceil(numerator / net) : null;
       out.push({
         artist: inp.artist || '', city: inp.city || '', recordHash: hash,
         expectedTickets: expected, recordedTickets: t.breakEvenTickets,
@@ -632,7 +639,34 @@
       checks.push({ status: 'FAIL', title: label, field: 'net', detail: 'Net per ticket is not above zero — no break-even number can be recomputed.' });
       return checks;
     }
-    var expected = Math.ceil(guarantee / net);
+    var stackKeys = ['roomCost', 'productionCost', 'marketingCost', 'otherFixedCosts', 'sponsorOffset'];
+    var fc = (obj.breakEven && obj.breakEven.fixedCosts) || null;
+    var extra = 0;
+    var anyStack = false;
+    for (var si = 0; si < stackKeys.length; si++) {
+      var key = stackKeys[si];
+      var raw;
+      if (inp && Object.prototype.hasOwnProperty.call(inp, key)) raw = inp[key];
+      else if (fc && Object.prototype.hasOwnProperty.call(fc, key)) raw = fc[key];
+      else continue;
+      var enteredVal = null;
+      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+        if (raw.entered !== true) continue;
+        enteredVal = numOrNull(raw.value);
+      } else {
+        enteredVal = numOrNull(raw);
+      }
+      if (enteredVal === null) continue;
+      anyStack = true;
+      if (key === 'sponsorOffset') extra -= enteredVal;
+      else extra += enteredVal;
+    }
+    var numerator = guarantee + (anyStack ? extra : 0);
+    if (anyStack && !(numerator > 0)) {
+      checks.push({ status: 'FAIL', title: label, field: 'totalToRecover', detail: 'Total to recover is not above zero — no break-even number can be recomputed.' });
+      return checks;
+    }
+    var expected = Math.ceil(numerator / net);
     var costNote = cost === null ? ' (before variable costs)' : '';
     var present = null, fieldName = 'breakEvenTickets';
     if (obj.breakEvenTickets != null) { present = numOrNull(obj.breakEvenTickets); fieldName = 'breakEvenTickets'; }
@@ -641,9 +675,12 @@
     if (present === null) {
       checks.push({ status: 'cannot verify', title: label, field: 'breakEvenTickets', detail: 'No break-even tickets field in this payload — nothing to compare against.' });
     } else {
+      var recomputeLead = anyStack
+        ? 'Recomputed ceil((guarantee + entered fixed costs - entered sponsor offset) / net) = '
+        : 'Recomputed ceil(guarantee / net) = ';
       checks.push(present === expected
-        ? { status: 'PASS', title: label, field: fieldName, detail: 'Recomputed ceil(guarantee / net) = ' + fmt(expected) + costNote + ', matching the recorded value.' }
-        : { status: 'FAIL', title: label, field: fieldName, detail: 'Recomputed ceil(guarantee / net) = ' + fmt(expected) + costNote + ' does not match recorded ' + fmt(present) + '.' });
+        ? { status: 'PASS', title: label, field: fieldName, detail: recomputeLead + fmt(expected) + costNote + ', matching the recorded value.' }
+        : { status: 'FAIL', title: label, field: fieldName, detail: recomputeLead + fmt(expected) + costNote + ' does not match recorded ' + fmt(present) + '.' });
     }
     if (obj.breakEven && obj.breakEven.net != null) {
       var recordedNet = numOrNull(obj.breakEven.net);

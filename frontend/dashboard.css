@@ -179,8 +179,9 @@ form input:focus, .checker-field input:focus { border-color: var(--purple); outl
 .form-actions { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
 .form-actions .form-note { font-size: 13px; color: var(--muted); margin-left: auto; text-align: right; }
 #offerForm { display: grid; grid-template-columns: 1fr; gap: 0; }
-#offerForm .form-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-#offerForm .form-row--opt { grid-template-columns: repeat(3, 1fr); margin-top: 16px; }
+#offerForm .form-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+#offerForm .form-row--opt { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 16px; }
+#offerForm .form-row--costs { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 16px; gap: 16px; }
 #offerForm .form-actions { grid-column: 1 / -1; margin-top: 24px; }
 .form-disabled-note { background: #2A1210; border: 1px solid #FECACA; border-radius: 12px; padding: 14px 16px; color: #FECACA; font-size: 15px; }
 .config-banner { background: #2A1210; border: 1px solid #FECACA; border-radius: 16px; padding: 20px 24px; color: #FECACA; margin: 24px 0 0; }
@@ -258,8 +259,12 @@ form input:focus, .checker-field input:focus { border-color: var(--purple); outl
 .diagram-result { font-size: 28px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
 .diagram-note { margin: 12px 0 0; }
 .checker { background: #1E1E1E; border: 1px solid var(--hair); border-radius: var(--radius-panel); padding: 24px; margin-top: 20px; }
-.checker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 12px 0; }
+.checker-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 12px 0; }
 .checker-out { font-size: 18px; font-weight: 700; color: var(--ink); }
+.cost-lines { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
+.cost-lines li { background: #1E1E1E; border: 1px solid var(--hair); border-radius: 8px; padding: 8px 14px; font-size: 14px; overflow-wrap: anywhere; }
+.cost-lines .cost-label { font-weight: 600; }
+.cost-lines .cost-value { color: var(--ink); }
 /* Evidence: native details cards, each with its own icon + chip row. */
 details { border-top: 1px solid var(--hair); padding: 12px 0; }
 details summary { cursor: pointer; font-weight: 700; color: var(--ink); font-size: 18px; min-height: 48px; display: flex; align-items: center; }
@@ -380,7 +385,7 @@ details[open] summary { margin-bottom: 8px; }
   .wrap, .nav-inner, .footer-inner, .app-rule { padding-left: 16px; padding-right: 16px; }
   main section.sheet:not(.disc) { padding: 20px; }
   .flow-steps { grid-template-columns: 1fr 1fr; }
-  #offerForm .form-row, #offerForm .form-row--opt, .checker-grid, .ws-grid, .trial-cards-row { grid-template-columns: 1fr; }
+  #offerForm .form-row, #offerForm .form-row--opt, #offerForm .form-row--costs, .checker-grid, .ws-grid, .trial-cards-row { grid-template-columns: 1fr; }
   .form-actions .form-note { margin-left: 0; text-align: left; }
   .btn.nav-toggle { display: inline-flex; }
   .nav-links {

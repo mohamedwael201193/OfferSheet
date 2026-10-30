@@ -24,8 +24,7 @@ legs → Ticketmaster / OpenStreetMap / Wikidata legs → break-even calculator
 → one-page card. The frontend never calls Qloo directly; the Node backend
 runs `qloo mcp` over stdio and the REST receipt layer, same-origin only.
 
-Break-even definition: `tickets = ceil(guarantee ÷ (ticket price − variable
-cost per ticket))`. If break-even exceeds a known capacity, the verdict is
+Break-even definition: `tickets = ceil((guarantee + entered fixed costs − entered sponsor offset) ÷ (ticket price − variable cost per ticket))`. Optional fixed costs are venue/room cost, production cost, marketing cost, and other fixed costs. A sponsor offset is subtracted only when it is entered. A blank field is not entered: it is left out of the sum and is never treated as zero. An explicit 0 is entered zero. No tax rate or fee rate is assumed. With every fixed-cost field blank, the count is `ceil(guarantee ÷ (ticket price − variable cost per ticket))`, and $250,000 at $120 stays 2,084 tickets. Once any fixed-cost field is entered, the total to recover must stay above zero (`total fixed must stay > 0`). A zero guarantee with every fixed-cost field blank is still 0 tickets with the note "no guarantee". If break-even exceeds a known capacity, the verdict is
 "Cannot break even in this room at this guarantee."
 
 ## 3. Qloo tools and workflows — and why they fit
@@ -55,7 +54,7 @@ a verdict response carries replay data: click it to re-run the exact call via
 
 ## 4. Request-to-result (redacted)
 
-Input is artist + city + guarantee (plus optional room/venue, ticket price, variable cost per ticket, and capacity). No names, emails, device IDs, account IDs, or location histories
+Input is artist + city + guarantee (plus optional room/venue, ticket price, variable cost per ticket, capacity, venue/room cost, production cost, marketing cost, other fixed costs, and sponsor offset). No names, emails, device IDs, account IDs, or location histories
 are sent to Qloo — ever. Entity/tag choices: the headliner name is resolved
 through `find_tags` first, then `describe`; when several entities match, the
 user picks from candidates. Tag URNs from `find_tags` feed the REST insights
@@ -112,6 +111,7 @@ repo):
   A user-supplied capacity renders labeled "user-supplied, not
   Ticketmaster-verified".
 - Variable cost per ticket is optional. When left blank, net renders as "before variable costs" — never as if costs were zero. An explicitly entered 0 renders as cost 0.
+- Venue cost, production cost, marketing cost, other fixed costs, and sponsor offset are optional. A blank field is shown as "not entered" and is left out of the total. An entered sponsor offset is subtracted. The verdict breakdown lists guarantee, each entered cost, the offset, the total to recover, the net per ticket, and the ticket count.
 - The Web arm is LLM + Wikidata facts only — no generic web search is called. OpenStreetMap output is display-only (shown for confirmation, never fed into Qloo filters) and Wikidata output is input to the Web arm only, never a direct verdict input.
 - Guards are per-instance tripwires, not a quota guarantee: in-memory, per-instance counters reset on restart and do not cap total usage across instances or restarts.
 - No server-side cache; every verdict re-runs live legs.

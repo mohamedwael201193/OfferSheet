@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OfferSheet — check a live-show offer before you sign it</title>
 <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="dashboard.css?v=u14">
+<link rel="stylesheet" href="dashboard.css?v=u15">
 <link rel="stylesheet" href="kinpaku.css?v=u12">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0A0A0A">
@@ -152,6 +152,33 @@
         </details>
       </div>
       </div>
+      <div class="form-row form-row--costs">
+      <div class="field">
+        <label for="roomCost">Venue cost (USD, optional)</label>
+        <input id="roomCost" name="roomCost" type="number" min="0" step="0.01" inputmode="decimal">
+        <span class="field-hint">Blank is not entered.</span>
+      </div>
+      <div class="field">
+        <label for="productionCost">Production cost (USD, optional)</label>
+        <input id="productionCost" name="productionCost" type="number" min="0" step="0.01" inputmode="decimal">
+        <span class="field-hint">Blank is not entered.</span>
+      </div>
+      <div class="field">
+        <label for="marketingCost">Marketing cost (USD, optional)</label>
+        <input id="marketingCost" name="marketingCost" type="number" min="0" step="0.01" inputmode="decimal">
+        <span class="field-hint">Blank is not entered.</span>
+      </div>
+      <div class="field">
+        <label for="otherFixedCosts">Other fixed costs (USD, optional)</label>
+        <input id="otherFixedCosts" name="otherFixedCosts" type="number" min="0" step="0.01" inputmode="decimal">
+        <span class="field-hint">Blank is not entered.</span>
+      </div>
+      <div class="field">
+        <label for="sponsorOffset">Sponsor offset (USD, optional)</label>
+        <input id="sponsorOffset" name="sponsorOffset" type="number" min="0" step="0.01" inputmode="decimal">
+        <span class="field-hint">Subtracted. Blank is not entered.</span>
+      </div>
+      </div>
       <div class="form-actions">
         <button class="btn btn--primary" type="submit">Run the verdict</button>
         <a class="link-btn" href="#formula">See how the number is computed</a>
@@ -193,7 +220,8 @@
     <div id="thinBadge" class="thin-badge" hidden></div>
     <p class="aggregate-note">Aggregate taste signals only — they show how much two audiences share, never a prediction about any individual, and never a promise this show will sell out.</p>
     <p id="beVerdict" class="verdict-line"></p>
-    <p class="verdict-formula-line">Break-even tickets = ceil(guarantee ÷ (ticket price − variable cost per ticket))</p>
+    <p class="verdict-formula-line">Break-even tickets = ceil((guarantee + entered fixed costs − entered sponsor offset) ÷ (ticket price − variable cost per ticket)). A blank field is not entered.</p>
+    <ul id="fixedCostBreakdown" class="cost-lines" aria-label="Break-even breakdown" hidden></ul>
     <div id="citeChips" class="cite-chips" aria-label="Citations for this verdict"></div>
     <ul id="proofSummary" class="proof-summary"></ul>
     <div id="cannotBox" class="cannot-box" hidden><p>Cannot break even in this room at this guarantee</p></div>
@@ -247,7 +275,7 @@
           </div>
         </div>
     </div><button class="btn disc-toggle" type="button" aria-expanded="false" aria-controls="disc-formula-body">Show formula</button></div>
-    <div class="disc-body" id="disc-formula-body"><p>Break-even tickets = ceil(guarantee ÷ (ticket price − variable cost per ticket))</p>
+    <div class="disc-body" id="disc-formula-body"><p>Break-even tickets = ceil((guarantee + entered fixed costs − entered sponsor offset) ÷ (ticket price − variable cost per ticket)). A blank fixed cost is not entered — it is left out of the sum, never treated as zero. An entered sponsor offset is subtracted. No tax or fee rate is assumed.</p>
         <svg class="formula-divider" aria-hidden="true" viewBox="0 0 600 24" focusable="false"><path class="formula-divider-path" d="M0 12 H600" pathLength="100"></path></svg>
         <figure class="fig">
           <img src="assets/photo-formula-room.webp" alt="The crowd, seen from behind, facing the stage" width="1920" height="1234" loading="lazy" data-fallback="formulaAppFallback">
@@ -260,7 +288,7 @@
           <div id="diagramLive" hidden>
             <div class="diagram-row">
               <div class="diagram-cell">
-                <span class="diagram-dim"><span class="diagram-dim-label">guarantee</span></span>
+                <span class="diagram-dim"><span id="diagramNumeratorLabel" class="diagram-dim-label">guarantee</span></span>
                 <span id="diagramGuarantee" class="diagram-value num">—</span>
               </div>
               <span class="diagram-op" aria-hidden="true">÷</span>
@@ -324,8 +352,24 @@
             <label class="checker-field">Variable cost per ticket (USD, optional)
               <input id="checkCost" type="number" min="0" step="0.01" inputmode="decimal">
             </label>
+            <label class="checker-field">Venue cost (USD, optional)
+              <input id="checkRoomCost" type="number" min="0" step="0.01" inputmode="decimal">
+            </label>
+            <label class="checker-field">Production cost (USD, optional)
+              <input id="checkProductionCost" type="number" min="0" step="0.01" inputmode="decimal">
+            </label>
+            <label class="checker-field">Marketing cost (USD, optional)
+              <input id="checkMarketingCost" type="number" min="0" step="0.01" inputmode="decimal">
+            </label>
+            <label class="checker-field">Other fixed costs (USD, optional)
+              <input id="checkOtherFixed" type="number" min="0" step="0.01" inputmode="decimal">
+            </label>
+            <label class="checker-field">Sponsor offset (USD, optional)
+              <input id="checkSponsorOffset" type="number" min="0" step="0.01" inputmode="decimal">
+            </label>
           </div>
           <p class="checker-out">Break-even: <strong id="checkResult" class="num">2,084 tickets</strong></p>
+          <ul id="checkBreakdown" class="cost-lines" aria-label="Break-even breakdown"></ul>
           <p class="label">This checker divides and rounds up only. It knows nothing about the artist, the city, or the audience.</p>
         </div>
           </div>
@@ -695,9 +739,9 @@
   </footer>
 </div>
 
-<script src="app.js?v=u12"></script>
-<script src="workspace.js?v=u12"></script>
-<script src="oracle.js?v=u12"></script>
+<script src="app.js?v=u15"></script>
+<script src="workspace.js?v=u15"></script>
+<script src="oracle.js?v=u15"></script>
 <script src="dark-dash.js?v=u12"></script>
 <script>
   // Arithmetic checker: pure client-side ceil math on typed inputs.
@@ -710,25 +754,83 @@
     var p = document.getElementById('checkPrice');
     var c = document.getElementById('checkCost');
     var out = document.getElementById('checkResult');
+    var breakdown = document.getElementById('checkBreakdown');
+    var fixedInputs = [
+      ['checkRoomCost', 'Venue cost'],
+      ['checkProductionCost', 'Production cost'],
+      ['checkMarketingCost', 'Marketing cost'],
+      ['checkOtherFixed', 'Other fixed costs'],
+      ['checkSponsorOffset', 'Sponsor offset']
+    ].map(function (pair) {
+      return { el: document.getElementById(pair[0]), label: pair[1], offset: pair[0] === 'checkSponsorOffset' };
+    });
     if (!g || !p || !c || !out) return;
     function fmt(n) { return n.toLocaleString('en-US'); }
+    function money(n) { return '$' + fmt(n); }
+    function readOptional(el) {
+      if (!el || el.value === '') return { entered: false, value: 0, bad: false };
+      var n = Number(el.value);
+      if (!isFinite(n) || n < 0) return { entered: true, value: n, bad: true };
+      return { entered: true, value: n, bad: false };
+    }
+    function line(label, valueText) {
+      return '<li><span class="cost-label">' + label + '</span> <span class="cost-value">' + valueText + '</span></li>';
+    }
+    function paint(rows) {
+      if (breakdown) breakdown.innerHTML = rows.join('');
+    }
     function update() {
       var guarantee = Number(g.value);
       var price = Number(p.value);
       var costBlank = c.value === '';
       var cost = costBlank ? 0 : Number(c.value);
-      if (!isFinite(guarantee) || !isFinite(price) || !isFinite(cost) || guarantee < 0 || price < 0 || cost < 0) {
+      var fixed = fixedInputs.map(function (item) {
+        return { label: item.label, offset: item.offset, read: readOptional(item.el) };
+      });
+      var badFixed = fixed.some(function (item) { return item.read.bad; });
+      if (!isFinite(guarantee) || !isFinite(price) || !isFinite(cost) || guarantee < 0 || price < 0 || cost < 0 || badFixed) {
         out.textContent = 'Enter valid non-negative numbers.';
+        paint([line('Breakdown', 'Enter valid non-negative numbers.')]);
         return;
       }
       var net = price - cost;
       if (net <= 0) {
         out.textContent = 'No break-even: net per ticket must be above zero.';
+        paint([line('Net per ticket', 'must stay above zero')]);
         return;
       }
-      out.textContent = fmt(Math.ceil(guarantee / net)) + ' tickets' + (costBlank ? ' — before variable costs' : '');
+      var anyFixed = fixed.some(function (item) { return item.read.entered; });
+      var sum = 0;
+      var offset = 0;
+      fixed.forEach(function (item) {
+        if (!item.read.entered) return;
+        if (item.offset) offset += item.read.value;
+        else sum += item.read.value;
+      });
+      var total = guarantee + sum - offset;
+      if (anyFixed && !(total > 0)) {
+        out.textContent = 'Total to recover must stay above zero.';
+        paint(fixed.map(function (item) {
+          return line(item.label, item.read.entered ? money(item.read.value) : 'not entered');
+        }).concat([line('Total to recover', money(total))]));
+        return;
+      }
+      var numerator = anyFixed ? total : guarantee;
+      var tickets = Math.ceil(numerator / net);
+      // Blank stack keeps today's checker string, including the 2,084 case.
+      out.textContent = fmt(tickets) + ' tickets' + (costBlank ? ' — before variable costs' : '');
+      var rows = [line('Guarantee', money(guarantee))];
+      fixed.forEach(function (item) {
+        rows.push(line(item.label, item.read.entered ? money(item.read.value) : 'not entered'));
+      });
+      rows.push(line('Total to recover', money(numerator)));
+      rows.push(line('Net per ticket', money(net) + (costBlank ? ' (before variable costs)' : '')));
+      rows.push(line('Tickets', 'ceil(' + fmt(numerator) + ' ÷ ' + fmt(net) + ') = ' + fmt(tickets)));
+      paint(rows);
     }
-    [g, p, c].forEach(function (el) { el.addEventListener('input', update); });
+    [g, p, c].concat(fixedInputs.map(function (item) { return item.el; })).forEach(function (el) {
+      if (el) el.addEventListener('input', update);
+    });
     update();
   })();
 </script>

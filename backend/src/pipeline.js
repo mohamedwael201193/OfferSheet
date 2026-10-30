@@ -2,10 +2,14 @@
 // Dependency injection: production wires live transports; tests wire fixture
 // transports. Production code never imports test fixtures.
 // Input: { artist, city, guarantee, ticketPrice?, variableCost?, capacity?,
-//   venue?, entityHint?, visitorIp? }
+//   venue?, entityHint?, visitorIp?, roomCost?, productionCost?,
+//   marketingCost?, otherFixedCosts?, sponsorOffset? }
 //   venue: optional promoter-typed room name (G11). variableCost: optional
 //   per-ticket cost — ABSENT (blank) is distinct from 0 (G12); the pipeline
 //   records variableCostProvided so the UI never renders blank as zero cost.
+//   Fixed-cost fields are optional USD amounts. Omitted / null is blank
+//   (left out of the sum, never zero). sponsorOffset is subtracted only
+//   when entered. No tax or fee rate is assumed.
 // Deps: { config, guards, receipts, checkCall, checkVisitor, mcpCall, restCall,
 //   tmEvents, tmVenues, geocodeFn, wikidataFn, gutArm, webArm, now? }
 //   mcpCall(tool, args) -> envelope (throws OfferError on envelope error)
@@ -28,7 +32,7 @@
 // user supplied one (labeled). A null capacity means NO sellout percentage,
 // NO "will sell out" claim, NO room-fill claim — anywhere in the response.
 import { notConfigured, invalidInput, isGuardTrip } from './errors.js';
-import { breakEven } from './breakeven.js';
+import { breakEven, enteredFixedArgs } from './breakeven.js';
 import { argsHashFor } from './receipts.js';
 import { extractCapacity, extractPrice, extractFirstVenue, extractVenueForCity, venueCityOf } from './ticketmaster.js';
 import { classifyMisses, pickMatchesName } from './rerank.js';
@@ -143,6 +147,25 @@ export async function runVerdict(input, deps) {
   const variableCostProvided = typeof input.variableCost === 'number' && Number.isFinite(input.variableCost);
   const variableCost = variableCostProvided ? input.variableCost : 0;
   if (variableCost < 0) throw invalidInput('variableCost must be non-negative');
+  // Fixed-cost stack: reject a non-number or a negative before any live
+  // call. When the promoter already supplied a ticket price, also reject a
+  // non-positive total (and a non-positive net) before spending quota.
+  let fixedArgs;
+  try {
+    fixedArgs = enteredFixedArgs(input);
+  } catch (e) {
+    throw invalidInput(e.message);
+  }
+  if (typeof input.ticketPrice === 'number' && Number.isFinite(input.ticketPrice) && input.ticketPrice > 0) {
+    if (variableCostProvided && input.ticketPrice <= variableCost) {
+      throw invalidInput('variable cost must be below the ticket price for a break-even count');
+    }
+    try {
+      breakEven({ guarantee, ticketPrice: input.ticketPrice, variableCost, ...fixedArgs });
+    } catch (e) {
+      throw invalidInput(e.message);
+    }
+  }
   const venueQuery = typeof input.venue === 'string' ? input.venue.trim() : '';
 
   // Fail-closed gate: no Qloo key, no verdict path at all.
@@ -630,7 +653,12 @@ export async function runVerdict(input, deps) {
   if (variableCostProvided && price <= variableCost) {
     throw invalidInput('variable cost must be below the ticket price for a break-even count');
   }
-  const be = breakEven({ guarantee, ticketPrice: price, variableCost, capacity });
+  let be;
+  try {
+    be = breakEven({ guarantee, ticketPrice: price, variableCost, capacity, ...fixedArgs });
+  } catch (e) {
+    throw invalidInput(e.message);
+  }
   const graphPick = topOpener?.name || null;
 
   // Arms: Gut + Web (unavailable when no LLM is configured — never fabricated).
@@ -716,6 +744,9 @@ export async function runVerdict(input, deps) {
       // G12: blank vs explicit cost travels with the verdict — the UI
       // renders blank as "before variable costs", explicit 0 as cost 0.
       variableCost: { value: variableCostProvided ? variableCost : null, provided: variableCostProvided },
+      // Present only when at least one fixed-cost field was entered, so a
+      // blank stack leaves this object identical to the pre-stack verdict.
+      ...(be.fixedCosts ? { fixedCosts: be.fixedCosts } : {}),
     },
     capacity: capacity === null
       ? unknownCapacity

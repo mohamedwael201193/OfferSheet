@@ -8,7 +8,7 @@
 // Reuse only: breakEven (pure arithmetic), argsHashFor / requestHashFor /
 // sha256 (receipt hashes), OfferError taxonomy, runVerdict (full pipeline),
 // MCP_TOOLS / REST_PATHS (replay allowlists), isGuardTrip.
-import { breakEven } from './breakeven.js';
+import { breakEven, enteredFixedArgs, fixedStack, recoverTotal } from './breakeven.js';
 import { argsHashFor, requestHashFor, sha256 } from './receipts.js';
 import { invalidInput, isGuardTrip } from './errors.js';
 import { runVerdict } from './pipeline.js';
@@ -23,6 +23,23 @@ export const COMPARE_SORT_NOTE = 'Sorted by tickets needed to break even. This i
 export const ROUTING_LABEL = 'affinity-ranked, not demand-proven';
 export const ROUTING_NOTE = 'Ranking reflects how many areas Qloo matched for this headliner in each city. It is not a sales forecast, not an attendance estimate, and not evidence the show will sell.';
 export const DELTA_MONEY_LABEL = 'arithmetic on the two break-evens at the recorded net — not a forecast of money made or lost';
+
+const FIXED_COST_KEYS = ['roomCost', 'productionCost', 'marketingCost', 'otherFixedCosts', 'sponsorOffset'];
+
+function fixedCostsOnOffer(offer) {
+  if (!offer || typeof offer !== 'object') return null;
+  let stack;
+  try { stack = fixedStack(offer); } catch { return null; }
+  if (!stack.anyEntered) return null;
+  return {
+    roomCost: stack.lines.roomCost,
+    productionCost: stack.lines.productionCost,
+    marketingCost: stack.lines.marketingCost,
+    otherFixedCosts: stack.lines.otherFixedCosts,
+    sponsorOffset: stack.sponsorOffset,
+    totalToRecover: offer.guarantee + stack.sum - stack.offsetAmount,
+  };
+}
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isFiniteNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -87,6 +104,13 @@ export function buildWorkspace(verdict, input) {
     capacity: verdict.capacity.value,
     capacitySource: verdict.capacity.source,
   };
+  const fc = verdict.breakEven.fixedCosts;
+  if (fc) {
+    for (const key of FIXED_COST_KEYS) {
+      const line = fc[key];
+      if (line && line.entered === true && typeof line.value === 'number') baseOffer[key] = line.value;
+    }
+  }
   const baseVerdict = {
     tickets: verdict.breakEven.tickets,
     net: verdict.breakEven.net,
@@ -147,6 +171,12 @@ export function verifyWorkspace(workspace, { baseUrl = QLOO_DEFAULT_BASE_URL } =
     if (base.variableCostProvided === true && !isFiniteNum(base.variableCost)) { schemaOk = false; mismatch('baseOffer.variableCost', 'number >= 0 when variableCostProvided is true', base.variableCost); }
     if (!(base.capacity === null || (isFiniteNum(base.capacity) && base.capacity > 0))) { schemaOk = false; mismatch('baseOffer.capacity', 'number > 0 | null', base.capacity); }
     if (!isNullOrStr(base.capacitySource)) { schemaOk = false; mismatch('baseOffer.capacitySource', 'string | null', base.capacitySource); }
+    for (const key of FIXED_COST_KEYS) {
+      if (base[key] !== undefined && base[key] !== null && !(isFiniteNum(base[key]) && base[key] >= 0)) {
+        schemaOk = false;
+        mismatch(`baseOffer.${key}`, 'number >= 0, or omitted when blank', base[key]);
+      }
+    }
     baseTermsOk = isNonEmptyStr(base.artist) && isNonEmptyStr(base.city)
       && isFiniteNum(base.guarantee) && base.guarantee >= 0
       && (base.ticketPrice === null || (isFiniteNum(base.ticketPrice) && base.ticketPrice > 0))
@@ -183,10 +213,15 @@ export function verifyWorkspace(workspace, { baseUrl = QLOO_DEFAULT_BASE_URL } =
 
   // Arithmetic: recompute from the submitted terms with breakEven().
   // The server never trusts a client-computed number.
-  if (baseTermsOk && verdictShapeOk && isObj(base) && base.ticketPrice !== null) {
+  let fixedArgs = {};
+  let fixedOk = true;
+  if (isObj(base)) {
+    try { fixedArgs = enteredFixedArgs(base); } catch { fixedOk = false; }
+  }
+  if (baseTermsOk && verdictShapeOk && fixedOk && isObj(base) && base.ticketPrice !== null) {
     const cost = base.variableCostProvided ? (base.variableCost ?? 0) : 0;
     try {
-      const be = breakEven({ guarantee: base.guarantee, ticketPrice: base.ticketPrice, variableCost: cost, capacity: base.capacity });
+      const be = breakEven({ guarantee: base.guarantee, ticketPrice: base.ticketPrice, variableCost: cost, capacity: base.capacity, ...fixedArgs });
       if (be.tickets !== bv.tickets) { arithmeticOk = false; mismatch('baseVerdict.tickets', be.tickets, bv.tickets); }
       if (be.net !== bv.net) { arithmeticOk = false; mismatch('baseVerdict.net', be.net, bv.net); }
       if (be.verdict !== bv.verdict) { arithmeticOk = false; mismatch('baseVerdict.verdict', be.verdict, bv.verdict); }
@@ -314,6 +349,7 @@ export function computeRenegotiation(workspace, stepInput, opts) {
   if (!isObj(stepInput)) throw invalidInput('stepInput must be an object');
   const { base, cost, net } = baseNumbers(workspace);
   if (net <= 0) throw invalidInput('net per-ticket contribution must be positive');
+  const fixedExtra = recoverTotal(base.guarantee, base) - base.guarantee;
   let target;
   let targetSource;
   let targetLabel = null;
@@ -329,15 +365,15 @@ export function computeRenegotiation(workspace, stepInput, opts) {
     throw invalidInput('targetTickets is required when capacity is unknown — the server will not invent a target');
   }
   const costNote = base.variableCostProvided ? null : 'before variable costs';
-  if (base.guarantee === 0) {
+  if (base.guarantee === 0 && fixedExtra === 0) {
     return stepEnvelope('renegotiation', workspace, report, {
       targetTickets: target, targetSource, targetLabel,
       note: 'no guarantee — break-even is already 0 tickets; no lever applies',
       levers: null, costNote, baseRef: derivedFrom(workspace), derivedFrom: derivedFrom(workspace),
     }, []);
   }
-  const lowerValue = target * net;
-  const exactPrice = cost + base.guarantee / target;
+  const lowerValue = target * net - fixedExtra;
+  const exactPrice = cost + (base.guarantee + fixedExtra) / target;
   const higherValue = Math.ceil(exactPrice * 100 - 1e-9) / 100;
   const levers = {
     lowerGuarantee: { value: lowerValue, reduction: base.guarantee - lowerValue, holdsFixed: 'holding price and costs fixed', costNote },
@@ -367,12 +403,14 @@ export function computeEnvelope(workspace, stepInput, opts) {
   if (hasMax === hasTarget) throw invalidInput('envelope takes exactly one of maxGuarantee / targetTickets');
   const { base, net } = baseNumbers(workspace);
   if (net <= 0) throw invalidInput('net per-ticket contribution must be positive');
+  const fixedExtra = recoverTotal(base.guarantee, base) - base.guarantee;
   const costNote = base.variableCostProvided ? null : 'before variable costs';
   const capacityState = base.capacity === null || base.capacity === undefined ? 'unknown' : 'known';
   if (hasMax) {
     const m = stepInput.maxGuarantee;
     if (!isFiniteNum(m) || m < 0) throw invalidInput('maxGuarantee must be a number >= 0');
-    const ticketsNeeded = m === 0 ? 0 : Math.ceil(m / net);
+    const numerator = m + fixedExtra;
+    const ticketsNeeded = numerator <= 0 ? 0 : Math.ceil(numerator / net);
     const fits = capacityState === 'known' ? ticketsNeeded <= base.capacity : null;
     const note = capacityState === 'known'
       ? (fits ? 'fits within the known capacity' : 'Cannot break even in this room at this guarantee')
@@ -385,7 +423,7 @@ export function computeEnvelope(workspace, stepInput, opts) {
   }
   const t = stepInput.targetTickets;
   if (!Number.isInteger(t) || t <= 0) throw invalidInput('targetTickets must be an integer > 0');
-  const maxAffordableGuarantee = t * net;
+  const maxAffordableGuarantee = t * net - fixedExtra;
   const fits = capacityState === 'known' ? t <= base.capacity : null;
   const note = capacityState === 'known'
     ? (fits ? 'fits within the known capacity' : 'target exceeds the known capacity')
@@ -410,11 +448,12 @@ export function computeSettlement(workspace, stepInput, opts) {
   }
   if (stepInput.note !== undefined && stepInput.note !== null && typeof stepInput.note !== 'string') throw invalidInput('note must be a string');
   const { base, cost } = baseNumbers(workspace);
+  const fixedExtra = recoverTotal(base.guarantee, base) - base.guarantee;
   const netSettled = base.ticketPrice - (actualCost ?? cost);
   const breakEvenTickets = workspace.baseVerdict.tickets;
   const gapTickets = attendance - breakEvenTickets;
   const covered = gapTickets >= 0;
-  const moneyGap = attendance * netSettled - base.guarantee;
+  const moneyGap = attendance * netSettled - (base.guarantee + fixedExtra);
   const assessment = covered
     ? 'reported sales met the recorded break-even threshold'
     : `reported sales missed the recorded break-even threshold by ${-gapTickets} tickets ($${-moneyGap} at the settled net)`;
@@ -444,7 +483,7 @@ export function computeSettlement(workspace, stepInput, opts) {
 }
 
 // --- Step 2 (live): replacement re-price ----------------------------------
-const FORBIDDEN_REPLACEMENT_TERMS = ['guarantee', 'ticketPrice', 'variableCost', 'capacity', 'venue', 'city'];
+const FORBIDDEN_REPLACEMENT_TERMS = ['guarantee', 'ticketPrice', 'variableCost', 'capacity', 'venue', 'city', 'roomCost', 'productionCost', 'marketingCost', 'otherFixedCosts', 'sponsorOffset'];
 
 export async function runReplacement(workspace, stepInput, deps, { visitorIp } = {}) {
   const report = requireVerified(workspace, 'replacement');
@@ -468,6 +507,7 @@ export async function runReplacement(workspace, stepInput, deps, { visitorIp } =
     variableCost: base.variableCostProvided ? base.variableCost : undefined,
     capacity: base.capacity ?? undefined,
     venue: base.venue ?? undefined,
+    ...enteredFixedArgs(base),
     entityHint: stepInput.entityHint,
     visitorIp,
   }, deps);
@@ -666,6 +706,11 @@ function normalizedOfferTerms(offer) {
     variableCostProvided: typeof offer.variableCost === 'number',
     capacity: offer.capacity ?? null,
     venue: typeof offer.venue === 'string' ? offer.venue.trim().toLowerCase() : null,
+    roomCost: typeof offer.roomCost === 'number' ? offer.roomCost : null,
+    productionCost: typeof offer.productionCost === 'number' ? offer.productionCost : null,
+    marketingCost: typeof offer.marketingCost === 'number' ? offer.marketingCost : null,
+    otherFixedCosts: typeof offer.otherFixedCosts === 'number' ? offer.otherFixedCosts : null,
+    sponsorOffset: typeof offer.sponsorOffset === 'number' ? offer.sponsorOffset : null,
   };
 }
 
@@ -683,12 +728,22 @@ export async function runComparison(workspace, stepInput, makeDeps, { checkVisit
     if (!(o.variableCost === undefined || o.variableCost === null || (isFiniteNum(o.variableCost) && o.variableCost >= 0))) throw invalidInput('each offer variableCost must be a number >= 0');
     if (!(o.capacity === undefined || o.capacity === null || (isFiniteNum(o.capacity) && o.capacity > 0))) throw invalidInput('each offer capacity must be a number > 0');
     if (!(o.venue === undefined || o.venue === null || typeof o.venue === 'string')) throw invalidInput('each offer venue must be a string');
+    for (const key of FIXED_COST_KEYS) {
+      if (!(o[key] === undefined || o[key] === null || (isFiniteNum(o[key]) && o[key] >= 0))) {
+        throw invalidInput(`each offer ${key} must be a number >= 0`);
+      }
+    }
   }
   const baseNorm = normalizedOfferTerms({
     artist: workspace.baseOffer.artist, city: workspace.baseOffer.city,
     guarantee: workspace.baseOffer.guarantee, ticketPrice: workspace.baseOffer.ticketPrice,
     variableCost: workspace.baseOffer.variableCostProvided ? workspace.baseOffer.variableCost : null,
     capacity: workspace.baseOffer.capacity, venue: workspace.baseOffer.venue,
+    roomCost: workspace.baseOffer.roomCost,
+    productionCost: workspace.baseOffer.productionCost,
+    marketingCost: workspace.baseOffer.marketingCost,
+    otherFixedCosts: workspace.baseOffer.otherFixedCosts,
+    sponsorOffset: workspace.baseOffer.sponsorOffset,
   });
   for (const o of offers) {
     const norm = normalizedOfferTerms(o);
@@ -699,6 +754,7 @@ export async function runComparison(workspace, stepInput, makeDeps, { checkVisit
   if (typeof checkVisitor === 'function' && visitorIp) checkVisitor(visitorIp);
 
   // Base row 0: from the verified base verdict, NEVER re-run.
+  const baseFixed = fixedCostsOnOffer(workspace.baseOffer);
   const baseRow = {
     offerIndex: 0,
     artist: workspace.baseOffer.artist,
@@ -720,6 +776,7 @@ export async function runComparison(workspace, stepInput, makeDeps, { checkVisit
     receiptCount: workspace.baseVerdict.receipts.length,
     baseRecordedAt: workspace.baseVerdict.recordedAt,
     status: 'verdict',
+    ...(baseFixed ? { fixedCosts: baseFixed } : {}),
   };
 
   const verdictRows = [];
@@ -747,6 +804,7 @@ export async function runComparison(workspace, stepInput, makeDeps, { checkVisit
         variableCost: offer.variableCost ?? undefined,
         capacity: offer.capacity ?? undefined,
         venue: offer.venue ?? undefined,
+        ...enteredFixedArgs(offer),
       }, deps);
     } catch (e) {
       if (close) close();
@@ -777,6 +835,7 @@ export async function runComparison(workspace, stepInput, makeDeps, { checkVisit
         net: verdict.breakEven.net,
         tickets: verdict.breakEven.tickets,
         verdict: verdict.breakEven.verdict,
+        ...(verdict.breakEven.fixedCosts ? { fixedCosts: verdict.breakEven.fixedCosts } : {}),
         capacity: capacityView(verdict.capacity),
         openers: { topPick: verdict.openers.topPick },
         // Carried legs (no new call) + comparability flag, computed only

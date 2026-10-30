@@ -29,7 +29,7 @@
     <p class="label">Static page. It links the live ledger and the recorded trials — it never restates numbers that can drift.</p>
 
     <h2>1. The formula</h2>
-    <p>Break-even tickets = ceil(guarantee ÷ net per ticket), where net per ticket = ticket price − variable cost per ticket. A blank variable cost means the net is <em>before</em> variable costs — never net of zero costs. An explicit 0 is cost 0. The worked example on every verdict shows the exact numbers used.</p>
+    <p>Break-even tickets = ceil((guarantee + entered fixed costs − entered sponsor offset) ÷ net per ticket), where net per ticket = ticket price − variable cost per ticket. Optional fixed costs are venue cost, production cost, marketing cost, and other fixed costs. A sponsor offset is subtracted only when entered. A blank field is not entered — it is left out of the sum, never treated as zero. An explicit 0 is entered zero. No tax or fee rate is assumed. With every fixed-cost field blank, the count is ceil(guarantee ÷ net per ticket). A blank variable cost means the net is <em>before</em> variable costs — never net of zero costs. An explicit variable cost of 0 is cost 0. The worked example and the line-by-line breakdown on every verdict show the exact numbers used.</p>
     <p>When capacity is known (user-supplied or Ticketmaster venue, source always labelled), the verdict also shows break-even as a percentage of room capacity, and when break-even exceeds capacity it says plainly: “Cannot break even in this room at this guarantee.” When capacity is unknown, no percentage is shown at all — only tickets needed, plus the verbatim unknown-capacity sentence.</p>
 
     <h2>2. The receipt model</h2>
