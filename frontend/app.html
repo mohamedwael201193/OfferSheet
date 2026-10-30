@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="dashboard.css?v=u15">
 <link rel="stylesheet" href="kinpaku.css?v=u12">
-<link rel="stylesheet" href="u16-dashboard.css?v=u16">
+<link rel="stylesheet" href="u16-dashboard.css?v=u16b">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0A0A0A">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -197,17 +197,21 @@
 
   <section id="status" class="status" aria-live="polite" hidden></section>
 
-  <!-- U16 empty state: words only, no figure. Hidden by CSS as soon as a real verdict renders. -->
-  <div class="u16-empty" role="note" aria-label="No verdict yet">
-    <span class="u16-empty-ic" aria-hidden="true"></span>
-    <h2>No verdict yet</h2>
-    <p>The number, the formula and every receipt appear here after a real run. Nothing is shown before one — no placeholder figure.</p>
-    <ol>
-      <li>Check artist, city and guarantee</li>
-      <li>Press the gold run button</li>
-      <li>Read the verdict, then the receipts</li>
-    </ol>
-  </div>
+  <!-- U16 recorded preview (sketch B): a labelled record of Trial 1, never a live verdict.
+       Filled from trial-pack.json by u16-dashboard.js; hidden once a real verdict renders. -->
+  <aside class="u16-preview" aria-label="Recorded example verdict, not live" hidden>
+    <p class="u16-rectag" data-pv="tag">Recorded · Trial 1 · not live</p>
+    <p class="u16-pv-k">No. 02 — The verdict</p>
+    <h2>Verdict</h2>
+    <p class="u16-pv-sub" data-pv="subject"></p>
+    <p class="u16-pv-num" data-pv="num"></p>
+    <p class="u16-pv-unit">tickets to break even</p>
+    <div class="u16-rule" aria-hidden="true"></div>
+    <p class="u16-pv-note">Aggregate taste signals only — they show how much two audiences share, never a prediction about any individual, and never a promise this show will sell out.</p>
+    <p class="u16-pv-note">Break-even tickets = ceil(guarantee ÷ (ticket price − variable cost per ticket))</p>
+    <dl class="u16-pv-facts"><div><dt>Ticket price</dt><dd data-pv="price"></dd></div><div><dt>Graph pick</dt><dd data-pv="graph"></dd></div><div><dt>Net per ticket</dt><dd>— not in recorded pack</dd></div></dl>
+    <p class="u16-pv-foot">A record of a real run on 29 Oct 2026. Press “Run the verdict” for your own offer — your live result replaces this card.</p>
+  </aside>
 
   <!-- Verdict hero: lavender panel, huge number, chip rows, facts as
        chips. It renders only on a successful run (hidden otherwise) —
@@ -760,7 +764,7 @@
 <script src="oracle.js?v=u15"></script>
 <script src="dark-dash.js?v=u12"></script>
 <script src="vendor/gsap.min.js?v=3.15.0"></script>
-<script src="u16-dashboard.js?v=u16"></script>
+<script src="u16-dashboard.js?v=u16b"></script>
 <script>
   // Arithmetic checker: pure client-side ceil math on typed inputs.
   // No fetch, no verdict, no Qloo call, no stored state.
