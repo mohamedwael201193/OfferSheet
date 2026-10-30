@@ -147,6 +147,23 @@
 .v3 .mobile-copy { font-size: 18px; line-height: 1.8; color: var(--warm); margin: 0; }
 .v3 .pwa-note { color: var(--muted); font-size: 14px; line-height: 1.8; margin: 20px 0 0; }
 
+/* Contrast only. `.v3 a { color: inherit }` was painting light text on the
+   gold fill, and the topbar link color was painting muted gray on the
+   white primary pill. Both sat under 4.5:1. Copy and layout are unchanged. */
+.v3 a.cta-gold,
+.v3 a.btn--gold {
+  color: var(--on-gold);
+  background: var(--gold);
+}
+.v3 .topbar .nav-links a.btn--primary {
+  color: #0A0A0A;
+  background: #FFFFFF;
+}
+.v3 .topbar .nav-links a.btn--primary:hover {
+  color: #0A0A0A;
+  background: #E5E5E5;
+}
+
 @media (max-width: 820px) {
   .v3 .wrap { padding: 72px 6vw; }
   .v3 .steps, .v3 .cards, .v3 .trials, .v3 .evrow { grid-template-columns: 1fr; }

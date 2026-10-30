@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OfferSheet — check a live-show offer before you sign it</title>
 <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="dashboard.css?v=u12">
+<link rel="stylesheet" href="dashboard.css?v=u14">
 <link rel="stylesheet" href="kinpaku.css?v=u12">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0A0A0A">
@@ -30,7 +30,7 @@
      focus into the drawer on open, return on close). The skip link is
      injected by app.js as the first element of <body>, ahead of this
      panel, so it stays the first Tab stop. -->
-<button class="btn nav-toggle sidebar-toggle" type="button" aria-expanded="false" aria-controls="appNav" aria-label="Open navigation">Menu</button>
+<button class="btn nav-toggle sidebar-toggle" type="button" aria-expanded="false" aria-controls="appNav" aria-label="Menu, open navigation">Menu</button>
 <div class="nav-scrim" aria-hidden="true"></div>
 <div class="sidebar-panel" id="sidebarPanel">
   <div class="sidebar-head">
@@ -373,7 +373,7 @@
       <div id="legsBlock"></div>
       <p id="legsSourceTag" class="source-tag-line"></p>
     </details>
-    <div id="missTaxonomy" class="miss-taxonomy" aria-label="Miss taxonomy"></div>
+    <div id="missTaxonomy" class="miss-taxonomy" role="region" aria-label="Miss taxonomy"></div>
   </section>
 
   <!-- Receipts as a link module: pale-blue header band, hairline rows. -->
