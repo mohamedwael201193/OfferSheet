@@ -284,7 +284,7 @@
       var key = rowKey + '|' + i;
       var mm = mismatchKeys.has(key) ? '<span class="ws-mismatch">replay mismatch — do not rely on this row</span>' : '';
       return '<li class="ws-receipt' + (mm ? ' ws-row--mismatch' : '') + '"><span>' + esc(r.claim || r.operation || '') +
-        ' · ' + esc(r.operation || '') + ' · requestId ' + esc(r.requestId == null ? '—' : r.requestId) +
+        ' · ' + esc(r.operation || '') + ' · requestId ' + esc(r.requestId == null || r.requestId === '' ? '—' : r.requestId) +
         ' · ' + esc(r.resultCount == null ? '—' : r.resultCount) + ' results</span> ' + receiptBtnHtml(r, rowKey, i) + ' ' + mm + '<span class="ws-replay-out" id="ws-replay-' + esc(rowKey) + '-' + i + '"></span></li>';
     }).join('') + '</ul>';
   }

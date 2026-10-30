@@ -326,7 +326,7 @@ function stepLogHtml(r, v) {
   // so a judge can skim hashes without opening every receipt. Replay
   // behavior is untouched.
   const hashShort = r.requestHash ? `${String(r.requestHash).slice(0, 12)}…` : '—';
-  const lead = `<p class="step-lead">hash ${esc(hashShort)} · requestId ${esc(r.requestId ?? '—')}</p>`;
+  const lead = `<p class="step-lead">hash ${esc(hashShort)} · requestId ${esc(r.requestId == null || r.requestId === '' ? '—' : r.requestId)}</p>`;
   if (!r.replay) {
     return `<details class="receipt-step"><summary>Step log</summary>${lead}<p>Step: ${esc(op)} · results: ${esc(r.resultCount ?? '—')} · status: ${esc(status)} — no replay payload recorded for this receipt, so no parameters are shown.</p></details>`;
   }
@@ -607,7 +607,7 @@ function renderRerankSection(result, opts) {
   if (result && result.status === 'ok' && result.newPick) {
     const r = result.receipt || {};
     out.innerHTML = `<p><strong>Re-ranked pick (without “${esc(result.excludedPick || '')}”): ${esc(result.newPick.name || result.newPick.id || '')}</strong></p>`
-      + `<p class="label">New receipt: ${esc(r.operation || 'qloo_rank')} · requestId ${esc(r.requestId ?? '—')} · results: ${esc(r.resultCount ?? '—')}</p>`
+      + `<p class="label">New receipt: ${esc(r.operation || 'qloo_rank')} · requestId ${esc(r.requestId == null || r.requestId === '' ? '—' : r.requestId)} · results: ${esc(r.resultCount ?? '—')}</p>`
       + (opts.derived ? '<p class="label">Derived from the recorded fixture — not a live re-rank run.</p>' : '<p class="label">Live re-rank — the original verdict, pick, and receipts above are unchanged.</p>');
     return;
   }
@@ -794,7 +794,7 @@ function renderReceipts(v) {
     const replayBtn = r.replay
       ? `<button class="btn btn-sm" data-replay='${esc(JSON.stringify(r.replay))}' data-receipt-idx="${idx}">Replay</button>`
       : '<em>No replay for this receipt</em>';
-    div.innerHTML = `<div><div class="claim">${esc(r.claim)}</div><div class="meta">${esc(r.operation)} · requestId: ${esc(r.requestId ?? '—')} · results: ${esc(r.resultCount ?? '—')}</div></div>${replayBtn}${stepLogHtml(r, v)}`;
+    div.innerHTML = `<div><div class="claim">${esc(r.claim)}</div><div class="meta">${esc(r.operation)} · requestId: ${esc(r.requestId == null || r.requestId === '' ? '—' : r.requestId)} · results: ${esc(r.resultCount ?? '—')}</div></div>${replayBtn}${stepLogHtml(r, v)}`;
     list.appendChild(div);
   });
   const receiptTag = $('receiptSourceTag');
@@ -1077,7 +1077,7 @@ function renderCiteChips(v) {
   const chips = [];
   if (v.openers?.topPick && graphIdx >= 0) {
     const r = receipts[graphIdx];
-    chips.push({ label: `Graph pick ${esc(v.openers.topPick)} — ${esc(r.operation)} · requestId ${esc(r.requestId ?? '—')}`, idx: graphIdx });
+    chips.push({ label: `Graph pick ${esc(v.openers.topPick)} — ${esc(r.operation)} · requestId ${esc(r.requestId == null || r.requestId === '' ? '—' : r.requestId)}`, idx: graphIdx });
   }
   for (const m of v.missTrial?.misses || []) {
     if (graphIdx >= 0) {
@@ -1259,7 +1259,7 @@ function renderVerdictSheet(v) {
   const be = v.breakEven || {};
   const cap = v.capacity || {};
   const known = cap.state === 'known' && typeof cap.value === 'number';
-  const receiptsHtml = (v.receipts || []).map((r) => `<li>${esc(r.claim || r.operation)} — ${esc(r.operation)} · requestId ${esc(r.requestId ?? '—')} · ${esc(String(r.resultCount ?? '—'))} results</li>`).join('');
+  const receiptsHtml = (v.receipts || []).map((r) => `<li>${esc(r.claim || r.operation)} — ${esc(r.operation)} · requestId ${esc(r.requestId == null || r.requestId === '' ? '—' : r.requestId)} · ${esc(String(r.resultCount ?? '—'))} results</li>`).join('');
   const unknowns = buildSignChecklist(v).unknowns;
   // Phase 3 C: the sheet strikes exactly the lines buildSheetLines flags
   // (same backing rule as the brief) — Graph pick and miss ledger when
