@@ -197,6 +197,7 @@ function hideVerdict() {
   // AFTER every hidden flag above is set, so the derived state is
   // final — every verdict-section link returns to inert-but-explained.
   try { syncVerdictNav(); } catch { /* verdict-nav sync never breaks a verdict reset */ }
+  try { syncFlowSteps(); } catch { /* flow-step sync never breaks a verdict reset */ }
 }
 function setRunning(on) {
   document.querySelectorAll('#offerForm button').forEach((b) => { b.disabled = on; });
@@ -1750,6 +1751,7 @@ function wireVerdictAids(v) {
   // so their nav/toolbar links go live; the Race link goes live only
   // when a race actually ran (raceSection.hidden = !race above).
   try { setVerdictNavState(); } catch { /* nav sync never breaks a verdict */ }
+  try { syncFlowSteps(); } catch { /* flow-step sync never breaks a verdict */ }
 }
 
 // G12 (superiority): inputs-only share URL builder — form fields only,
@@ -2257,6 +2259,28 @@ function syncVerdictNav() {
       else note.textContent = 'Verdict sections are open — Verdict and Receipts jump to this verdict\u2019s content.';
     }
   } catch { /* verdict-nav sync never breaks the page */ }
+}
+// V4 (user-approved sketch v4): flow-step indicator sync. Step 02 is
+// active exactly when a verdict section stands; otherwise step 01.
+// Presentation only: it never shows, hides, or invents a verdict — it
+// reads the same hidden state syncVerdictNav reads. Every call site
+// is guarded like the nav-sync sites, so a missing steps row never
+// breaks a verdict or a reset.
+function syncFlowSteps() {
+  try {
+    if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') return;
+    const steps = document.querySelectorAll('.flow-steps .flow-step');
+    if (!steps || !steps.length) return;
+    const verdict = document.getElementById('verdict');
+    const live = !!(verdict && !verdict.hidden);
+    steps.forEach((step) => {
+      const n = step.getAttribute ? step.getAttribute('data-flow-step') : null;
+      const on = live ? n === '2' : n === '1';
+      if (typeof step.classList === 'undefined') return;
+      if (on) step.classList.add('on');
+      else step.classList.remove('on');
+    });
+  } catch { /* flow-step sync never breaks a verdict or a reset */ }
 }
 function wireSidebarNav() {
   try {
