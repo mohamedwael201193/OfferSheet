@@ -361,9 +361,11 @@ test('U20: sources checked is one row per check with a pill, method and summary'
   const html = sandbox.sourcesCheckedHtml({ legs: {
     rank: { status: 'ok' }, demographics: { status: 'ok', retried429: true },
     trends: { status: 'empty', envelopeSummary: 'no rows' }, compare: { status: 'error', reason: 'timeout' } } });
-  assert.match(html, /2 of 7<\/strong> core checks returned data\. 0 of 2 additional checks returned data/);
+  assert.match(html, /2 of 7<\/strong> core checks returned data\./);
+  assert.match(html, /0 of 2<\/strong> additional checks returned data\./);
+  assert.match(html, /7 checks had no data/);
   assert.equal((html.match(/class="u20-check"/g) || []).length, 9);
-  assert.match(html, /u20-pill--retry">rate-limited, retried · ok/);
+  assert.match(html, /u20-pill--retry">[\s\S]*?rate-limited, retried · ok/);
   assert.match(html, /u20-pill--none">no data/);
   assert.match(html, /u20-pill--err">error/);
   assert.match(html, /<code class="u20-check-m">demographics<\/code>/);

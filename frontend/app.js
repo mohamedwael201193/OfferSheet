@@ -259,9 +259,9 @@ function tagsHtml(list) {
 }
 
 function kvOrList(value, title) {
-  if (value === null || value === undefined) return `<h3>${esc(title)}</h3><p class="empty">Unavailable this run. <span class="next-action">Next action:</span> run the verdict again.</p>`;
+  if (value === null || value === undefined) return `<h3>${esc(title)}</h3><p class="u20-empty"><span class="u20-pill u20-pill--none">no data</span> No data from Qloo this run</p>`;
   if (Array.isArray(value)) {
-    if (value.length === 0) return `<h3>${esc(title)}</h3><p class="empty">No data returned this run. <span class="next-action">Next action:</span> run the verdict again.</p>`;
+    if (value.length === 0) return `<h3>${esc(title)}</h3><p class="u20-empty"><span class="u20-pill u20-pill--none">no data</span> No data from Qloo this run</p>`;
     const rows = value.map((v) => {
       if (v && typeof v === 'object') {
         const parts = Object.entries(v).map(([k, val]) => `${esc(k)}: ${esc(typeof val === 'object' ? JSON.stringify(val) : val)}`).join(' · ');
@@ -978,8 +978,8 @@ function plainLegRows(legs, tm, osm, wd) {
 }
 
 function checkPill(status, retried) {
-  if (status === 'ok' && retried) return '<span class="u20-pill u20-pill--retry">rate-limited, retried · ok</span>';
-  if (status === 'ok') return '<span class="u20-pill u20-pill--ok">ok</span>';
+  if (status === 'ok' && retried) return '<span class="u20-pill u20-pill--retry"><svg class="u20-tick" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.5l2.2 2.2 4.8-5"/></svg>rate-limited, retried · ok</span>';
+  if (status === 'ok') return '<span class="u20-pill u20-pill--ok"><svg class="u20-tick" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.5l2.2 2.2 4.8-5"/></svg>ok</span>';
   if (status === 'empty' || status === 'skipped') return '<span class="u20-pill u20-pill--none">no data</span>';
   if (status === 'error') return '<span class="u20-pill u20-pill--err">error</span>';
   return `<span class="u20-pill u20-pill--partial">partial</span>`;
@@ -1007,7 +1007,8 @@ function sourcesCheckedHtml(v) {
   if (v.ticketmaster) ext.push(checkRow('Ticketmaster venue and event history', 'ticketmaster', v.ticketmaster.status, false, v.ticketmaster.status === 'error' ? 'Ticketmaster unavailable — capacity and event history not loaded' : [v.ticketmaster.venueName, v.ticketmaster.reason].filter(Boolean).join(' — ')));
   if (v.osm) ext.push(checkRow('city confirmation', 'osm', v.osm.status, false, [v.osm.displayName, 'display-only · Map data © OpenStreetMap contributors (ODbL)'].filter(Boolean).join(' — ')));
   if (v.wikidata) ext.push(checkRow('public facts cross-check', 'wikidata', v.wikidata.status, false, v.wikidata.scope || 'input to the Web arm only'));
-  return `<p class="u20-checks-sum"><strong>${ok} of ${total}</strong> core checks returned data.${extraRows.length ? ` ${extraOk} of ${extra.length} additional checks returned data.` : ''}</p><p class="u20-checks-sub">Core checks</p><ul class="u20-checks">${rows.join('')}</ul>${extraRows.length ? `<p class="u20-checks-sub">Additional checks</p><ul class="u20-checks">${extraRows.join('')}</ul>` : ''}${ext.length ? `<p class="u20-checks-sub">Outside sources</p><ul class="u20-checks">${ext.join('')}</ul>` : ''}`;
+  const noData = (coreLegs.length ? coreLegs : extra).concat(coreLegs.length ? extra : []).filter(([, l]) => l.status !== 'ok').length;
+  return `<p class="u20-checks-sum"><span class="u20-sumpill u20-sumpill--ok"><strong>${ok} of ${total}</strong> core checks returned data.</span>${extraRows.length ? `<span class="u20-sumpill"><strong>${extraOk} of ${extra.length}</strong> additional checks returned data.</span>` : ''}${noData ? `<span class="u20-sumpill u20-sumpill--none">${noData} check${noData === 1 ? '' : 's'} had no data</span>` : ''}</p><p class="u20-checks-sub">Core checks</p><ul class="u20-checks">${rows.join('')}</ul>${extraRows.length ? `<p class="u20-checks-sub">Additional checks</p><ul class="u20-checks">${extraRows.join('')}</ul>` : ''}${ext.length ? `<p class="u20-checks-sub">Outside sources</p><ul class="u20-checks">${ext.join('')}</ul>` : ''}`;
 }
 function renderLegs(v) {
   $('legsBlock').innerHTML = sourcesCheckedHtml(v);
@@ -1206,7 +1207,7 @@ function computeConfidence(v) {
   const reasons = [];
   if (coreOk && !anyError) reasons.push('All 7 core Qloo legs ok; no leg in error.');
   else reasons.push(`Core legs: ${CONFIDENCE_CORE.filter((k) => st(k) === 'ok').length}/7 ok.`);
-  if (nonOk.length) reasons.push(`Legs without usable data: ${nonOk.join('; ')}.`);
+  if (nonOk.length) reasons.push(`${nonOk.length} check${nonOk.length === 1 ? '' : 's'} returned no usable data — listed one per row under Sources checked.`);
   if (ranked.length === 0 && candidates.length > 0) reasons.push('Unranked shortlist: the Graph pick is the first candidate returned, not a ranked winner.');
   else reasons.push('Tie check: Qloo rank returns names only, no scores — a near-tie cannot be ruled out from this verdict.');
   return { level, reasons };
@@ -1690,7 +1691,7 @@ function renderVerdict(v, race) {
   renderDiagram(v);
 
   $('audienceNote').textContent = v.audience.note;
-  $('audienceAreas').innerHTML = (v.audience.areas || []).map((a) => `<li>${esc(a.name || a.id || '')}</li>`).join('') || '<li>No areas returned this run. <span class="next-action">Next action:</span> run the verdict again.</li>';
+  $('audienceAreas').innerHTML = (v.audience.areas || []).map((a) => `<li>${esc(a.name || a.id || '')}</li>`).join('') || '<li class="u20-empty-li"><p class="u20-empty"><span class="u20-pill u20-pill--none">no data</span> No data from Qloo this run</p></li>';
   const ranked = v.openers.ranked.length > 0 ? v.openers.ranked : v.openers.candidates;
   $('openerList').innerHTML = ranked.map((o) => `<li>${esc(o.name || o.id || '')}</li>`).join('') || '<li>No equivalent cleared the evidence checks — this does not mean none exists. <span class="next-action">Next action:</span> run the verdict again.</li>';
   // SHIP item 9: no forced winner. A first candidate from an unranked
