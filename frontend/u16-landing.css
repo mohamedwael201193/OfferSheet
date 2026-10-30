@@ -304,3 +304,4 @@ body.v3 .u16-phone .u16-orbit{margin:22px 0 0}
 }
 @media (min-width:901px){body.v3 .u16-phone .record-verdict-sub{display:none}}
 .u16-fig-num span{margin-left:.22em}
+.u16-fig-ceil{margin-top:14px!important}.u16-fig-num b,.u16-fig-num span{font-size:52px}@media (max-width:820px){.u16-fig-num b,.u16-fig-num span{font-size:42px}}
