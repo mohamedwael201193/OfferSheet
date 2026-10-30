@@ -280,3 +280,29 @@ html.u17-tabs body main.wrap[data-u17-active="evidence"]>div.u20c-slim.u20c-slim
 @media (max-width:820px){html.u17-tabs body main.wrap>div.u20c-slim.u20c-slim{grid-template-columns:1fr!important}}
 html.u17-tabs .u20c-slim .disc-head-row{flex-wrap:nowrap!important}
 html.u17-tabs .u20c-slim .disc-head-row>div{flex:1 1 auto;min-width:0}
+/* ===== U21: comparison table ===== */
+#wsComparison .ws-table-wrap{overflow-x:auto}
+table.ws-cmp{width:100%;border-collapse:collapse;table-layout:auto;font-size:14.5px}
+table.ws-cmp th{font-size:12.5px;font-weight:500;color:var(--u20-ink-2);text-align:left;padding:10px 12px;border-bottom:1px solid var(--u20-rule);white-space:nowrap}
+table.ws-cmp td{padding:14px 12px;border-bottom:1px solid var(--u20-rule);vertical-align:middle;color:var(--u20-ink)}
+table.ws-cmp td:first-child{color:var(--u20-ink-2);font-size:13.5px;max-width:150px}
+table.ws-cmp .ws-tix{font-size:28px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--u20-ink)}
+table.ws-cmp tr.ws-row--base{background:rgba(255,255,255,.025)}
+.ws-delta{font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
+.ws-delta--up{color:#ffb4a8}.ws-delta--down{color:#9fe0b0}.ws-delta--same{color:var(--u20-ink-2)}
+details.ws-rcpt-more>summary{cursor:pointer;font-size:13.5px;color:var(--u20-ink-2);white-space:nowrap;list-style:none}
+details.ws-rcpt-more>summary::after{content:" ›"}
+details.ws-rcpt-more[open]>summary::after{content:" ⌄"}
+details.ws-rcpt-more[open]{min-width:280px}
+@media (max-width:820px){
+  table.ws-cmp thead{display:none}
+  table.ws-cmp,table.ws-cmp tbody,table.ws-cmp tr,table.ws-cmp td{display:block;width:100%}
+  table.ws-cmp tr{border:1px solid var(--u20-rule);border-radius:14px;padding:12px 14px;margin:0 0 12px;background:var(--u20-card)}
+  table.ws-cmp td{border:0;padding:6px 0;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+  table.ws-cmp td::before{content:attr(data-label);font-size:12.5px;color:var(--u20-ink-2);flex:0 0 auto}
+  table.ws-cmp td:first-child{max-width:none;font-size:13px}
+  table.ws-cmp td:first-child::before{content:"Row"}
+  table.ws-cmp td.ws-c-rcpt{display:block}
+  table.ws-cmp td.ws-c-rcpt::before{display:block;margin-bottom:4px}
+  table.ws-cmp .ws-tix{font-size:24px}
+}

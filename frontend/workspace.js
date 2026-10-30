@@ -838,7 +838,23 @@
     if (!r) return '';
     var bv = ws.baseVerdict, b = ws.baseOffer;
     var baseParts = enteredFixedParts(b);
-    var baseRow = '<tr><td>0 (base — from the verified base, never re-run)</td><td>' + esc(b.artist) + ' · ' + esc(b.city) + '</td><td>' + guaranteeLine(b.guarantee) + (baseParts.length ? '<br><span class="ws-label">' + esc(baseParts.join(' · ')) + '</span>' : '') + '</td><td>' + fmt(bv ? bv.tickets : null) + '</td><td>' + (bv && bv.capacityState === 'known' ? fmt(b.capacity) : 'unknown') + '</td><td>' + (bv ? receiptsHtml(bv.receipts, 'base') : '') + '</td></tr>';
+    // U21: one readable row per offer. Receipts sit behind a per-row
+    // "n receipts" expander; delta is plain arithmetic vs the base verdict.
+    var tixCell = function (t) { return '<td class="ws-c-tix" data-label="Break-even tickets"><strong class="ws-tix">' + fmt(t) + '</strong></td>'; };
+    var deltaCell = function (t) {
+      if (!bv || typeof t !== 'number' || typeof bv.tickets !== 'number') return '<td class="ws-c-delta" data-label="vs base">—</td>';
+      var d = t - bv.tickets;
+      return '<td class="ws-c-delta" data-label="vs base"><span class="ws-delta ws-delta--' + (d > 0 ? 'up' : (d < 0 ? 'down' : 'same')) + '">' + (d > 0 ? '+' : '') + fmt(d) + ' tickets</span></td>';
+    };
+    var rcptCell = function (list, key) {
+      var n = (list || []).length;
+      if (!n) return '<td class="ws-c-rcpt" data-label="Receipts"><span class="ws-label">No receipts for this row.</span></td>';
+      var mm = list.some(function (x, k) { return mismatchKeys.has(key + '|' + k); });
+      return '<td class="ws-c-rcpt" data-label="Receipts"><details class="ws-rcpt-more"' + (mm ? ' open' : '') + '><summary>' + n + ' receipt' + (n === 1 ? '' : 's') + (mm ? ' · replay mismatch' : '') + '</summary>' + receiptsHtml(list, key) + '</details></td>';
+    };
+    var termsCell = function (g, parts) { return '<td class="ws-c-terms" data-label="Guarantee and costs">' + guaranteeLine(g) + (parts.length ? '<br><span class="ws-label">' + esc(parts.join(' · ')) + '</span>' : '') + '</td>'; };
+    var capCell = function (txt) { return '<td class="ws-c-cap" data-label="Capacity">' + txt + '</td>'; };
+    var baseRow = '<tr class="ws-row--base"><td>0 (base — from the verified base, never re-run)</td><td class="ws-c-offer" data-label="Offer">' + esc(b.artist) + ' · ' + esc(b.city) + '</td>' + termsCell(b.guarantee, baseParts) + tixCell(bv ? bv.tickets : null) + '<td class="ws-c-delta" data-label="vs base">base</td>' + capCell(bv && bv.capacityState === 'known' ? fmt(b.capacity) : 'unknown') + (bv ? rcptCell(bv.receipts, 'base') : '<td class="ws-c-rcpt"></td>') + '</tr>';
     // The server result already carries its own base row (offerIndex 0);
     // rendering it as well would show row 0 twice. The row above is the
     // only base row: it carries the verified base receipts, while the
@@ -855,7 +871,7 @@
     }).map(function (row, i) {
       if (row.status === 'refused' || !row.tickets && row.tickets !== 0) {
         var ref = row.refusal || {};
-        return '<tr class="ws-row--refused"><td>' + esc(row.offerIndex != null ? row.offerIndex : i + 1) + '</td><td>' + esc(row.artist || '') + ' · ' + esc(row.city || '') + '</td><td>—</td><td>refused — no numbers</td><td>' + esc(row.capacity ? (row.capacity.state || '') : '') + '</td><td>Code: ' + esc(ref.code || '') + ' — ' + esc(ref.reason || '') + '</td></tr>';
+        return '<tr class="ws-row--refused"><td>' + esc(row.offerIndex != null ? row.offerIndex : i + 1) + '</td><td class="ws-c-offer" data-label="Offer">' + esc(row.artist || '') + ' · ' + esc(row.city || '') + '</td><td data-label="Guarantee and costs">—</td><td class="ws-c-tix" data-label="Break-even tickets">refused — no numbers</td><td class="ws-c-delta" data-label="vs base">—</td>' + capCell(esc(row.capacity ? (row.capacity.state || '') : '')) + '<td class="ws-c-rcpt" data-label="Refusal">Code: ' + esc(ref.code || '') + ' — ' + esc(ref.reason || '') + '</td></tr>';
       }
       // Receipt keys are the row's offerIndex, NOT the filtered-array
       // index: filtering out the server base row (offerIndex 0) shifts
@@ -865,9 +881,9 @@
       // (findReceipts indexes the unfiltered rows array).
       var compKey = 'comp' + (row.offerIndex != null ? row.offerIndex : i + 1);
       var rowParts = enteredFixedParts(row);
-      return '<tr><td>' + esc(row.offerIndex != null ? row.offerIndex : i + 1) + '</td><td>' + esc(row.artist || '') + ' · ' + esc(row.city || '') + '</td><td>' + guaranteeLine(row.guarantee) + (rowParts.length ? '<br><span class="ws-label">' + esc(rowParts.join(' · ')) + '</span>' : '') + '</td><td>' + fmt(row.tickets) + '</td><td>' + (row.capacity ? (row.capacity.state === 'known' ? fmt(row.capacity.value) : 'unknown') : 'unknown') + '</td><td>' + receiptsHtml(row.receipts || [], compKey) + '</td></tr>';
+      return '<tr><td>' + esc(row.offerIndex != null ? row.offerIndex : i + 1) + '</td><td class="ws-c-offer" data-label="Offer">' + esc(row.artist || '') + ' · ' + esc(row.city || '') + '</td>' + termsCell(row.guarantee, rowParts) + tixCell(row.tickets) + deltaCell(row.tickets) + capCell(row.capacity ? (row.capacity.state === 'known' ? fmt(row.capacity.value) : 'unknown') : 'unknown') + rcptCell(row.receipts || [], compKey) + '</tr>';
     }).join('');
-    return '<article class="ws-row"><div class="ws-table-wrap"><table class="ws-table"><thead><tr><th>Row</th><th>Offer</th><th>Guarantee</th><th>Tickets needed</th><th>Capacity</th><th>Receipts / refusal</th></tr></thead><tbody>' + baseRow + rows + '</tbody></table></div>' +
+    return '<article class="ws-row"><div class="ws-table-wrap"><table class="ws-table ws-cmp"><thead><tr><th>Row</th><th>Offer</th><th>Guarantee and costs</th><th>Break-even tickets</th><th>vs base</th><th>Capacity</th><th>Receipts / refusal</th></tr></thead><tbody>' + baseRow + rows + '</tbody></table></div>' +
       '<p>' + esc(SORT_NOTE) + '</p>' +
       (r.supersedes ? '<p class="ws-label">Supersedes the entry recorded ' + esc(r.supersedes) + '</p>' : '') + '</article>';
   }
