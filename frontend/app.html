@@ -8,7 +8,8 @@
 <link rel="stylesheet" href="dashboard.css?v=u15">
 <link rel="stylesheet" href="kinpaku.css?v=u12">
 <link rel="stylesheet" href="u16-dashboard.css?v=u17">
-<link rel="stylesheet" href="u17-dashboard.css?v=u20">
+<link rel="stylesheet" href="u17-dashboard.css?v=u20b">
+  <link rel="stylesheet" href="u20-design.css?v=u20b">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#0A0A0A">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -416,27 +417,43 @@
       <figcaption>Offer, evidence, count.</figcaption>
     </figure>
     <details>
-      <summary>Audience evidence</summary>
+      <summary>Audience areas</summary>
+      <p class="u20-purpose">Places where this artist's fans cluster, as Qloo matched them.</p>
       <p id="audienceNote"></p>
       <ul id="audienceAreas"></ul>
       <p id="audienceSourceTag" class="source-tag-line"></p>
     </details>
     <details>
-      <summary>Opener shortlist, ranked for this city audience</summary>
+      <summary>Opener shortlist</summary>
+      <p class="u20-purpose">Who could open, ranked for this city's audience.</p>
       <ol id="openerList"></ol>
       <p id="topPick"></p>
       <p id="openerSourceTag" class="source-tag-line"></p>
     </details>
-    <details>
-      <summary>Evidence details: who the audience is, whether the artist is rising, shared tags, how the fan bases overlap</summary>
+    <details class="u20-sub">
+      <summary>Audience</summary>
+      <p class="u20-purpose">How the fan base leans by age and gender, against an average fan base.</p>
       <div id="demoBlock"></div>
+    </details>
+    <details class="u20-sub">
+      <summary>Trend</summary>
+      <p class="u20-purpose">Whether interest in the artist is rising or falling.</p>
       <div id="trendBlock"></div>
+    </details>
+    <details class="u20-sub">
+      <summary>Shared tags</summary>
+      <p class="u20-purpose">Tags Qloo finds on both the headliner and the opener.</p>
       <div id="tagsBlock"></div>
+    </details>
+    <details class="u20-sub">
+      <summary>Fan overlap</summary>
+      <p class="u20-purpose">How much the two fan bases overlap.</p>
       <div id="overlapBlock"></div>
       <p id="evidenceSourceTag" class="source-tag-line"></p>
     </details>
-    <details>
+    <details class="u20-sources">
       <summary>Sources checked</summary>
+      <p class="u20-purpose">Every call behind the number, one row each.</p>
       <p id="legSummary" class="leg-summary"></p>
       <div id="legsBlock"></div>
       <p id="legsSourceTag" class="source-tag-line"></p>
@@ -763,13 +780,14 @@
   </footer>
 </div>
 
-<script src="app.js?v=u20"></script>
+<script src="app.js?v=u20b"></script>
 <script src="workspace.js?v=u20"></script>
 <script src="oracle.js?v=u15"></script>
 <script src="dark-dash.js?v=u12"></script>
 <script src="vendor/gsap.min.js?v=3.15.0"></script>
 <script src="u16-dashboard.js?v=u17"></script>
-<script src="u17-tabs.js?v=u20"></script>
+<script src="u17-tabs.js?v=u20b"></script>
+<script src="u20-fx.js?v=u20b" defer></script>
 <script>
   // Arithmetic checker: pure client-side ceil math on typed inputs.
   // No fetch, no verdict, no Qloo call, no stored state.
