@@ -137,7 +137,7 @@
     if (rs && typeof window.openDiscSection === 'function') window.openDiscSection(rs);
     if (ev && rs && ev.nextElementSibling !== rs) ev.after(rs);
     if (!ev) return;
-    Array.prototype.forEach.call(ev.querySelectorAll('details'), function (d) {
+    Array.prototype.forEach.call(ev.querySelectorAll('details:not(.u20-tag-other):not(.u20-why)'), function (d) {
       d.open = true;
       var body = Array.prototype.filter.call(d.children, function (c) { return c.tagName !== 'SUMMARY' && !c.classList.contains('u18-empty') && !c.classList.contains('source-tag-line'); });
       var has = body.some(function (c) { return c.textContent.trim().length > 0; });

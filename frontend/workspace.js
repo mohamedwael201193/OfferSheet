@@ -505,10 +505,13 @@
       renderPanelsEmpty(); bindStatic(); return;
     }
     var b = ws.baseOffer, bv = ws.baseVerdict;
-    if (head) head.innerHTML = '<p class="ws-season-ledger">' + esc(SEASON_LEDGER_LINE) + '</p><p><strong>' + esc(b.artist) + '</strong> in <strong>' + esc(b.city) + '</strong>' + (b.venue ? ' · room: ' + esc(b.venue) : '') + '</p>' +
-      '<p>' + guaranteeLine(b.guarantee) + '</p>' +
-      '<p class="ws-settle-line">Settlement status: ' + esc(settlementStatus()) + '</p>' +
-      '<p class="ws-label">Workspace id: ' + esc(ws.workspaceId || '—') + ' · stored on this device only (localStorage + export). No server copy exists.</p>';
+    var kv = function (k, v2) { return '<div><dt>' + k + '</dt><dd>' + v2 + '</dd></div>'; };
+    if (head) head.innerHTML = '<p class="ws-season-ledger">' + esc(SEASON_LEDGER_LINE) + '</p>' +
+      '<dl class="u20-ws-kv">' + kv('Artist', esc(b.artist)) + kv('City', esc(b.city)) + (b.venue ? kv('Room', esc(b.venue)) : '') +
+      kv('Guarantee at stake', money(b.guarantee)) + (bv ? kv('Break-even', fmt(bv.tickets) + ' tickets') : '') +
+      kv('Settlement status', '<span class="ws-settle-line"><span class="u20-sr">Settlement status: </span>' + esc(settlementStatus()) + '</span>') +
+      kv('Workspace id', '<code class="u20-ws-id">' + esc(ws.workspaceId || '—') + '</code>') + '</dl>' +
+      '<p class="ws-label">Stored on this device only (localStorage + export). No server copy exists.</p>';
     if (base) {
       if (!bv) {
         base.innerHTML = '<p class="ws-msg">Base edited — prior steps were dropped. Run a verdict for these terms to seed steps.</p>' +

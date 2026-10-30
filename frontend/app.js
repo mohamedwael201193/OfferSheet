@@ -246,9 +246,16 @@ function tagsHtml(list) {
   const rows = list.map((t) => {
     const pop = Number(t.popularity), aff = Number(t.affinity);
     const meta = [t.type ? tagKind(t.type) : '', Number.isFinite(pop) ? `popularity ${(pop * 100).toFixed(0)}%` : '', Number.isFinite(aff) ? `affinity ${aff.toFixed(2)}` : ''].filter(Boolean).join(' · ');
-    return `<li><strong>${esc(t.name || t.id)}</strong>${meta ? `<span class="u19-meta">${esc(meta)}</span>` : ''}${t.id ? `<span class="u19-id">${esc(t.id)}</span>` : ''}</li>`;
-  }).join('');
-  return `<h3>Shared tags</h3><ul class="u19-tags">${rows}</ul>`;
+    return { kind: t.type ? tagKind(t.type) : 'untyped', html: `<li><strong>${esc(t.name || t.id)}</strong>${meta ? `<span class="u19-meta">${esc(meta)}</span>` : ''}${t.id ? `<span class="u19-id">${esc(t.id)}</span>` : ''}</li>` };
+  });
+  const groups = new Map();
+  rows.forEach((r) => { if (!groups.has(r.kind)) groups.set(r.kind, []); groups.get(r.kind).push(r.html); });
+  const relevant = (k) => /music|artist|genre|audience|band|song|album/i.test(k);
+  const grp = (k, items) => `<div class="u20-tag-grp"><p class="u20-tag-k">${esc(k)} <span>(${items.length})</span></p><ul class="u19-tags">${items.join('')}</ul></div>`;
+  const first = [...groups].filter(([k]) => relevant(k));
+  const other = [...groups].filter(([k]) => !relevant(k));
+  const otherN = other.reduce((a, [, i]) => a + i.length, 0);
+  return `<h3>Shared tags</h3><p class="u19-hint">Qloo's raw shared tags, grouped by tag type. Music and artist types first; nothing is removed.</p>${first.map(([k, i]) => grp(k, i)).join('') || '<p class="u19-hint">No music or artist tag types in this run.</p>'}${otherN ? `<details class="u20-tag-other"><summary>Other tag types (${otherN})</summary><p class="u19-hint">These are Qloo's raw shared tags from non-music types, kept as returned.</p>${other.map(([k, i]) => grp(k, i)).join('')}</details>` : ''}`;
 }
 
 function kvOrList(value, title) {
@@ -970,8 +977,40 @@ function plainLegRows(legs, tm, osm, wd) {
   return rows + tmRow + osmRow + wdRow;
 }
 
+function checkPill(status, retried) {
+  if (status === 'ok' && retried) return '<span class="u20-pill u20-pill--retry">rate-limited, retried · ok</span>';
+  if (status === 'ok') return '<span class="u20-pill u20-pill--ok">ok</span>';
+  if (status === 'empty' || status === 'skipped') return '<span class="u20-pill u20-pill--none">no data</span>';
+  if (status === 'error') return '<span class="u20-pill u20-pill--err">error</span>';
+  return `<span class="u20-pill u20-pill--partial">partial</span>`;
+}
+function checkRow(label, method, status, retried, detail) {
+  const cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+  return `<li class="u20-check"><span class="u20-check-l">${esc(cap(label))}</span>${checkPill(status, retried)}<code class="u20-check-m">${esc(method)}</code>${detail ? `<span class="u20-check-d">${esc(detail)}</span>` : ''}</li>`;
+}
+function sourcesCheckedHtml(v) {
+  const legs = Object.entries(v.legs || {}).filter(([, l]) => l);
+  const core = (typeof CONFIDENCE_CORE !== 'undefined' ? CONFIDENCE_CORE : []);
+  const coreLegs = core.map((k) => [k, (v.legs || {})[k] || { status: 'missing' }]);
+  const extra = legs.filter(([k]) => !core.includes(k));
+  const coreOk = coreLegs.filter(([, l]) => l.status === 'ok').length;
+  const extraOk = extra.filter(([, l]) => l.status === 'ok').length;
+  const row = ([k, l]) => {
+    const d = [l.status !== 'ok' ? (l.reason || l.envelopeSummary || (l.status === 'missing' ? 'not run this time' : '')) : '', l.note || ''].filter(Boolean).join(' — ');
+    return checkRow(plainLegName(k), k, l.status, !!l.retried429, d);
+  };
+  const ok = coreLegs.length ? coreOk : extraOk;
+  const rows = (coreLegs.length ? coreLegs : extra).map(row);
+  const extraRows = coreLegs.length ? extra.map(row) : [];
+  const total = coreLegs.length || extra.length;
+  const ext = [];
+  if (v.ticketmaster) ext.push(checkRow('Ticketmaster venue and event history', 'ticketmaster', v.ticketmaster.status, false, v.ticketmaster.status === 'error' ? 'Ticketmaster unavailable — capacity and event history not loaded' : [v.ticketmaster.venueName, v.ticketmaster.reason].filter(Boolean).join(' — ')));
+  if (v.osm) ext.push(checkRow('city confirmation', 'osm', v.osm.status, false, [v.osm.displayName, 'display-only · Map data © OpenStreetMap contributors (ODbL)'].filter(Boolean).join(' — ')));
+  if (v.wikidata) ext.push(checkRow('public facts cross-check', 'wikidata', v.wikidata.status, false, v.wikidata.scope || 'input to the Web arm only'));
+  return `<p class="u20-checks-sum"><strong>${ok} of ${total}</strong> core checks returned data.${extraRows.length ? ` ${extraOk} of ${extra.length} additional checks returned data.` : ''}</p><p class="u20-checks-sub">Core checks</p><ul class="u20-checks">${rows.join('')}</ul>${extraRows.length ? `<p class="u20-checks-sub">Additional checks</p><ul class="u20-checks">${extraRows.join('')}</ul>` : ''}${ext.length ? `<p class="u20-checks-sub">Outside sources</p><ul class="u20-checks">${ext.join('')}</ul>` : ''}`;
+}
 function renderLegs(v) {
-  $('legsBlock').innerHTML = `<dl class="kv">${plainLegRows(v.legs, v.ticketmaster, v.osm, v.wikidata)}</dl>`;
+  $('legsBlock').innerHTML = sourcesCheckedHtml(v);
   renderLegsTag(v);
 }
 
@@ -1446,8 +1485,19 @@ function renderTrialTally(runs) {
   const line = $('tallyLine');
   if (!table || !line) return;
   const t = computeTrialTally(runs);
-  const cell = (c) => c.full ? `${esc(c.short)}<details><summary>Full pick</summary>${esc(c.full)}</details>` : esc(c.short);
-  const rows = (runs || []).map((run) => {
+  const why = (text) => {
+    const t = String(text || '');
+    const m = t.match(/^(.+?)(?:[.!?](?=\s|$)| — | - )/s);
+    let head = m ? m[1].trim() : t;
+    if (head.length > 70) head = head.slice(0, 70) + '…';
+    const rest = head !== t && head + '.' !== t ? t : '';
+    return { head, rest };
+  };
+  const tile = (label, text, badge, kind) => {
+    const w = why(text);
+    return `<div class="u20-pick u20-pick--${kind}"><p class="u20-pick-k">${label}</p><p class="u20-pick-v">${esc(w.head || '—')}</p>${badge ? `<span class="u20-badge u20-badge--${badge.cls}">${badge.text}</span>` : ''}${w.rest ? `<details class="u20-why"><summary>Why</summary><p>${esc(w.rest)}</p></details>` : ''}</div>`;
+  };
+  const cards = (runs || []).map((run, i) => {
     const input = run.input || {};
     const gutPick = pickFor(run, 'gut');
     const webPick = pickFor(run, 'web');
@@ -1455,21 +1505,20 @@ function renderTrialTally(runs) {
     const webMiss = trialMissed(run, 'web');
     const webRefused = isWebRefusal(run);
     const missNames = [];
-    if (gutMiss) missNames.push(`Gut missed: ${gutPick}`);
+    if (gutMiss) missNames.push(`Gut missed: ${why(gutPick).head}`);
     if (webRefused) missNames.push('Web declined to pick (no pick recorded)');
-    else if (webMiss) missNames.push(`Web missed: ${webPick}`);
-    return `<tr>
-      <td>${esc(input.artist || '')} · ${esc(input.city || '')}<br><span class="label">${money(input.guarantee ?? 0)} / ${money(input.ticketPrice ?? 0)} → ${fmt(run.breakEvenTickets ?? 0)} tickets</span></td>
-      <td>${cell(shortPick(gutPick, 120))}</td>
-      <td>${esc(run.graphPick || '')}</td>
-      <td>${gutMiss ? 'different' : 'same'}</td>
-      <td>${cell(shortPick(webPick, 120))}</td>
-      <td>${webRefused ? 'declined (no pick)' : (webMiss ? 'different' : 'same')}</td>
-      <td>${missNames.length ? esc(missNames.join('; ')) : 'No miss — both arms matched Graph.'}</td>
-      <td><button type="button" class="btn" data-rerun='${esc(JSON.stringify(input))}'>Use these inputs</button></td>
-    </tr>`;
+    else if (webMiss) missNames.push(`Web missed: ${why(webPick).head}`);
+    const gutBadge = gutMiss ? { cls: 'diff', text: 'different' } : { cls: 'same', text: 'same' };
+    const webBadge = webRefused ? { cls: 'declined', text: 'declined (no pick)' } : (webMiss ? { cls: 'diff', text: 'different' } : { cls: 'same', text: 'same' });
+    return `<article class="u20-trial" aria-label="Trial ${i + 1}">
+      <header class="u20-trial-h"><span class="u20-trial-n">Trial ${i + 1}</span><strong>${esc(input.artist || '')} · ${esc(input.city || '')}</strong><span class="u20-trial-m">${money(input.guarantee ?? 0)} / ${money(input.ticketPrice ?? 0)} → ${fmt(run.breakEvenTickets ?? 0)} tickets</span></header>
+      <div class="u20-picks">${tile('Gut pick', gutPick, gutBadge, 'gut')}${tile('Qloo pick', run.graphPick || '', { cls: 'ref', text: 'reference' }, 'graph')}${tile('Web pick', webRefused ? 'No pick — declined.' : webPick, webBadge, 'web')}</div>
+      <p class="u20-miss"><span>Named miss</span> ${missNames.length ? esc(missNames.join(' · ')) : 'No miss — both arms matched Graph.'}</p>
+      <button type="button" class="btn u20-rerun" data-rerun='${esc(JSON.stringify(input))}'>Use these inputs</button>
+    </article>`;
   }).join('');
-  table.innerHTML = `<div class="table-wrap"><table class="depth-table"><thead><tr><th>Trial</th><th>Gut pick</th><th>Qloo pick</th><th>Gut same?</th><th>Web pick</th><th>Web same?</th><th>Named miss</th><th>Re-run</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const summary = `<div class="u20-tally" role="group" aria-label="Tally"><div><b>${t.n}</b><span>recorded trials</span></div><div><b>${t.gutSame}/${t.n}</b><span>Gut agreed with Graph</span></div><div><b>${t.webSame}/${t.n}</b><span>Web agreed with Graph</span></div><div><b>${t.webRefused}/${t.n}</b><span>Web declined to pick</span></div></div>`;
+  table.innerHTML = summary + `<div class="u20-trials">${cards}</div>`;
   table.querySelectorAll('[data-rerun]').forEach((b) => {
     b.addEventListener('click', () => { try { prefillForm(JSON.parse(b.getAttribute('data-rerun'))); } catch {} });
   });
