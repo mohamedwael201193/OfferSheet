@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { spawn } from 'node:child_process';
+import { spawnEphemeralBackend } from './ephemeral-backend.js';
 import { runVerdict } from '../backend/src/pipeline.js';
 import { qlooRest } from '../backend/src/rest.js';
 import { baseDeps, baseInput, mcpFixture } from './fixtures.js';
@@ -259,17 +259,13 @@ async function waitHealthy(port) {
 }
 
 test('Static handler: bare double-slash path returns 400 and the process survives', { timeout: 30000 }, async () => {
-  const child = spawn('node', ['backend/server.js'], {
-    cwd: new URL('..', import.meta.url).pathname,
-    env: { ...process.env, QLOO_API_KEY: 'test-only-not-a-real-key', PORT: '3471' },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const { child, port } = await spawnEphemeralBackend({ ...process.env, QLOO_API_KEY: 'test-only-not-a-real-key' });
   try {
-    await waitHealthy(3471);
-    const bad = await httpRaw(3471, '//');
+    await waitHealthy(port);
+    const bad = await httpRaw(port, '//');
     assert.equal(bad.status, 400);
     assert.equal(JSON.parse(bad.body).error.code, 'BAD_REQUEST');
-    const health = await httpRaw(3471, '/api/health');
+    const health = await httpRaw(port, '/api/health');
     assert.equal(health.status, 200, 'server must still answer after a malformed path');
     assert.equal(child.exitCode, null, 'process must not have crashed');
   } finally {

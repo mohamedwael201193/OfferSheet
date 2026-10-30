@@ -13,7 +13,7 @@
 // MCP receipt hashes need no rewriting: the pipeline computes them.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawnEphemeralBackend } from './ephemeral-backend.js';
 import { readFile } from 'node:fs/promises';
 import { runVerdict } from '../backend/src/pipeline.js';
 import { breakEven } from '../backend/src/breakeven.js';
@@ -541,14 +541,13 @@ test('server wiring: workspace routes + webmanifest type present; no new fs writ
 });
 
 test('live server smoke (no keys): pure steps verify over HTTP; replacement refuses closed; stream emits an error event', { timeout: 30000 }, async () => {
-  const PORT = 3499;
-  const child = spawn(process.execPath, ['backend/server.js'], {
-    cwd: new URL('..', import.meta.url).pathname,
-    env: { ...process.env, PORT: String(PORT), QLOO_API_KEY: '', TICKETMASTER_API_KEY: '' },
-    stdio: 'ignore',
+  const { child, port } = await spawnEphemeralBackend({
+    ...process.env,
+    QLOO_API_KEY: '',
+    TICKETMASTER_API_KEY: '',
   });
   try {
-    const base = `http://127.0.0.1:${PORT}`;
+    const base = `http://127.0.0.1:${port}`;
     for (let i = 0; i < 50; i += 1) {
       try {
         const r = await fetch(`${base}/api/health`);

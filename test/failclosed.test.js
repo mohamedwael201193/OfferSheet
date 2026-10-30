@@ -1,7 +1,7 @@
 // T04 (fail-closed mapping, unit) + T10 (no-key 503 staging run).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawnEphemeralBackend } from './ephemeral-backend.js';
 import http from 'node:http';
 import {
   notConfigured, qlooAuthFailed, quotaFloorTripped, visitorCapTripped,
@@ -44,18 +44,13 @@ test('T10: server with no key serves a visible 503 on the verdict path (staging)
   const env = { ...process.env };
   delete env.QLOO_API_KEY;
   delete env.TICKETMASTER_API_KEY;
-  env.PORT = '3457';
-  const child = spawn('node', ['backend/server.js'], {
-    cwd: new URL('..', import.meta.url).pathname,
-    env,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const { child, port } = await spawnEphemeralBackend(env);
   try {
     // Wait for the health endpoint (up to 5s).
     let health = null;
     for (let i = 0; i < 50; i += 1) {
       try {
-        health = await httpCall(3457, '/api/health');
+        health = await httpCall(port, '/api/health');
         if (health.status === 200) break;
       } catch {
         // not listening yet
@@ -67,13 +62,13 @@ test('T10: server with no key serves a visible 503 on the verdict path (staging)
     assert.equal(h.qlooConfigured, false);
     assert.ok(!('qlooKey' in h) && !('ticketmasterKey' in h), 'health must not expose key fields');
 
-    const verdict = await httpCall(3457, '/api/verdict', 'POST', { artist: 'Billie Eilish', city: 'New York', guarantee: 250000 });
+    const verdict = await httpCall(port, '/api/verdict', 'POST', { artist: 'Billie Eilish', city: 'New York', guarantee: 250000 });
     assert.equal(verdict.status, 503);
     const v = JSON.parse(verdict.body);
     assert.equal(v.error.code, 'NOT_CONFIGURED');
     assert.match(v.error.message, /not configured/i);
 
-    const page = await httpCall(3457, '/');
+    const page = await httpCall(port, '/');
     assert.equal(page.status, 200);
     assert.match(page.body, /OfferSheet/);
   } finally {
