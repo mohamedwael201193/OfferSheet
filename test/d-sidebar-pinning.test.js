@@ -200,7 +200,7 @@ test('live-inspection destination inventory: every drawer destination accounted 
   const body = navBlocks[0][1];
   const linkTexts = [...body.matchAll(/<a[^>]*>([^<]*)<\/a>/g)].map((m) => m[1].trim());
   assert.deepEqual(linkTexts,
-    ['Tool', 'Verdict', 'Evidence', 'Workspace', 'Ledger'],
+    ['Offer', 'Verdict', 'Evidence', 'Workspace', 'Ledger'],
     `sidebar link labels must be exactly the v3 drawer destinations in order: ${linkTexts}`);
   assert.ok(!linkTexts.includes('Close'), 'Close must not be counted as a destination');
   const panel = html.slice(html.indexOf('<div class="sidebar-panel"'), html.indexOf('<div class="app-shell"'));

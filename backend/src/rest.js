@@ -44,7 +44,7 @@ function extractName(item) {
   return item.name ?? item.properties?.name ?? null;
 }
 
-export async function qlooRest({
+async function qlooRestRaw({
   path,
   params = {},
   key,
@@ -93,6 +93,7 @@ export async function qlooRest({
   }
   const requestHash = requestHashFor('GET', url.toString());
   let lastError = null;
+  let retried429 = false;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -120,8 +121,13 @@ export async function qlooRest({
         const rawAfter = res.headers?.get?.('Retry-After');
         const secs = Number(rawAfter);
         const dateMs = rawAfter ? Date.parse(rawAfter) : NaN;
-        const waitMs = Number.isFinite(secs) ? secs * 1000
-          : (Number.isFinite(dateMs) ? dateMs - Date.now() : 0);
+        // U18: with no Retry-After, a 429 backs off ~1.2s (+jitter) before the
+        // single retry — an immediate retry inside the same burst just earns
+        // another 429. 5xx keeps the immediate retry.
+        const noHint = rawAfter === null || rawAfter === undefined || rawAfter === '';
+        const waitMs = Number.isFinite(secs) && !noHint ? secs * 1000
+          : (Number.isFinite(dateMs) ? dateMs - Date.now() : (res.status === 429 ? REST_429_BACKOFF_MS + Math.floor(Math.random() * 300) : 0));
+        if (res.status === 429) retried429 = true;
         await sleep(Math.max(0, Math.min(waitMs, 10000)));
         continue;
       }
@@ -149,6 +155,7 @@ export async function qlooRest({
         resultCount,
         entities: entities.map((e) => ({ id: extractId(e), name: extractName(e) })).filter((e) => e.id || e.name),
         payloadPresent,
+        retried429,
       };
     } catch (e) {
       clearTimeout(timer);
@@ -232,4 +239,48 @@ export async function restEntities({ ids, key, baseUrl, fetchImpl, logFn }) {
     fetchImpl,
     logFn,
   });
+}
+
+
+// U18 · rate-limit hygiene for one verdict run (and the whole process):
+//  - identical in-flight GETs (same path + params, same fetch impl) share ONE
+//    upstream call — a duplicate never hits Qloo twice at the same moment;
+//  - at most REST_MAX_CONCURRENCY REST calls are in flight at once, so a
+//    verdict's fan-out never bursts every REST leg into the same second.
+// Nothing is cached after a call settles: every verdict still makes its own
+// live calls, and every result (and receipt) is the real upstream answer.
+export const REST_MAX_CONCURRENCY = 2;
+export const REST_429_BACKOFF_MS = 1200;
+let restActive = 0;
+const restQueue = [];
+function restAcquire() {
+  if (restActive < REST_MAX_CONCURRENCY) { restActive += 1; return Promise.resolve(); }
+  return new Promise((resolve) => restQueue.push(resolve));
+}
+function restRelease() {
+  const next = restQueue.shift();
+  if (next) next(); else restActive -= 1;
+}
+const restInflight = new WeakMap();
+export const restStats = { calls: 0, deduped: 0, retried429: 0 };
+export async function qlooRest(opts) {
+  const fetchImpl = opts.fetchImpl || fetch;
+  let byImpl = restInflight.get(fetchImpl);
+  if (!byImpl) { byImpl = new Map(); restInflight.set(fetchImpl, byImpl); }
+  const params = opts.params || {};
+  const dedupeKey = String(opts.path) + '?' + Object.keys(params).sort().map((k) => k + '=' + String(params[k])).join('&') + '#' + String(opts.baseUrl || '');
+  const shared = byImpl.get(dedupeKey);
+  if (shared) { restStats.deduped += 1; return shared; }
+  const p = (async () => {
+    await restAcquire();
+    try {
+      restStats.calls += 1;
+      const out = await qlooRestRaw(opts);
+      if (out && out.retried429) restStats.retried429 += 1;
+      return out;
+    } finally { restRelease(); }
+  })();
+  byImpl.set(dedupeKey, p);
+  p.then(() => byImpl.delete(dedupeKey), () => byImpl.delete(dedupeKey));
+  return p;
 }

@@ -55,7 +55,7 @@
       if (!last[k]) last[k] = el; first[k] = el;
     }
     KEYS.forEach(function (k) {
-      if (first[k] && heads[k].nextSibling !== first[k]) main.insertBefore(heads[k], first[k]);
+      if (k !== 'offer' && first[k] && heads[k].nextSibling !== first[k]) main.insertBefore(heads[k], first[k]);
       if (nexts[k] && last[k] && last[k].nextSibling !== nexts[k]) last[k].after(nexts[k]);
     });
   }
@@ -79,6 +79,30 @@
   row.after(hint);
 
   var current = null;
+  var NAV_IDLE = ['enter the offer', 'open', 'open', 'save & compare offers', 'recorded trials'];
+  function navStates() {
+    var run = hasRun();
+    Array.prototype.forEach.call(document.querySelectorAll('#appNav .nav-item'), function (it, i) {
+      var on = KEYS[i] === current, st = it.querySelector('.nav-state'), a = it.querySelector('a');
+      it.classList.toggle('u17-current', on);
+      if (a) { if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
+      if (st) st.textContent = on ? 'you are here' : ((i === 1 || i === 2) && !run ? 'run a verdict to unlock' : NAV_IDLE[i]);
+    });
+  }
+  function openEvidence() {
+    var ev = document.getElementById('evidence'), rs = document.getElementById('receiptSection');
+    if (rs && typeof window.openDiscSection === 'function') window.openDiscSection(rs);
+    if (ev && rs && ev.nextElementSibling !== rs) ev.after(rs);
+    if (!ev) return;
+    Array.prototype.forEach.call(ev.querySelectorAll('details'), function (d) {
+      d.open = true;
+      var body = Array.prototype.filter.call(d.children, function (c) { return c.tagName !== 'SUMMARY' && !c.classList.contains('u18-empty') && !c.classList.contains('source-tag-line'); });
+      var has = body.some(function (c) { return c.textContent.trim().length > 0; });
+      var e = d.querySelector('.u18-empty');
+      if (!has && !e) { e = document.createElement('p'); e.className = 'u18-empty'; e.textContent = 'No data returned for this check in this run \u2014 nothing is shown in its place.'; d.appendChild(e); }
+      else if (has && e) e.remove();
+    });
+  }
   function syncDisabled() {
     var run = hasRun();
     tabs.forEach(function (t) {
@@ -86,9 +110,7 @@
       t.setAttribute('aria-disabled', dis ? 'true' : 'false');
       t.title = dis ? 'Run a verdict first' : '';
     });
-    Array.prototype.forEach.call(document.querySelectorAll('#appNav .nav-item .nav-state'), function (st, i) {
-      if (i === 1 || i === 2) st.textContent = run ? 'open' : 'run a verdict to unlock';
-    });
+    navStates();
     Object.keys(nexts).forEach(function (k) {
       var target = META[k][2], dis = !run && NEEDS_RUN[target];
       var b = nexts[k].querySelector('button'), h = nexts[k].querySelector('.u17-next-hint');
@@ -99,7 +121,8 @@
     current = k; place();
     main.setAttribute('data-u17-active', k);
     tabs.forEach(function (t) { var on = t.getAttribute('data-tab') === k; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; });
-    Array.prototype.forEach.call(document.querySelectorAll('#appNav .nav-item'), function (it, i) { it.classList.toggle('u17-current', KEYS[i] === k); });
+    navStates();
+    if (k === 'evidence') openEvidence();
   }
   function go(k, push, scrollEl) {
     if (NEEDS_RUN[k] && !hasRun()) { hint.textContent = 'Run a verdict first — the ' + META[k][0].replace('The ', '') + ' view fills with it.'; return false; }
