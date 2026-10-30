@@ -192,7 +192,7 @@ form input:focus, .checker-field input:focus { border-color: var(--purple); outl
 /* Trial cards: borderless cards with thumbnail treatment via dark panel. */
 .trial-cards { margin-top: 24px; }
 .trial-cards-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 12px; }
-.trial-card { background: var(--lavender); border-radius: var(--radius-panel); padding: 16px; cursor: pointer; min-height: 48px; }
+.trial-card { background: var(--lavender); border-radius: var(--radius-panel); padding: 16px; cursor: pointer; min-height: 48px; color: var(--ink); }
 .trial-card:hover { background: var(--blue-band); }
 .trial-card--blank { background: #1E1E1E; border: 1px dashed var(--hair); }
 .trial-card-be { font-size: 20px; font-weight: 800; color: var(--ink); }
