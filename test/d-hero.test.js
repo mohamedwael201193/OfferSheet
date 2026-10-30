@@ -64,7 +64,21 @@ test('D-HERO hero: giant display present, copy verbatim, no new claims', () => {
     'hero primary CTA must be unchanged');
   assert.ok(hero.includes('<a class="quiet" href="#flow">See how it works</a>'),
     'hero secondary CTA must be unchanged');
-  assert.ok(!/\$\d/.test(hero), 'hero must carry no dollar figure (no invented number)');
+  // U16 (Direction A, approved 30 Oct 2026): the hero may carry ONE
+  // figure — the recorded Trial 1 formula card — and only if it is
+  // labelled Recorded / not live and every figure in it equals the
+  // recorded pack. Outside that card the hero still carries no dollar figure.
+  const fig = (hero.match(/<figure class="u16-fig"[\s\S]*?<\/figure>/) || [''])[0];
+  const heroOutsideFig = hero.replace(fig, '');
+  assert.ok(!/\$\d/.test(heroOutsideFig), 'hero must carry no dollar figure outside the recorded card (no invented number)');
+  if (fig) {
+    assert.ok(/Recorded · Trial 1/.test(fig) && /not live/.test(fig), 'hero card must be labelled Recorded · Trial 1, not live');
+    const pack = JSON.parse(read('frontend/trial-pack.json')).trials[0];
+    const money = (n) => '$' + n.toLocaleString('en-US');
+    assert.ok(fig.includes(money(pack.inputs.guarantee)) && fig.includes(money(pack.inputs.ticketPrice)), 'hero card inputs must equal Trial 1');
+    assert.ok(fig.includes(pack.breakEvenTickets.toLocaleString('en-US')), 'hero card break-even must equal Trial 1');
+    assert.equal(Math.ceil(pack.inputs.guarantee / pack.inputs.ticketPrice), pack.breakEvenTickets);
+  }
   assert.ok(!/winner/i.test(hero), 'hero must award no winner');
   const v3css = read('frontend/v3-landing.css');
   assert.ok(v3css.includes('.v3 .hero h1 {') && v3css.includes('font-size: clamp(3.4rem, 6.5vw, 5.6rem);'),
