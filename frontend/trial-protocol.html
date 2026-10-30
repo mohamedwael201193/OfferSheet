@@ -6,6 +6,12 @@
 <title>OfferSheet — Pre-registered trial protocol</title>
 <link href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="oracle.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body>
 <header class="site-head">
@@ -54,5 +60,14 @@
     <p>Protocol only — not a trial, not evidence. Linked from the Oracle page and the proof documentation.</p>
   </footer>
 </main>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function (e) {
+        console.warn('OfferSheet service worker did not register:', e);
+      });
+    });
+  }
+</script>
 </body>
 </html>

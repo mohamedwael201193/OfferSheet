@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How the verdict is proven — OfferSheet</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body class="app-page">
 <header class="appbar">
@@ -27,13 +33,13 @@
     <p>When capacity is known (user-supplied or Ticketmaster venue, source always labelled), the verdict also shows break-even as a percentage of room capacity, and when break-even exceeds capacity it says plainly: “Cannot break even in this room at this guarantee.” When capacity is unknown, no percentage is shown at all — only tickets needed, plus the verbatim unknown-capacity sentence.</p>
 
     <h2>2. The receipt model</h2>
-    <p>Every Qloo-backed claim on a verdict traces to a receipt (arithmetic lines carry no receipt by design): the claim, the operation (MCP tool name or REST path), a SHA-256 request hash, the upstream requestId (null when the upstream returns none — never invented), a result count, and, where the leg holds one, an ordered ID list. Receipts exist only for legs that returned ok. Every receipt in the drawer carries a Replay button that re-runs the exact call live; a replay matches only when the replayed ID list equals the original ID list in order — counts alone never prove a match.</p>
+    <p>Every Qloo-backed claim on a verdict traces to a receipt (arithmetic lines carry no receipt by design): the claim, the operation (MCP tool name or REST path), a SHA-256 request hash, the upstream requestId (null when the upstream returns none — never invented), a result count, and, where the leg holds one, an ordered ID list. In a verdict, receipts exist only for legs that returned ok. Every receipt in the drawer carries a Replay button that re-runs the exact call live; a replay matches only when the replayed ID list equals the original ID list in order — counts alone never prove a match.</p>
     <p>Keys never appear in receipts. The REST client sends the key only as an X-Api-Key header, and MCP arguments never contain keys.</p>
 
     <h2>3. The fail-closed rule</h2>
     <p>When a required evidence leg fails, the verdict is withheld and no numbers render. The states:</p>
     <ul>
-      <li><strong>503 / not configured</strong> — visible error, form disabled. Nothing is guessed.</li>
+      <li><strong>503 / Qloo not configured</strong> — visible error, form disabled. Nothing is guessed. Other missing keys do not produce a 503: a missing Ticketmaster key renders the verdict with capacity unknown, and missing LLM providers render the verdict with the arms unavailable.</li>
       <li><strong>Verdict withheld</strong> — missing legs named, refusal kind named (OUTAGE when a leg errored, THIN DATA when legs returned empty or skipped). No numbers shown.</li>
       <li><strong>Needs input</strong> — an ambiguous headliner name returns a picker, never a guess.</li>
       <li><strong>Price unknown</strong> — no break-even number without a price; partial evidence only.</li>
@@ -62,5 +68,14 @@
   <p class="label">Open source — MIT License. Source: github.com/mohamedwael201193/OfferSheet.</p>
   <p class="colophon">Colophon — Set in a rounded display face and one grotesk sans.</p>
 </footer>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function (e) {
+        console.warn('OfferSheet service worker did not register:', e);
+      });
+    });
+  }
+</script>
 </body>
 </html>

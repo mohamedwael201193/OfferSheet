@@ -616,6 +616,10 @@
       <thead><tr><th>Case</th><th>What the page shows</th><th>What it means</th></tr></thead>
       <tbody>
         <tr><td>Qloo not configured</td><td>Visible 503, form disabled</td><td>Outage refusal — no verdict can be computed</td></tr>
+        <tr><td>Ticketmaster key missing</td><td>Verdict renders; capacity unknown, never a sellout percentage</td><td>Thin-data state — not a 503; verify room size before signing</td></tr>
+        <tr><td>LLM providers missing</td><td>Verdict renders; arms unavailable, no miss trial</td><td>Thin-data state — not a 503; the Qloo-grounded pick still stands on its receipts</td></tr>
+        <tr><td>Qloo harness down</td><td>502 on the MCP path; 500 or 502 on the HTTP path</td><td>Outage state — not a 503; no verdict numbers from partial evidence</td></tr>
+        <tr><td>Per-visitor daily cap reached</td><td>429, try again tomorrow</td><td>Cap state — not a 503; no stale or invented data is served</td></tr>
         <tr><td>Required evidence leg fails</td><td>“Verdict withheld: evidence incomplete”, no numbers</td><td>Refusal — the missing legs are named (OUTAGE if a leg errored, THIN DATA if legs returned empty or skipped)</td></tr>
         <tr><td>Price unknown</td><td>No break-even number; partial evidence only</td><td>Thin-data state — a count needs a price</td></tr>
         <tr><td>Ambiguous headliner name</td><td>Needs-input picker, no guess</td><td>Thin-data state — pick the entity you mean</td></tr>

@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Qloo tool catalogue — OfferSheet</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 </head>
 <body class="app-page">
 <header class="appbar">
@@ -20,7 +26,7 @@
   <section class="sheet crop">
     <p class="specimen">The catalogue</p>
     <h1>Qloo tool catalogue</h1>
-    <p class="label">The 10 Qloo tools behind every verdict, in plain verbs. OfferSheet also runs its own MCP server — 33 tools: 23 OfferSheet tools + 10 guarded Qloo tools. A full verdict run invokes all 10 Qloo tools below; a leg that is skipped or returns empty invokes fewer and is labelled skipped or empty, never receipted as data. Every Qloo call that returns data earns a receipt; empty REST and re-rank legs earn no receipt, replay re-runs are comparisons against the original receipt rather than new receipts, and offline tools (arithmetic, hash checks, lists, arms) carry no receipt by design. The one exception is the ID-threading resolution helper, which leaves no receipt; the ID it resolves is receipted downstream when it is used. The full 33-tool catalogue is served by the OfferSheet server.</p>
+    <p class="label">The 10 Qloo tools behind every verdict, in plain verbs. OfferSheet also runs its own MCP server — 33 tools: 23 OfferSheet tools + 10 guarded Qloo tools. A full verdict run invokes all 10 Qloo tools below; a leg that is skipped or returns empty invokes fewer and is labelled skipped or empty, never receipted as data. Every verdict leg that returns data earns a receipt; empty REST and re-rank legs earn no receipt, replay re-runs are comparisons against the original receipt rather than new receipts, and offline tools (arithmetic, hash checks, lists, arms) carry no receipt by design. Standalone proxy calls are a separate surface: the proxy records a receipt unconditionally after a non-throwing call, so a proxy receipt alone does not prove an ok leg — filter receipts on operation, never on claim. The ID-threading resolution helper records its own receipt ('opener description (resolution helper)'); the ID it resolves is receipted downstream when it is used. The full 33-tool catalogue is served by the OfferSheet server.</p>
 
     <div class="table-wrap"><table class="depth-table">
       <thead><tr><th>Tool</th><th>What it does</th><th>Where it shows up</th></tr></thead>
@@ -73,5 +79,14 @@ qloo mcp</pre>
   <p class="label">OfferSheet — one money decision, before you sign.</p>
   <p class="colophon">Colophon — Set in a rounded display face and one grotesk sans.</p>
 </footer>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function (e) {
+        console.warn('OfferSheet service worker did not register:', e);
+      });
+    });
+  }
+</script>
 </body>
 </html>
