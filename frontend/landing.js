@@ -5,15 +5,8 @@
 (function () {
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* APK button: the phone section's download route (same handler shape
-     as the previous landing script; the button would otherwise be dead). */
-  (function () {
-    var btn = document.querySelector('.apk-button[data-apk-url]');
-    if (btn) btn.addEventListener('click', function () {
-      var url = btn.getAttribute('data-apk-url');
-      if (url) window.location.href = url;
-    });
-  })();
+  /* APK link: the download is a real <a href> in index.html, so it works
+     with no JavaScript. No handler is needed or kept here. */
 
   /* Image fallback: a failed figure becomes a neutral placeholder box
      instead of a broken-image icon; layout does not shift. */

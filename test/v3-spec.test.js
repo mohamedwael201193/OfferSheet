@@ -154,7 +154,7 @@ test('mobile section: static recorded verdict, persistent label inside phone, AP
   assert.ok(phone.includes('class="record-label"'), 'the label must live on its own labelled element');
   assert.ok(mobileCss.includes('.record-verdict-num'), 'mobile-section.css must style the static record verdict number');
   assert.ok(!phone.includes('<iframe'), 'phone must embed nothing');
-  assert.ok(landing.includes('data-apk-url="https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk"'),
+  assert.ok(landing.includes('href="https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk"'),
     'APK download target must be the verified release URL');
   assert.ok(landing.includes('PWA note:'), 'phone section must carry the PWA note line');
   assert.ok(phone.includes('installable'), 'PWA note must state the app is installable');

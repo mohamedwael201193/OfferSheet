@@ -146,11 +146,11 @@ test('manifest is valid, matches the theme, and carries installable icons', () =
   assert.ok(landing.includes('href="/manifest.webmanifest"') && app.includes('href="/manifest.webmanifest"'), 'both pages must link the manifest');
 });
 
-test('APK control is a real button whose visible text shows no URL string', () => {
-  const btn = landing.match(/<button class="apk-button ms-apk"[^>]*>([^<]*)<\/button>/);
-  assert.ok(btn, 'landing must carry the APK <button>');
-  assert.ok(!btn[1].includes('http'), 'APK button visible text must not display a URL');
-  assert.ok(landing.includes('data-apk-url="https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk"'), 'button must keep its release download target unchanged');
+test('APK control is a real link whose visible text shows no URL string', () => {
+  const btn = landing.match(/<a class="apk-button ms-apk"[^>]*>([^<]*)<\/a>/);
+  assert.ok(btn, 'landing must carry the APK <a>');
+  assert.ok(!btn[1].includes('http'), 'APK link visible text must not display a URL');
+  assert.ok(landing.includes('href="https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk"'), 'link must keep its release download target unchanged');
   const note = landing.match(/<p class="apk-note">([^<]*)<\/p>/);
   assert.ok(note && !note[1].includes('http'), 'APK note must not display a URL string either');
   assert.ok(landing.includes('Android APK via GitHub Release'), 'APK note must describe the route without a URL');

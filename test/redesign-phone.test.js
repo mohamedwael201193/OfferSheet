@@ -61,8 +61,8 @@ test('phone carries no staged-film markup', () => {
 });
 
 test('real-app routes stay separate and distinct from the record', () => {
-  assert.ok(landing.includes(`data-apk-url="${APK_URL}"`), 'APK button must keep the exact release URL');
-  assert.ok(landing.includes('Download the Android app (APK)'), 'APK button text must stay');
+  assert.ok(landing.includes(`href="${APK_URL}"`), 'APK anchor must keep the exact release URL');
+  assert.ok(landing.includes('Download the Android app (APK)'), 'APK anchor text must stay');
   assert.ok(landing.includes('Try the live demo'), 'a live-demo link distinct from the record must exist');
   assert.ok((landing.match(/href="app\.html"/g) || []).length >= 1, 'live-demo link must point at app.html');
 });
