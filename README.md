@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/mohamedwael201193/OfferSheet/actions/workflows/ci.yml/badge.svg)](https://github.com/mohamedwael201193/OfferSheet/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
-![Tests](https://img.shields.io/badge/node%20--test-606%20pass%20%C2%B7%200%20fail%20%C2%B7%203%20skip-brightgreen)
+![Tests](https://img.shields.io/badge/node%20--test-607%20pass%20%C2%B7%200%20fail%20%C2%B7%203%20skip-brightgreen)
 ![Qloo MCP](https://img.shields.io/badge/Qloo%20MCP%20tools-10%2F10%20wired-orange)
 ![MCP server](https://img.shields.io/badge/own%20MCP%20server-33%20tools-blue)
 
@@ -137,7 +137,7 @@ The recorded trials come from the committed ledger [`bench/results.json`](bench/
 ```bash
 git clone https://github.com/mohamedwael201193/OfferSheet && cd OfferSheet
 node --test test/*.test.js
-# tests 609 · pass 606 · fail 0 · skipped 3
+# tests 610 · pass 607 · fail 0 · skipped 3
 ```
 
 There are 77 test files. A fresh clone needs zero runtime dependencies. CI runs the same suite plus a Playwright browser job on every push: [Actions](https://github.com/mohamedwael201193/OfferSheet/actions/workflows/ci.yml).
@@ -315,7 +315,7 @@ Deployment: the frontend is served from `frontend/` on Vercel, and the backend r
 | Grounding | Ticketmaster Discovery, OpenStreetMap (display only), Wikidata (Web arm only) |
 | Agents | OfferSheet MCP server (33 tools), Gut/Web LLM arms with a provider fallback chain |
 | Frontend | Vanilla HTML/CSS/JS, GSAP (self-hosted), PWA, Android WebView app |
-| Quality | `node:test` (609 tests), Playwright + axe-core in CI, GitHub Actions |
+| Quality | `node:test` (610 tests), Playwright + axe-core in CI, GitHub Actions |
 | Hosting | Vercel (frontend), Render (backend) |
 
 ## 📁 Project structure
