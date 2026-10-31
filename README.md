@@ -14,6 +14,12 @@
 
 **[▶ Live demo](https://offersheet-rouge.vercel.app)** · **[Open the app](https://offersheet-rouge.vercel.app/app.html)** · **[Backend health](https://offersheet-backend-k2zp.onrender.com/api/health)** · **[⬇ Android APK](https://github.com/mohamedwael201193/OfferSheet/releases/download/android-app-v1.0.0/offersheet-release.apk)**
 
+### ▶ Watch the 3-minute demo
+
+<a href="https://github.com/mohamedwael201193/OfferSheet/blob/main/docs/media/offersheet-demo.mp4"><img src="docs/media/offersheet-demo-preview.webp" alt="OfferSheet demo film preview: click to watch the 3-minute demo (opens GitHub's video player)" width="100%"></a>
+
+**[▶ Watch the 3-minute demo film (3:10, 720p)](https://github.com/mohamedwael201193/OfferSheet/blob/main/docs/media/offersheet-demo.mp4)** · [Poster](docs/media/offersheet-demo-poster.jpg)
+
 <img src="docs/screenshots/landing-1280.jpg" alt="OfferSheet landing page: Know the number before you sign. The recorded trial 1 card shows $250,000 ÷ $120 = 2,084 tickets" width="100%">
 
 </div>
