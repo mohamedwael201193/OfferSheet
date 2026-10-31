@@ -16,7 +16,7 @@
 
 ### ▶ Watch the 3-minute demo
 
-<a href="https://www.youtube.com/watch?v=hJfhIayYv-w"><img src="docs/media/offersheet-demo-preview.webp" alt="OfferSheet demo film preview: click to watch the 3-minute demo on YouTube" width="100%"></a>
+https://github.com/user-attachments/assets/a72da1a2-6b4e-4ae4-8a21-dee4ca38797d
 
 **[▶ Watch the 3-minute demo on YouTube](https://www.youtube.com/watch?v=hJfhIayYv-w)** · [Play the mp4 on GitHub](https://github.com/mohamedwael201193/OfferSheet/blob/main/docs/media/offersheet-demo.mp4) · [Poster](docs/media/offersheet-demo-poster.jpg)
 
